@@ -447,10 +447,17 @@ def get_debug_catalog(session):
     except Exception as e:
         results["db_error"] = str(e)
     try:
-        seed_catalog()
-        results["seed"] = "ok"
+        import httpx as _hx
+        from app.supabase_db import SUPABASE_URL, SERVICE_KEY
+        # Try inserting a single minimal row to see the raw error
+        test_row = {"slug": "_debug_test", "title": "Debug", "description": "test", "status": "live"}
+        _h = {"apikey": SERVICE_KEY, "Authorization": f"Bearer {SERVICE_KEY}",
+              "Content-Type": "application/json", "Prefer": "return=representation"}
+        _r = _hx.post(f"{SUPABASE_URL}/rest/v1/datasets", json=test_row, headers=_h)
+        results["seed_test_status"] = _r.status_code
+        results["seed_test_response"] = _r.text[:500]
     except Exception as e:
-        results["seed_error"] = str(e)
+        results["seed_test_error"] = str(e)
     try:
         rows2 = db_select("datasets")
         results["db_row_count_after_seed"] = len(rows2)
