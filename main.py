@@ -1,4 +1,8 @@
 import os
+import secrets
+import base64
+import httpx as _httpx
+from urllib.parse import urlencode
 from dotenv import load_dotenv
 from supabase_auth import SyncGoTrueClient
 from fasthtml.common import *
@@ -29,9 +33,18 @@ else:
 
 APP_URL = os.environ.get("APP_URL", "https://app.opendata.london")
 
+SNOWFLAKE_ACCOUNT = os.environ.get("SNOWFLAKE_ACCOUNT", "").lower().replace("_", "-")
+SNOWFLAKE_CLIENT_ID = os.environ.get("SNOWFLAKE_CLIENT_ID", "")
+SNOWFLAKE_CLIENT_SECRET = os.environ.get("SNOWFLAKE_CLIENT_SECRET", "")
+SNOWFLAKE_REDIRECT_URI = f"{APP_URL}/auth/snowflake/callback"
+
+def _sf_base_url():
+    return f"https://{SNOWFLAKE_ACCOUNT}.snowflakecomputing.com"
+
 def before(req, session):
     open_routes = ['/login', '/register', '/forgot-password', '/reset-password',
                    '/auth/google', '/auth/github', '/auth/callback',
+                   '/auth/snowflake', '/auth/snowflake/callback',
                    '/invite/accept', '/invite/confirm']
     if req.url.path not in open_routes and not session.get('user'):
         return RedirectResponse('/login', status_code=303)
@@ -101,6 +114,58 @@ def get_auth_github():
         "options": {"redirect_to": f"{APP_URL}/auth/callback"}
     })
     return RedirectResponse(result.url, status_code=303)
+
+# ── OAuth: Snowflake ──
+@rt("/auth/snowflake")
+def get_auth_snowflake(session):
+    if not SNOWFLAKE_CLIENT_ID:
+        return RedirectResponse('/login', status_code=303)
+    state = secrets.token_urlsafe(16)
+    session['sf_state'] = state
+    qs = urlencode({
+        "client_id": SNOWFLAKE_CLIENT_ID,
+        "response_type": "code",
+        "redirect_uri": SNOWFLAKE_REDIRECT_URI,
+        "state": state,
+        "scope": "session:role:PUBLIC",
+    })
+    return RedirectResponse(f"{_sf_base_url()}/oauth/authorize?{qs}", status_code=303)
+
+@rt("/auth/snowflake/callback")
+def get_auth_snowflake_callback(req, session, code: str = None, state: str = None, error: str = None):
+    if error or not code:
+        return RedirectResponse('/login?error=snowflake_denied', status_code=303)
+    if state != session.get('sf_state'):
+        return RedirectResponse('/login?error=invalid_state', status_code=303)
+    session.pop('sf_state', None)
+    try:
+        credentials = base64.b64encode(
+            f"{SNOWFLAKE_CLIENT_ID}:{SNOWFLAKE_CLIENT_SECRET}".encode()
+        ).decode()
+        r = _httpx.post(
+            f"{_sf_base_url()}/oauth/token-request",
+            data={
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": SNOWFLAKE_REDIRECT_URI,
+            },
+            headers={
+                "Authorization": f"Basic {credentials}",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+        )
+        r.raise_for_status()
+        token_data = r.json()
+        username = token_data.get("username", "")
+        access_token = token_data.get("access_token", "")
+        if not username:
+            return RedirectResponse('/login?error=snowflake_no_user', status_code=303)
+        session['user'] = f"{username}@snowflake"
+        session['access_token'] = access_token
+        session['auth_provider'] = 'snowflake'
+        return RedirectResponse('/', status_code=303)
+    except Exception:
+        return RedirectResponse('/login?error=snowflake_failed', status_code=303)
 
 # ── OAuth callback ──
 @rt("/auth/callback")
