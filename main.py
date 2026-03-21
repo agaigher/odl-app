@@ -16,6 +16,7 @@ from app.pages.forgot_password import ForgotPasswordPage, ResetPasswordPage
 from app.pages.create_org import CreateOrgPage
 from app.pages.invite import InvitePage
 from app.supabase_db import db_insert, db_select, db_patch, auth_invite
+from app.email import send_org_invite
 
 load_dotenv()
 
@@ -371,15 +372,22 @@ def post_invite(slug: str, invited_email: str, role: str, session):
             redirect_to=f"{APP_URL}/invite/accept?org={slug}"
         )
         invite_link = result.get("action_link", "")
+        # Send branded invite email via Resend
+        email_sent = send_org_invite(
+            invited_email=invited_email,
+            org_name=org_name,
+            role=role,
+            invite_link=invite_link,
+            invited_by=session.get('user', ''),
+        )
+        if email_sent:
+            return Div(f"Invitation sent to {invited_email}.", cls="success-text")
+        # Resend not configured — show the link for manual sharing
         return Div(
             P(f"Membership record created for {invited_email}.", style="color: #10B981; font-size: 13px; margin-bottom: 10px;"),
-            P("Share this invite link with them directly:", style="color: #94A3B8; font-size: 13px; margin-bottom: 8px;"),
-            Div(
-                Input(type="text", value=invite_link, readonly=True,
-                      style="width: 100%; background: #0F1929; border: 1px solid rgba(148,163,184,0.2); color: #CBD5E1; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-family: monospace;"),
-                style="margin-bottom: 6px;"
-            ),
-            P("When they click the link they will be prompted to set a password and join the organisation.", style="color: #475569; font-size: 12px;"),
+            P("Email delivery is not configured. Share this link manually:", style="color: #94A3B8; font-size: 13px; margin-bottom: 8px;"),
+            Input(type="text", value=invite_link, readonly=True,
+                  style="width: 100%; background: #0F1929; border: 1px solid rgba(148,163,184,0.2); color: #CBD5E1; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-family: monospace;"),
         )
     except Exception as e:
         err = str(e)
