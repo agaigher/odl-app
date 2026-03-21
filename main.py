@@ -7,6 +7,7 @@ from app.pages.catalog import DataCatalog
 from app.pages.dataset import DatasetDetail
 from app.pages.access import SettingsKeys, SettingsShares
 from app.pages.auth import AuthPage
+from app.pages.forgot_password import ForgotPasswordPage, ResetPasswordPage
 
 load_dotenv()
 
@@ -109,6 +110,38 @@ def get_auth_callback(req, session, code: str = None):
         return RedirectResponse('/', status_code=303)
     except Exception as e:
         return RedirectResponse(f'/login?error=oauth_failed', status_code=303)
+
+@rt("/forgot-password", methods=["GET"])
+def get_forgot_password():
+    return ForgotPasswordPage()
+
+@rt("/forgot-password", methods=["POST"])
+def post_forgot_password(email: str):
+    if not supabase:
+        return Div("Supabase not configured.", cls="error-text")
+    try:
+        supabase.auth.reset_password_for_email(email, {"redirect_to": f"{APP_URL}/reset-password"})
+        return Div("Check your email for a password reset link.", cls="success-text")
+    except Exception as e:
+        return Div(f"Error: {str(e)}", cls="error-text")
+
+@rt("/reset-password", methods=["GET"])
+def get_reset_password(req):
+    token = req.query_params.get("token", "")
+    return ResetPasswordPage(token=token)
+
+@rt("/reset-password", methods=["POST"])
+def post_reset_password(token: str, password: str, confirm_password: str):
+    if password != confirm_password:
+        return Div("Passwords do not match.", cls="error-text")
+    if not supabase:
+        return Div("Supabase not configured.", cls="error-text")
+    try:
+        supabase.auth.verify_otp({"token_hash": token, "type": "recovery"})
+        supabase.auth.update_user({"password": password})
+        return Div("Password updated! ", A("Sign in", href="/login"), ".", cls="success-text")
+    except Exception as e:
+        return Div(f"Error: {str(e)}", cls="error-text")
 
 @rt("/")
 def get(session):
