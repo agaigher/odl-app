@@ -18,6 +18,9 @@ from app.supabase_db import db_insert, db_select, db_patch, auth_invite
 
 load_dotenv()
 
+from app.catalog_data import seed_catalog
+seed_catalog()
+
 supabase_url = os.environ.get("SUPABASE_URL")
 supabase_key = os.environ.get("SUPABASE_KEY")
 
@@ -250,17 +253,53 @@ def post_create_org(org_name: str, slug: str, session):
         return Div(f"Error: {err}", cls="error-text")
 
 @rt("/")
-def get(session):
-    return page_layout("Data Catalog", "/", session.get('user'), DataCatalog())
+def get(session, q: str = "", category: str = ""):
+    return page_layout("London Database", "/", session.get('user'), DataCatalog(category=category, q=q))
 
 @rt("/catalog/search")
-def get_catalog_search(q: str):
+def get_catalog_search(q: str = "", category: str = ""):
     from app.pages.catalog import SearchCatalogResults
-    return SearchCatalogResults(q)
+    return SearchCatalogResults(q=q, category=category)
 
 @rt("/catalog/{slug}")
 def get_dataset(slug: str, session):
-    return page_layout("Dataset Details", f"/catalog/{slug}", session.get('user'), DatasetDetail(slug))
+    return page_layout("Dataset Details", f"/catalog/{slug}", session.get('user'), DatasetDetail(slug, session))
+
+@rt("/catalog/{slug}/request-access", methods=["GET"])
+def get_request_access(slug: str, session, type: str = "api"):
+    from app.pages.request_access import RequestAccessPage
+    return RequestAccessPage(slug=slug, access_type=type, session=session)
+
+@rt("/catalog/{slug}/request-access", methods=["POST"])
+def post_request_access(slug: str, access_type: str, snowflake_account: str = "", session=None):
+    if not session or not session.get('user'):
+        return Div("Not authenticated.", cls="error-text")
+    user = supabase.auth.get_user(session.get('access_token'))
+    user_id = str(user.user.id)
+    try:
+        if access_type == "snowflake":
+            if not snowflake_account:
+                return Div("Snowflake account identifier is required.", cls="error-text")
+            db_insert("share_requests", {
+                "user_id": user_id,
+                "dataset_slug": slug,
+                "snowflake_account": snowflake_account,
+                "status": "pending",
+            })
+            return Div("Request submitted! We'll provision your Snowflake share within 24 hours.", cls="success-text")
+        else:
+            db_insert("dataset_access", {
+                "user_id": user_id,
+                "dataset_slug": slug,
+                "access_type": "api",
+                "status": "active",
+            })
+            return Script(f"window.location.href = '/keys';")
+    except Exception as e:
+        err = str(e)
+        if "duplicate" in err.lower() or "unique" in err.lower():
+            return Div("You already have access to this dataset.", cls="success-text")
+        return Div(f"Error: {err}", cls="error-text")
 
 @rt("/keys")
 def get_keys(session):

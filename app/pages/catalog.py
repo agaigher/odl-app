@@ -1,241 +1,188 @@
 from fasthtml.common import *
-from app.db import datasets_tbl
+from app.supabase_db import db_select
 
-def dataset_card(dataset):
-    """Renders a single dataset card for the catalog."""
-    
-    # Map category to icon roughly
-    icon_map = {
-        "Corporate Registries": "🏢",
-        "Transportation": "🚇",
-        "Real Estate": "🏗️",
-        "Financial Regulation": "⚖️"
+FREQ_COLOR = {
+    "Real-time": "#10B981", "Streaming": "#10B981",
+    "Hourly": "#3B82F6", "Daily": "#3B82F6",
+    "Monthly": "#F59E0B", "Annual": "#94A3B8",
+}
+STATUS_BADGE = {
+    "live": ("#10B981", "Live"),
+    "coming_soon": ("#F59E0B", "Coming Soon"),
+    "restricted": ("#EF4444", "Restricted"),
+}
+
+CATALOG_STYLE = Style("""
+    .cat-layout { display: flex; gap: 32px; align-items: flex-start; }
+    .cat-sidebar { width: 188px; flex-shrink: 0; }
+    .cat-main { flex: 1; min-width: 0; }
+    .cat-sidebar-item {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 7px 10px; border-radius: 6px; text-decoration: none;
+        margin-bottom: 2px; transition: background 0.15s;
     }
-    icon = icon_map.get(dataset['category'], "📊")
+    .cat-sidebar-item:hover { background: rgba(148,163,184,0.06); }
+    .cat-sidebar-item.active { background: rgba(41,181,232,0.1); }
+    .cat-sidebar-label { font-size: 13px; font-weight: 500; color: #CBD5E1; }
+    .cat-sidebar-item.active .cat-sidebar-label { color: #29b5e8; }
+    .cat-sidebar-count {
+        font-size: 11px; color: #475569;
+        background: rgba(148,163,184,0.08);
+        padding: 1px 7px; border-radius: 999px;
+    }
+    .search-wrap { position: relative; margin-bottom: 24px; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #475569; pointer-events: none; }
+    .search-input {
+        width: 100%; background: #0F1929;
+        border: 1px solid rgba(148,163,184,0.15); color: #F8FAFC;
+        padding: 10px 14px 10px 38px; border-radius: 8px;
+        font-family: 'Inter', sans-serif; font-size: 14px; outline: none;
+        transition: border-color 0.2s;
+    }
+    .search-input:focus { border-color: #29b5e8; }
+    .search-input::placeholder { color: #334155; }
+    .ds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+    .ds-card {
+        display: flex; flex-direction: column; height: 100%;
+        background: #0F1929; border: 1px solid rgba(148,163,184,0.1);
+        border-radius: 10px; text-decoration: none;
+        transition: border-color 0.2s, transform 0.15s;
+    }
+    .ds-card:hover { border-color: rgba(41,181,232,0.35); transform: translateY(-1px); }
+    .ds-card-inner { display: flex; flex-direction: column; height: 100%; padding: 18px 20px; }
+    .ds-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .ds-cat { font-size: 11px; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ds-title { font-size: 14px; font-weight: 600; color: #F8FAFC; line-height: 1.4; margin-bottom: 6px; }
+    .ds-desc { font-size: 13px; color: #64748B; line-height: 1.55; flex: 1; margin-bottom: 14px; }
+    .ds-footer { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(148,163,184,0.08); padding-top: 12px; }
+    .ds-provider { font-size: 12px; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55%; }
+    .ds-badges { display: flex; gap: 5px; flex-shrink: 0; }
+    .badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .badge-api { background: rgba(41,181,232,0.12); color: #29b5e8; }
+    .badge-sf { background: rgba(125,211,252,0.08); color: #7DD3FC; }
+    .badge-status-live { color: #10B981; }
+    .badge-status-coming { color: #F59E0B; }
+""")
 
-    return Div(
+
+def _card(d):
+    status_color, status_label = STATUS_BADGE.get(d.get("status", "live"), ("#64748B", "Unknown"))
+    access = d.get("access_methods") or ["api"]
+    return A(
         Div(
-            Span(icon, style="font-size: 24px; margin-right: 16px;"),
             Div(
-                A(dataset['name'], href=f"/catalog/{dataset['slug']}", cls="dataset-title-link"),
-                Div(
-                    Span(dataset['provider'], cls="dataset-meta"),
-                    Span("•", cls="dataset-meta-sep"),
-                    Span(dataset['category'], cls="dataset-meta"),
-                    Span("•", cls="dataset-meta-sep"),
-                    Span(dataset['update_frequency'], cls="dataset-meta-highlight"),
-                    cls="dataset-metadata"
-                ),
+                Span(d.get("category") or "", cls="ds-cat"),
+                Span(status_label, style=f"font-size: 11px; font-weight: 600; color: {status_color};"),
+                cls="ds-card-top"
             ),
-            style="display: flex; align-items: flex-start; margin-bottom: 12px;"
+            P(d.get("title") or "", cls="ds-title"),
+            P(d.get("description") or "", cls="ds-desc"),
+            Div(
+                Span(d.get("provider") or "", cls="ds-provider"),
+                Div(
+                    *([Span("API", cls="badge badge-api")] if "api" in access else []),
+                    *([Span("Snowflake", cls="badge badge-sf")] if "snowflake" in access else []),
+                    cls="ds-badges"
+                ),
+                cls="ds-footer"
+            ),
+            cls="ds-card-inner"
         ),
-        P(dataset['description'], cls="dataset-description"),
-        Div(
-            A("View Schema", href=f"/catalog/{dataset['slug']}", cls="action-link"),
-            A("Get Connection Details", href=f"/shares?dataset={dataset['slug']}", cls="action-link-primary"),
-            cls="dataset-actions"
-        ),
-        cls="dataset-card"
+        href=f"/catalog/{d['slug']}",
+        cls="ds-card"
     )
 
-def DataCatalog():
-    
-    catalog_style = Style("""
-        .catalog-header {
-            margin-bottom: 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-        }
-        .catalog-title {
-            font-size: 28px;
-            font-weight: 700;
-            margin: 0 0 8px 0;
-            color: #F8FAFC;
-            letter-spacing: -0.5px;
-        }
-        .catalog-subtitle {
-            color: #94A3B8;
-            margin: 0;
-            font-size: 15px;
-        }
-        
-        /* Grid Layout */
-        .catalog-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            gap: 24px;
-        }
 
-        /* Card Styles */
-        .dataset-card {
-            background: #0F172A;
-            border: 1px solid rgba(148, 163, 184, 0.15);
-            border-radius: 12px;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            transition: all 0.2s ease;
-        }
-        .dataset-card:hover {
-            border-color: rgba(41, 181, 232, 0.4);
-            transform: translateY(-2px);
-            box-shadow: 0 12px 24px -10px rgba(0,0,0,0.5);
-        }
-        
-        .dataset-title-link {
-            font-size: 18px;
-            font-weight: 600;
-            color: #F8FAFC;
-            text-decoration: none;
-            display: block;
-            margin-bottom: 4px;
-            transition: color 0.15s;
-        }
-        .dataset-title-link:hover {
-            color: #29b5e8;
-        }
-        
-        .dataset-metadata {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-        .dataset-meta {
-            color: #64748B;
-            font-size: 13px;
-            font-family: 'Inter', sans-serif;
-        }
-        .dataset-meta-sep {
-            color: #334155;
-            font-size: 13px;
-        }
-        .dataset-meta-highlight {
-            color: #38BDF8;
-            font-size: 12px;
-            font-weight: 600;
-            font-family: 'Roboto Mono', monospace;
-            background: rgba(56, 189, 248, 0.1);
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-        
-        .dataset-description {
-            color: #94A3B8;
-            font-size: 14px;
-            line-height: 1.5;
-            margin: 0 0 20px 0;
-            flex-grow: 1;
-        }
-        
-        .dataset-actions {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-top: auto;
-            border-top: 1px solid rgba(148, 163, 184, 0.1);
-            padding-top: 16px;
-        }
-        
-        .action-link {
-            color: #94A3B8;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-        .action-link:hover {
-            color: #F8FAFC;
-        }
-        
-        .action-link-primary {
-            color: #29b5e8;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 600;
-            transition: opacity 0.2s;
-        }
-        .action-link-primary:hover {
-            opacity: 0.8;
-        }
-        
-        /* Search Bar */
-        .catalog-search {
-            position: relative;
-            width: 320px;
-        }
-        .catalog-search input {
-            width: 100%;
-            background: #0F172A;
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            color: #F8FAFC;
-            padding: 10px 16px 10px 36px;
-            border-radius: 6px;
-            font-family: 'Inter', sans-serif;
-            font-size: 14px;
-            transition: border-color 0.2s;
-        }
-        .catalog-search input:focus {
-            outline: none;
-            border-color: #29b5e8;
-        }
-        .search-icon {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #64748B;
-            pointer-events: none;
-        }
-    """)
-    
-    all_datasets = datasets_tbl()
+def _sidebar(all_datasets, active_cat):
+    counts = {}
+    for d in all_datasets:
+        c = d.get("category") or "Other"
+        counts[c] = counts.get(c, 0) + 1
+    total = len(all_datasets)
+    items = [
+        A(
+            Span("All datasets", cls="cat-sidebar-label"),
+            Span(str(total), cls="cat-sidebar-count"),
+            href="/",
+            cls=f"cat-sidebar-item {'active' if not active_cat else ''}",
+        )
+    ]
+    for cat in sorted(counts):
+        items.append(A(
+            Span(cat, cls="cat-sidebar-label"),
+            Span(str(counts[cat]), cls="cat-sidebar-count"),
+            href=f"/?category={cat}",
+            cls=f"cat-sidebar-item {'active' if cat == active_cat else ''}",
+        ))
+    return Div(*items, cls="cat-sidebar")
+
+
+def DataCatalog(category: str = "", q: str = ""):
+    try:
+        all_datasets = db_select("datasets")
+    except Exception:
+        all_datasets = []
+
+    datasets = all_datasets
+    if q:
+        ql = q.lower()
+        datasets = [
+            d for d in datasets
+            if ql in (d.get("title") or "").lower()
+            or ql in (d.get("description") or "").lower()
+            or ql in " ".join(d.get("tags") or []).lower()
+            or ql in (d.get("category") or "").lower()
+            or ql in (d.get("provider") or "").lower()
+        ]
+    if category:
+        datasets = [d for d in datasets if d.get("category") == category]
+
+    heading_text = f'Results for "{q}"' if q else (category or "London Database")
+    subtext = f"{len(datasets)} dataset{'s' if len(datasets) != 1 else ''} found" if (q or category) \
+        else f"{len(datasets)} datasets — growing continuously"
+
+    grid = Div(
+        *[_card(d) for d in datasets],
+        cls="ds-grid"
+    ) if datasets else Div(
+        P("No datasets match your search.", style="color: #64748B; font-size: 14px; padding: 32px 0 8px;"),
+        A("Clear search", href="/", style="color: #29b5e8; font-size: 13px; text-decoration: none;"),
+    )
 
     return Div(
-        catalog_style,
-        Script(src="https://unpkg.com/htmx.org@1.9.10"),
+        CATALOG_STYLE,
+        # Search bar
         Div(
-            Div(
-                H1("London Database", cls="catalog-title"),
-                P("Discover, query, and synchronize high-fidelity government data.", cls="catalog-subtitle"),
+            Span(NotStr('<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>'), cls="search-icon"),
+            Input(
+                type="search", name="q", value=q,
+                placeholder="Search by name, category, keyword, or provider…",
+                cls="search-input",
+                hx_get="/catalog/search",
+                hx_trigger="input changed delay:280ms, search",
+                hx_target="#catalog-body",
+                hx_include="[name='q'],[name='category']",
             ),
-            Div(
-                Span("⚲", cls="search-icon"),
-                Input(
-                    type="search", 
-                    name="q", 
-                    placeholder="Search datasets...", 
-                    cls="catalog-search input",
-                    hx_get="/catalog/search",
-                    hx_trigger="keyup changed delay:300ms, search",
-                    hx_target="#catalog-grid-container"
-                ),
-                cls="catalog-search"
-            ),
-            cls="catalog-header"
+            Input(type="hidden", name="category", value=category),
+            cls="search-wrap"
         ),
-        
+        # Layout
         Div(
-            *[dataset_card(ds) for ds in all_datasets],
-            id="catalog-grid-container",
-            cls="catalog-grid"
+            _sidebar(all_datasets, category),
+            Div(
+                Div(
+                    H1(heading_text, style="font-size: 19px; font-weight: 700; color: #F8FAFC; letter-spacing: -0.3px;"),
+                    P(subtext, style="font-size: 13px; color: #64748B; margin-top: 3px;"),
+                    style="margin-bottom: 18px;"
+                ),
+                grid,
+                id="catalog-body",
+                cls="cat-main"
+            ),
+            cls="cat-layout"
         )
     )
 
-def SearchCatalogResults(q: str):
-    all_datasets = datasets_tbl()
-    
-    if not q:
-        filtered = all_datasets
-    else:
-        q = q.lower()
-        filtered = [
-            ds for ds in all_datasets 
-            if q in ds['name'].lower() 
-            or q in ds['description'].lower() 
-            or q in ds['category'].lower()
-            or q in ds['provider'].lower()
-        ]
-        
-    return [dataset_card(ds) for ds in filtered]
+
+def SearchCatalogResults(q: str = "", category: str = ""):
+    return DataCatalog(q=q, category=category)
