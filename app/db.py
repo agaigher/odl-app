@@ -1,7 +1,9 @@
 from fasthtml.common import *
 
-# Initialize SQLite database (using FastHTML's baked-in minidata)
-db = database('data/odl_app.db')
+# Initialize SQLite database — use /tmp on Vercel (read-only filesystem), data/ locally
+import os
+db_path = '/tmp/odl_app.db' if os.environ.get('VERCEL') else 'data/odl_app.db'
+db = database(db_path)
 
 # Define core tables for our MVP (Users, Datasets, API Keys, Data Shares)
 users_tbl = db.t.users
