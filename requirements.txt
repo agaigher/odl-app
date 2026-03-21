@@ -1,9 +1,3 @@
-fastapi
 python-fasthtml==0.12.0
-uvicorn
 python-dotenv
-sqlite-minutils
-python-jose[cryptography]
-passlib[bcrypt]
-multipart
-supabase
+supabase-auth
