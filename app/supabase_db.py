@@ -39,11 +39,12 @@ def db_patch(table: str, data: dict, filters: dict):
 
 
 def auth_invite(email: str, data: dict = None, redirect_to: str = None):
-    """Send an invite email via Supabase admin auth API."""
-    url = f"{SUPABASE_URL}/auth/v1/admin/invite"
-    body = {"email": email}
-    if data:
-        body["data"] = data
+    """Generate an invite link via Supabase admin generate_link API.
+    Returns the action_link the invitee must click to accept.
+    Note: /admin/invite is not available on free plan — generate_link is used instead.
+    """
+    url = f"{SUPABASE_URL}/auth/v1/admin/generate_link"
+    body = {"type": "invite", "email": email}
     if redirect_to:
         body["redirect_to"] = redirect_to
     headers = {

@@ -365,13 +365,22 @@ def post_invite(slug: str, invited_email: str, role: str, session):
             "role": role,
             "status": "pending",
         })
-        # Send invite email via Supabase admin API
-        auth_invite(
+        # Generate invite link via Supabase generate_link (free plan compatible)
+        result = auth_invite(
             email=invited_email,
-            data={"org_id": org_id, "org_slug": slug, "role": role},
             redirect_to=f"{APP_URL}/invite/accept?org={slug}"
         )
-        return Div(f"Invitation sent to {invited_email}.", cls="success-text")
+        invite_link = result.get("action_link", "")
+        return Div(
+            P(f"Membership record created for {invited_email}.", style="color: #10B981; font-size: 13px; margin-bottom: 10px;"),
+            P("Share this invite link with them directly:", style="color: #94A3B8; font-size: 13px; margin-bottom: 8px;"),
+            Div(
+                Input(type="text", value=invite_link, readonly=True,
+                      style="width: 100%; background: #0F1929; border: 1px solid rgba(148,163,184,0.2); color: #CBD5E1; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-family: monospace;"),
+                style="margin-bottom: 6px;"
+            ),
+            P("When they click the link they will be prompted to set a password and join the organisation.", style="color: #475569; font-size: 12px;"),
+        )
     except Exception as e:
         err = str(e)
         if "duplicate key" in err or "unique" in err.lower():
