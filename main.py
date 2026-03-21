@@ -50,7 +50,7 @@ def before(req, session):
     open_routes = ['/login', '/register', '/forgot-password', '/reset-password',
                    '/auth/google', '/auth/github', '/auth/callback',
                    '/auth/snowflake', '/auth/snowflake/callback',
-                   '/invite/accept', '/invite/confirm']
+                   '/invite/accept', '/invite/confirm', '/robots.txt']
     if req.url.path not in open_routes and not session.get('user'):
         return RedirectResponse('/login', status_code=303)
 
@@ -469,6 +469,32 @@ async def post_invite_confirm(req, session):
 @rt("/docs")
 def get_docs(session):
     return page_layout("Documentation", "/docs", session.get('user'), Div(H1("API Documentation", style="color: white;")))
+
+@rt("/robots.txt")
+def get_robots():
+    from starlette.responses import PlainTextResponse
+    content = """User-agent: *
+Disallow: /dashboard
+Disallow: /catalog
+Disallow: /catalog/
+Disallow: /keys
+Disallow: /shares
+Disallow: /queries
+Disallow: /settings
+Disallow: /admin
+Disallow: /org/
+Disallow: /create-org
+Disallow: /invite/
+Disallow: /auth/
+Disallow: /debug/
+
+# Login page is public but no value in indexing it
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+"""
+    return PlainTextResponse(content)
 
 if __name__ == '__main__':
     # Ensure port is open, using 5002 since odl-web is likely 5001
