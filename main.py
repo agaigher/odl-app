@@ -434,6 +434,34 @@ async def post_invite_confirm(req, session):
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
+@rt("/debug/catalog")
+def get_debug_catalog(session):
+    """Temporary debug endpoint — remove after fixing catalog."""
+    from app.supabase_db import db_select, db_insert, SUPABASE_URL, SERVICE_KEY
+    from app.catalog_data import seed_catalog, DATASETS
+    results = {}
+    try:
+        rows = db_select("datasets")
+        results["db_row_count"] = len(rows)
+        results["db_rows_sample"] = [r.get("slug") for r in rows[:5]]
+    except Exception as e:
+        results["db_error"] = str(e)
+    try:
+        seed_catalog()
+        results["seed"] = "ok"
+    except Exception as e:
+        results["seed_error"] = str(e)
+    try:
+        rows2 = db_select("datasets")
+        results["db_row_count_after_seed"] = len(rows2)
+    except Exception as e:
+        results["db_error_after_seed"] = str(e)
+    results["supabase_url_set"] = bool(SUPABASE_URL)
+    results["service_key_set"] = bool(SERVICE_KEY)
+    results["datasets_in_code"] = len(DATASETS)
+    import json
+    return Html(Body(Pre(json.dumps(results, indent=2), style="color: #0f0; background: #111; padding: 20px; font-size: 13px;")))
+
 @rt("/docs")
 def get_docs(session):
     return page_layout("Documentation", "/docs", session.get('user'), Div(H1("API Documentation", style="color: white;")))
