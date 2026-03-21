@@ -8,6 +8,8 @@ from app.pages.dataset import DatasetDetail
 from app.pages.access import SettingsKeys, SettingsShares
 from app.pages.auth import AuthPage
 from app.pages.forgot_password import ForgotPasswordPage, ResetPasswordPage
+from app.pages.create_org import CreateOrgPage
+from app.supabase_db import db_insert, db_select
 
 load_dotenv()
 
@@ -143,6 +145,43 @@ def post_reset_password(token: str, password: str, confirm_password: str):
     except Exception as e:
         return Div(f"Error: {str(e)}", cls="error-text")
 
+@rt("/create-org", methods=["GET"])
+def get_create_org(session):
+    if not session.get('user'): return RedirectResponse('/login', status_code=303)
+    return CreateOrgPage()
+
+@rt("/create-org", methods=["POST"])
+def post_create_org(org_name: str, slug: str, session):
+    if not session.get('user'):
+        return Div("Not authenticated.", cls="error-text")
+    if not org_name or not slug:
+        return Div("Organisation name and slug are required.", cls="error-text")
+    slug = slug.lower().strip().replace(" ", "-")
+    try:
+        # Get user ID from access token
+        user = supabase.auth.get_user(session.get('access_token'))
+        user_id = str(user.user.id)
+        # Create org
+        orgs = db_insert("organisations", {
+            "name": org_name,
+            "slug": slug,
+            "created_by": user_id,
+        })
+        org_id = orgs[0]["id"]
+        # Add creator as admin member
+        db_insert("memberships", {
+            "org_id": org_id,
+            "user_id": user_id,
+            "role": "admin",
+            "status": "active",
+        })
+        return Script(f"window.location.href = '/org/{slug}';")
+    except Exception as e:
+        err = str(e)
+        if "duplicate key" in err or "unique" in err.lower():
+            return Div("That slug is already taken. Choose a different one.", cls="error-text")
+        return Div(f"Error: {err}", cls="error-text")
+
 @rt("/")
 def get(session):
     return page_layout("Data Catalog", "/", session.get('user'), DataCatalog())
@@ -172,6 +211,11 @@ def get_queries(session):
 @rt("/settings")
 def get_settings(session):
     return page_layout("Settings", "/settings", session.get('user'), Div(H1("Account Settings", style="color: white;")))
+
+@rt("/org/{slug}")
+def get_org(slug: str, session):
+    from app.pages.org_dashboard import OrgDashboard
+    return page_layout(f"Organisation", f"/org/{slug}", session.get('user'), OrgDashboard(slug, session))
 
 @rt("/docs")
 def get_docs(session):
