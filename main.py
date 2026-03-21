@@ -23,9 +23,12 @@ else:
     print("Warning: SUPABASE_URL and SUPABASE_KEY not found in .env. Auth will fail.")
     supabase = None
 
+APP_URL = os.environ.get("APP_URL", "https://app.opendata.london")
+
 def before(req, session):
-    auth_routes = ['/login', '/register']
-    if req.url.path not in auth_routes and not session.get('user'):
+    open_routes = ['/login', '/register', '/forgot-password', '/reset-password',
+                   '/auth/google', '/auth/github', '/auth/callback']
+    if req.url.path not in open_routes and not session.get('user'):
         return RedirectResponse('/login', status_code=303)
 
 bware = Beforeware(before, skip=[r'/favicon\.ico', r'/static/.*', r'.*\.css'])
@@ -73,6 +76,39 @@ def get_logout(session):
         try: supabase.auth.sign_out()
         except: pass
     return RedirectResponse('/login', status_code=303)
+
+# ── OAuth: Google ──
+@rt("/auth/google")
+def get_auth_google():
+    if not supabase: return RedirectResponse('/login', status_code=303)
+    result = supabase.auth.sign_in_with_oauth({
+        "provider": "google",
+        "options": {"redirect_to": f"{APP_URL}/auth/callback"}
+    })
+    return RedirectResponse(result.url, status_code=303)
+
+# ── OAuth: GitHub ──
+@rt("/auth/github")
+def get_auth_github():
+    if not supabase: return RedirectResponse('/login', status_code=303)
+    result = supabase.auth.sign_in_with_oauth({
+        "provider": "github",
+        "options": {"redirect_to": f"{APP_URL}/auth/callback"}
+    })
+    return RedirectResponse(result.url, status_code=303)
+
+# ── OAuth callback ──
+@rt("/auth/callback")
+def get_auth_callback(req, session, code: str = None):
+    if not supabase or not code:
+        return RedirectResponse('/login', status_code=303)
+    try:
+        result = supabase.auth.exchange_code_for_session({"auth_code": code})
+        session['user'] = result.user.email
+        session['access_token'] = result.session.access_token
+        return RedirectResponse('/', status_code=303)
+    except Exception as e:
+        return RedirectResponse(f'/login?error=oauth_failed', status_code=303)
 
 @rt("/")
 def get(session):
