@@ -30,7 +30,7 @@ def before(req, session):
 
 bware = Beforeware(before, skip=[r'/favicon\.ico', r'/static/.*', r'.*\.css'])
 
-app, rt = fast_app(before=bware, secret_key="super_secret_odl_app_key")
+app, rt = fast_app(before=bware, secret_key=os.environ.get("SESSION_SECRET", "dev_secret_change_in_prod"))
 
 @rt("/login", methods=["GET"])
 def get_login(session):
