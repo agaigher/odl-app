@@ -9,7 +9,8 @@ from app.pages.access import SettingsKeys, SettingsShares
 from app.pages.auth import AuthPage
 from app.pages.forgot_password import ForgotPasswordPage, ResetPasswordPage
 from app.pages.create_org import CreateOrgPage
-from app.supabase_db import db_insert, db_select
+from app.pages.invite import InvitePage
+from app.supabase_db import db_insert, db_select, db_patch, auth_invite
 
 load_dotenv()
 
@@ -30,7 +31,8 @@ APP_URL = os.environ.get("APP_URL", "https://app.opendata.london")
 
 def before(req, session):
     open_routes = ['/login', '/register', '/forgot-password', '/reset-password',
-                   '/auth/google', '/auth/github', '/auth/callback']
+                   '/auth/google', '/auth/github', '/auth/callback',
+                   '/invite/accept', '/invite/confirm']
     if req.url.path not in open_routes and not session.get('user'):
         return RedirectResponse('/login', status_code=303)
 
@@ -216,6 +218,117 @@ def get_settings(session):
 def get_org(slug: str, session):
     from app.pages.org_dashboard import OrgDashboard
     return page_layout(f"Organisation", f"/org/{slug}", session.get('user'), OrgDashboard(slug, session))
+
+@rt("/org/{slug}/invite", methods=["GET"])
+def get_invite(slug: str, session):
+    orgs = db_select("organisations", {"slug": slug})
+    if not orgs: return RedirectResponse(f"/org/{slug}", status_code=303)
+    return InvitePage(slug=slug, org_name=orgs[0]["name"])
+
+@rt("/org/{slug}/invite", methods=["POST"])
+def post_invite(slug: str, invited_email: str, role: str, session):
+    if not session.get('user'):
+        return Div("Not authenticated.", cls="error-text")
+    if not invited_email:
+        return Div("Email is required.", cls="error-text")
+    if role not in ("admin", "member"):
+        role = "member"
+    try:
+        orgs = db_select("organisations", {"slug": slug})
+        if not orgs:
+            return Div("Organisation not found.", cls="error-text")
+        org_id = orgs[0]["id"]
+        org_name = orgs[0]["name"]
+        # Insert pending membership
+        db_insert("memberships", {
+            "org_id": org_id,
+            "invited_email": invited_email,
+            "role": role,
+            "status": "pending",
+        })
+        # Send invite email via Supabase admin API
+        auth_invite(
+            email=invited_email,
+            data={"org_id": org_id, "org_slug": slug, "role": role},
+            redirect_to=f"{APP_URL}/invite/accept?org={slug}"
+        )
+        return Div(f"Invitation sent to {invited_email}.", cls="success-text")
+    except Exception as e:
+        err = str(e)
+        if "duplicate key" in err or "unique" in err.lower():
+            return Div("That person is already a member or has a pending invite.", cls="error-text")
+        return Div(f"Error: {err}", cls="error-text")
+
+@rt("/invite/accept")
+def get_invite_accept(req, session, org: str = ""):
+    """Landing page after clicking an invite email link.
+    Supabase redirects here with access_token in the URL fragment (handled client-side).
+    """
+    return Html(
+        Head(
+            Title("Accepting Invitation | OpenData.London"),
+            Link(rel="stylesheet", href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"),
+            Style("""
+                * { box-sizing: border-box; margin: 0; padding: 0; }
+                body { background: #0B1120; font-family: 'Inter', sans-serif; min-height: 100vh;
+                       display: flex; align-items: center; justify-content: center; color: #F8FAFC; }
+                .card { text-align: center; max-width: 400px; padding: 40px 20px; }
+                .card h1 { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+                .card p { color: #64748B; font-size: 14px; line-height: 1.6; }
+            """)
+        ),
+        Body(
+            Div(
+                H1("Joining your organisation\u2026"),
+                P("Please wait while we set up your access."),
+                cls="card"
+            ),
+            Script(f"""
+                const hash = window.location.hash.substring(1);
+                const params = new URLSearchParams(hash);
+                const token = params.get('access_token');
+                const org = "{org}";
+                if (token) {{
+                    fetch('/invite/confirm', {{
+                        method: 'POST',
+                        headers: {{'Content-Type': 'application/json'}},
+                        body: JSON.stringify({{access_token: token, org: org}})
+                    }}).then(r => r.json()).then(d => {{
+                        if (d.ok) window.location.href = '/org/' + org;
+                        else document.querySelector('p').textContent = 'Error: ' + d.error;
+                    }});
+                }} else {{
+                    document.querySelector('p').textContent = 'Invalid or expired invite link.';
+                }}
+            """)
+        )
+    )
+
+@rt("/invite/confirm", methods=["POST"])
+async def post_invite_confirm(req, session):
+    """Receives the access_token from the invite accept page, logs the user in,
+    and activates their pending membership."""
+    try:
+        body = await req.json()
+        access_token = body.get("access_token", "")
+        org_slug = body.get("org", "")
+        user = supabase.auth.get_user(access_token)
+        user_email = user.user.email
+        user_id = str(user.user.id)
+        session['user'] = user_email
+        session['access_token'] = access_token
+        # Find pending membership by email and activate it
+        orgs = db_select("organisations", {"slug": org_slug})
+        if orgs:
+            org_id = orgs[0]["id"]
+            db_patch(
+                "memberships",
+                data={"user_id": user_id, "status": "active"},
+                filters={"org_id": org_id, "invited_email": user_email},
+            )
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 @rt("/docs")
 def get_docs(session):
