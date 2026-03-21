@@ -103,7 +103,7 @@ def _sidebar(all_datasets, active_cat):
         A(
             Span("All datasets", cls="cat-sidebar-label"),
             Span(str(total), cls="cat-sidebar-count"),
-            href="/",
+            href="/catalog",
             cls=f"cat-sidebar-item {'active' if not active_cat else ''}",
         )
     ]
@@ -111,7 +111,7 @@ def _sidebar(all_datasets, active_cat):
         items.append(A(
             Span(cat, cls="cat-sidebar-label"),
             Span(str(counts[cat]), cls="cat-sidebar-count"),
-            href=f"/?category={cat}",
+            href=f"/catalog?category={cat}",
             cls=f"cat-sidebar-item {'active' if cat == active_cat else ''}",
         ))
     return Div(*items, cls="cat-sidebar")
@@ -146,7 +146,7 @@ def DataCatalog(category: str = "", q: str = ""):
         cls="ds-grid"
     ) if datasets else Div(
         P("No datasets match your search.", style="color: #64748B; font-size: 14px; padding: 32px 0 8px;"),
-        A("Clear search", href="/", style="color: #29b5e8; font-size: 13px; text-decoration: none;"),
+        A("Clear search", href="/catalog", style="color: #29b5e8; font-size: 13px; text-decoration: none;"),
     )
 
     return Div(

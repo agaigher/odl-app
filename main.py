@@ -8,6 +8,7 @@ from supabase_auth import SyncGoTrueClient
 from fasthtml.common import *
 from app.components import page_layout
 from app.pages.catalog import DataCatalog
+from app.pages.dashboard import Dashboard
 from app.pages.dataset import DatasetDetail
 from app.pages.access import SettingsKeys, SettingsShares
 from app.pages.auth import AuthPage
@@ -253,8 +254,22 @@ def post_create_org(org_name: str, slug: str, session):
         return Div(f"Error: {err}", cls="error-text")
 
 @rt("/")
-def get(session, q: str = "", category: str = ""):
-    return page_layout("London Database", "/", session.get('user'), DataCatalog(category=category, q=q))
+def get(session):
+    return RedirectResponse('/dashboard', status_code=303)
+
+@rt("/dashboard")
+def get_dashboard(session):
+    user_email = session.get('user', '')
+    try:
+        user = supabase.auth.get_user(session.get('access_token'))
+        user_id = str(user.user.id)
+    except Exception:
+        user_id = ""
+    return page_layout("Dashboard", "/dashboard", user_email, Dashboard(user_id=user_id, user_email=user_email))
+
+@rt("/catalog")
+def get_catalog(session, q: str = "", category: str = ""):
+    return page_layout("London Database", "/catalog", session.get('user'), DataCatalog(category=category, q=q))
 
 @rt("/catalog/search")
 def get_catalog_search(q: str = "", category: str = ""):
