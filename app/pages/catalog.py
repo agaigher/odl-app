@@ -46,39 +46,74 @@ CATALOG_STYLE = Style("""
     .cat-sidebar-count { font-size: 11px; color: #94A3B8;
         background: #F1F5F9; padding: 1px 6px; border-radius: 999px; }
 
-    .search-tabs { display: flex; gap: 4px; margin-bottom: 10px; }
-    .stab { padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;
-        cursor: pointer; border: 1px solid #E2E8F0;
-        background: #FFFFFF; color: #64748B; font-family: 'Inter', sans-serif;
-        transition: all 0.15s; }
-    .stab.on { background: #E0F2FE; color: #0284C7; border-color: #BAE6FD; font-weight: 600; }
-    .stab:hover:not(.on) { background: #F8FAFC; color: #374151; }
+    /* ── Search bar ── */
+    .search-outer { margin-bottom: 16px; }
 
-    .kw-wrap { position: relative; }
-    .kw-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-        color: #94A3B8; pointer-events: none; }
-    .kw-input { width: 100%; background: #FFFFFF;
-        border: 1px solid #E2E8F0; color: #1E293B;
-        padding: 10px 14px 10px 38px; border-radius: 8px;
-        font-family: 'Inter', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
-    .kw-input:focus { border-color: #0284C7; box-shadow: 0 0 0 3px rgba(2,132,199,0.1); }
+    /* Keyword bar — Google-style, constrained width */
+    .kw-bar { display: flex; align-items: center; gap: 0;
+        background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px;
+        padding: 6px 6px 6px 14px; max-width: 640px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        transition: box-shadow 0.2s; }
+    .kw-bar:focus-within { box-shadow: 0 2px 12px rgba(2,132,199,0.15); border-color: #BAE6FD; }
+    .kw-icon { color: #CBD5E1; flex-shrink: 0; margin-right: 10px; }
+    .kw-input { flex: 1; border: none; outline: none; background: transparent;
+        font-family: 'Inter', sans-serif; font-size: 14px; color: #1E293B; min-width: 0; }
     .kw-input::placeholder { color: #CBD5E1; }
+    .ai-pill-btn { display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+        background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 60%, #EC4899 100%);
+        color: #fff; border: none; border-radius: 8px; padding: 7px 14px;
+        font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif;
+        white-space: nowrap; letter-spacing: 0.3px; transition: opacity 0.15s; }
+    .ai-pill-btn:hover { opacity: 0.88; }
 
-    .ai-wrap { display: flex; gap: 10px; }
-    .ai-input { flex: 1; background: #FFFFFF; border: 1px solid #E2E8F0;
-        color: #1E293B; padding: 10px 14px; border-radius: 8px;
-        font-family: 'Inter', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
-    .ai-input:focus { border-color: #0284C7; box-shadow: 0 0 0 3px rgba(2,132,199,0.1); }
-    .ai-input::placeholder { color: #CBD5E1; }
-    .ai-btn { background: #0284C7; color: #ffffff; font-weight: 700; font-size: 13px;
-        padding: 0 20px; border: none; border-radius: 8px; cursor: pointer;
-        font-family: 'Inter', sans-serif; white-space: nowrap; height: 42px;
-        transition: background 0.15s; }
-    .ai-btn:hover { background: #0369A1; }
-    .ai-form.htmx-request .ai-btn { opacity: 0.6; cursor: not-allowed; }
-    .ai-form.htmx-request .ai-btn::after { content: "…"; }
+    /* AI bar — gradient border, full width, expands from kw */
+    .ai-bar { display: none; align-items: center; gap: 10px; }
+    .ai-bar.active { display: flex; }
+    .ai-bar-inner { flex: 1; display: flex; align-items: center; gap: 0;
+        background: #fff;
+        border-radius: 12px; padding: 6px 6px 6px 16px;
+        border: 2px solid transparent;
+        background-image: linear-gradient(#fff,#fff),
+            linear-gradient(135deg, #6366F1, #8B5CF6, #EC4899);
+        background-origin: border-box;
+        background-clip: padding-box, border-box;
+        box-shadow: 0 4px 20px rgba(99,102,241,0.15);
+        animation: searchExpand 0.25s ease; }
+    @keyframes searchExpand {
+        from { opacity: 0; transform: scaleX(0.96); }
+        to   { opacity: 1; transform: scaleX(1); } }
+    .ai-sparkle { font-size: 16px; margin-right: 10px; flex-shrink: 0; }
+    .ai-query-input { flex: 1; border: none; outline: none; background: transparent;
+        font-family: 'Inter', sans-serif; font-size: 14px; color: #1E293B; min-width: 0; }
+    .ai-query-input::placeholder { color: #C4B5FD; }
+    .ai-submit-btn { flex-shrink: 0;
+        background: linear-gradient(135deg, #6366F1, #8B5CF6);
+        color: #fff; border: none; border-radius: 8px; padding: 8px 18px;
+        font-size: 13px; font-weight: 700; cursor: pointer;
+        font-family: 'Inter', sans-serif; transition: opacity 0.15s; }
+    .ai-submit-btn:hover { opacity: 0.88; }
+    .ai-back-btn { background: none; border: none; color: #94A3B8; font-size: 12px;
+        cursor: pointer; font-family: 'Inter', sans-serif; padding: 0; flex-shrink: 0;
+        transition: color 0.15s; white-space: nowrap; }
+    .ai-back-btn:hover { color: #475569; }
+
+    /* Thinking animation */
+    .thinking-bar { display: none; align-items: center; gap: 10px;
+        margin-top: 10px; padding: 10px 16px; max-width: 640px;
+        background: linear-gradient(135deg, rgba(99,102,241,0.06), rgba(236,72,153,0.04));
+        border: 1px solid rgba(139,92,246,0.2); border-radius: 10px; }
+    .thinking-bar.active { display: flex; }
+    .thinking-dots { display: flex; gap: 4px; align-items: center; }
+    @keyframes dotPulse {
+        0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
+        40%            { transform: scale(1);   opacity: 1; } }
+    .thinking-dot { width: 6px; height: 6px; border-radius: 50%;
+        background: linear-gradient(135deg, #6366F1, #EC4899);
+        animation: dotPulse 1.4s ease-in-out infinite; }
+    .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+    .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+    .thinking-msg { font-size: 13px; color: #6366F1; font-weight: 500; font-family: 'Inter', sans-serif; }
 
     .filters { display: flex; align-items: center; gap: 16px; margin: 12px 0; flex-wrap: wrap; }
     .filter-group { display: flex; align-items: center; gap: 5px; }
@@ -408,52 +443,92 @@ def _sidebar(all_datasets, active_cat):
 # ── Search area ───────────────────────────────────────────────────────────────
 
 def _search_area(q, category, access_f, freq_f):
-    return Div(
-        Div(
-            Button("Keyword search", id="tab-kw", cls="stab on", onclick="showTab('kw')"),
-            Button("✦ AI search",    id="tab-ai", cls="stab",    onclick="showTab('ai')"),
-            cls="search-tabs"
-        ),
-        Div(
-            Div(NotStr('<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>'),
-                cls="kw-icon"),
-            Input(type="search", name="q", value=q,
-                  placeholder="Search by name, category, keyword, or provider…",
-                  cls="kw-input",
-                  hx_get="/catalog/search",
-                  hx_trigger="input changed delay:280ms, search",
-                  hx_target="#catalog-body",
-                  hx_include="[name='q'],[name='category'],[name='access'],[name='freq']",
-                  hx_push_url="true"),
-            Input(type="hidden", name="category", value=category),
-            Input(type="hidden", name="access",   value=access_f),
-            Input(type="hidden", name="freq",     value=freq_f),
-            id="panel-kw", cls="kw-wrap"
-        ),
-        Form(
-            Div(
-                Input(type="text", name="query",
-                      placeholder="Describe what you need, e.g. 'company director data for KYC'…",
-                      cls="ai-input"),
-                Button("Ask AI", type="submit", cls="ai-btn"),
-                cls="ai-wrap"
-            ),
-            hx_post="/catalog/ai-search",
-            hx_target="#catalog-body",
-            cls="ai-form",
-            style="display:none;",
-            id="panel-ai"
-        ),
-        Script("""
-            function showTab(tab) {
-                document.getElementById('tab-kw').classList.toggle('on', tab==='kw');
-                document.getElementById('tab-ai').classList.toggle('on', tab==='ai');
-                document.getElementById('panel-kw').style.display = tab==='kw' ? '' : 'none';
-                document.getElementById('panel-ai').style.display = tab==='ai' ? '' : 'none';
-            }
-        """),
-        style="margin-bottom:4px;"
+    search_icon = NotStr('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>')
+
+    kw_bar = Div(
+        Div(search_icon, cls="kw-icon"),
+        Input(type="search", name="q", value=q,
+              placeholder="Search datasets by name, category or provider…",
+              cls="kw-input",
+              hx_get="/catalog/search",
+              hx_trigger="input changed delay:280ms, search",
+              hx_target="#catalog-body",
+              hx_include="[name='q'],[name='category'],[name='access'],[name='freq']",
+              hx_push_url="true"),
+        Input(type="hidden", name="category", value=category),
+        Input(type="hidden", name="access",   value=access_f),
+        Input(type="hidden", name="freq",     value=freq_f),
+        Button(NotStr("✦"), " AI Search",
+               type="button",
+               cls="ai-pill-btn",
+               onclick="activateAI()"),
+        id="kw-bar", cls="kw-bar"
     )
+
+    ai_bar = Form(
+        Div(
+            Span("✦", cls="ai-sparkle"),
+            Input(type="text", name="query",
+                  placeholder="Describe what you're looking for, e.g. 'company directors for KYC'…",
+                  cls="ai-query-input",
+                  id="ai-query-input"),
+            Button("Search →", type="submit", cls="ai-submit-btn"),
+            cls="ai-bar-inner"
+        ),
+        Button("← Keyword", type="button", cls="ai-back-btn", onclick="deactivateAI()"),
+        hx_post="/catalog/ai-search",
+        hx_target="#catalog-body",
+        cls="ai-bar",
+        id="ai-bar"
+    )
+
+    thinking_bar = Div(
+        Div(
+            Div(cls="thinking-dot"),
+            Div(cls="thinking-dot"),
+            Div(cls="thinking-dot"),
+            cls="thinking-dots"
+        ),
+        Span("Searching...", id="thinking-msg", cls="thinking-msg"),
+        id="thinking-bar", cls="thinking-bar"
+    )
+
+    script = Script("""
+        const _thinkMsgs = ['Searching...','Thinking...','Analysing datasets...','Finding matches...','Almost there...'];
+        let _thinkIdx = 0, _thinkTimer = null;
+
+        function activateAI() {
+            document.getElementById('kw-bar').style.display = 'none';
+            const bar = document.getElementById('ai-bar');
+            bar.classList.add('active');
+            document.getElementById('ai-query-input').focus();
+        }
+        function deactivateAI() {
+            document.getElementById('kw-bar').style.display = '';
+            document.getElementById('ai-bar').classList.remove('active');
+            document.getElementById('thinking-bar').classList.remove('active');
+            clearInterval(_thinkTimer);
+        }
+        document.body.addEventListener('htmx:beforeRequest', function(e) {
+            if (e.target.id === 'ai-bar') {
+                const bar = document.getElementById('thinking-bar');
+                bar.classList.add('active');
+                _thinkIdx = 0;
+                _thinkTimer = setInterval(function() {
+                    document.getElementById('thinking-msg').textContent =
+                        _thinkMsgs[_thinkIdx++ % _thinkMsgs.length];
+                }, 750);
+            }
+        });
+        document.body.addEventListener('htmx:afterRequest', function(e) {
+            if (e.target.id === 'ai-bar') {
+                document.getElementById('thinking-bar').classList.remove('active');
+                clearInterval(_thinkTimer);
+            }
+        });
+    """)
+
+    return Div(kw_bar, ai_bar, thinking_bar, script, cls="search-outer")
 
 
 # ── List body ─────────────────────────────────────────────────────────────────
