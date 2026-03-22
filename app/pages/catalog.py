@@ -448,7 +448,7 @@ def FavouriteModal(slug, dataset_title, user_id):
 
     close_and_update = Script(f"""
         document.getElementById('modal-done').addEventListener('click', function() {{
-            htmx.ajax('GET', '/catalog/{slug}/fav-btn', '#fav-{slug}');
+            htmx.ajax('GET', '/catalog/{slug}/fav-btn', {{target: '#fav-{slug}', swap: 'outerHTML'}});
             document.getElementById('modal-root').innerHTML = '';
         }});
     """)
@@ -515,7 +515,7 @@ def IntegrationModal(slug, dataset_title, user_id):
 
     close_and_update = Script(f"""
         document.getElementById('modal-done').addEventListener('click', function() {{
-            htmx.ajax('GET', '/catalog/{slug}/add-btn', '#add-{slug}');
+            htmx.ajax('GET', '/catalog/{slug}/add-btn', {{target: '#add-{slug}', swap: 'outerHTML'}});
             document.getElementById('modal-root').innerHTML = '';
         }});
     """)
