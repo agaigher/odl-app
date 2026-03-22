@@ -519,6 +519,37 @@ def post_delete_integration(int_id: str, session):
             pass
     return ""
 
+@rt("/integrations/{int_id}")
+def get_integration_detail(int_id: str, session):
+    from app.pages.integration_detail import IntegrationDetailView
+    user_id = _get_user_id(session)
+    if not user_id: return RedirectResponse("/login")
+    return page_layout("Integration Details", "/integrations", session.get('user'), IntegrationDetailView(integration_id=int_id, user_id=user_id))
+
+@rt("/integrations/{int_id}/remove-dataset/{slug}", methods=["POST"])
+def post_int_remove_dataset(int_id: str, slug: str, session):
+    user_id = _get_user_id(session)
+    if user_id:
+        try: db_delete("dataset_integrations", {"integration_id": int_id, "dataset_slug": slug})
+        except: pass
+    return ""
+
+@rt("/integrations/{int_id}/toggle-access/{target_user_id}", methods=["POST"])
+def post_int_toggle_access(int_id: str, target_user_id: str, session):
+    user_id = _get_user_id(session)
+    if not user_id: return ""
+    try:
+        from fasthtml.common import Button
+        existing = db_select("integration_members", {"integration_id": int_id, "user_id": target_user_id})
+        if existing:
+            db_delete("integration_members", {"integration_id": int_id, "user_id": target_user_id})
+            return Button("Grant", hx_post=f"/integrations/{int_id}/toggle-access/{target_user_id}", hx_target="this", hx_swap="outerHTML", cls="toggle-btn")
+        else:
+            db_insert("integration_members", {"integration_id": int_id, "user_id": target_user_id, "assigned_by": user_id})
+            return Button("Revoke", hx_post=f"/integrations/{int_id}/toggle-access/{target_user_id}", hx_target="this", hx_swap="outerHTML", cls="toggle-btn on")
+    except Exception:
+        return Button("Error", cls="toggle-btn")
+
 # Dummy routes for completeness
 @rt("/queries")
 def get_queries(session):

@@ -28,11 +28,13 @@ def _integration_row(row):
     type_label = "API Key" if row.get("type") == "api" else "Snowflake"
     created = row.get("created_at", "")[:10] if row.get("created_at") else "Just now"
     return Div(
-        Div(
+        A(
             Span(type_label, cls=f"int-badge {badge_cls}"),
-            H3(row.get("name", "Unnamed"), style="display: inline-block; vertical-align: middle; margin: 0;"),
+            H3(row.get("name", "Unnamed"), style="display: inline-block; vertical-align: middle; margin: 0; color: #1E293B;"),
             P(f"Created on {created}", style="margin-top: 6px;"),
-            cls="int-info"
+            href=f"/integrations/{row['id']}",
+            cls="int-info",
+            style="text-decoration: none; flex: 1; display: block;"
         ),
         Div(
             Button("Delete", hx_post=f"/integrations/{row['id']}/delete", hx_target=f"#int-{row['id']}", hx_swap="outerHTML"),
