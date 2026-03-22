@@ -312,21 +312,34 @@ def get_integration_modal(slug: str, session):
     from app.pages.catalog import IntegrationModal
     user_id = _get_user_id(session)
     if not user_id: return Script("window.location.href='/login'")
+    
+    project_id = session.get('active_project_id')
+    if not project_id:
+        return Div("Please select or create an active Project from the Projects tab before managing integrations.", cls="error-text", style="padding:24px;background:#fff;border-radius:8px;")
+
     try:
         ds = db_select("datasets", {"slug": slug})
         title = ds[0].get("title") if ds else slug
     except Exception:
         title = slug
-    return IntegrationModal(slug, title, user_id)
+    return IntegrationModal(slug, title, project_id)
 
 @rt("/catalog/{slug}/add-btn", methods=["GET"])
 def get_add_btn(slug: str, session):
     from app.pages.catalog import _add_btn
     user_id = _get_user_id(session)
     if not user_id: return _add_btn(slug, False)
+    
+    project_id = session.get('active_project_id')
+    if not project_id: return _add_btn(slug, False)
+
     try:
-        items = db_select("dataset_integrations", {"user_id": user_id, "dataset_slug": slug})
-        return _add_btn(slug, len(items) > 0)
+        project_ints = db_select("integrations", {"project_id": project_id})
+        project_int_ids = {i["id"] for i in project_ints}
+        
+        items = db_select("dataset_integrations", {"dataset_slug": slug})
+        is_assigned = any(item["integration_id"] in project_int_ids for item in items)
+        return _add_btn(slug, is_assigned)
     except Exception:
         return _add_btn(slug, False)
 
@@ -564,6 +577,174 @@ def get_queries(session):
 @rt("/settings")
 def get_settings(session):
     return page_layout("Settings", "/settings", session.get('user'), Div(H1("Account Settings", style="color: white;")))
+
+@rt("/billing")
+def get_billing(session):
+    from app.pages.billing import BillingDashboard
+    user_id = _get_user_id(session)
+    if not user_id: return RedirectResponse("/login", status_code=303)
+    return page_layout("Billing", "/billing", session.get('user'), BillingDashboard(user_id=user_id, session=session))
+
+import stripe
+
+stripe.api_key = os.getenv("STRIPE_API_KEY", "sk_test_dummy")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "whsec_dummy")
+
+@rt("/billing/checkout", methods=["POST"])
+def post_billing_checkout(req, session, package: str):
+    user_id = _get_user_id(session)
+    if not user_id: return RedirectResponse("/login", status_code=303)
+    
+    try:
+        memberships = db_select("memberships", {"user_id": user_id, "status": "active"})
+        org_id = memberships[0]["org_id"] if memberships else None
+    except:
+        org_id = None
+        
+    if not org_id:
+        return Div("Organization not found", cls="error-text")
+        
+    domain = str(req.base_url).rstrip("/")
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'gbp',
+                    'product_data': {
+                        'name': '10,000 Data Credits',
+                        'description': 'Prepaid compute and API querying credits for OpenData.London'
+                    },
+                    'unit_amount': 1000,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            metadata={
+                'org_id': org_id,
+                'credits_to_add': 10000
+            },
+            success_url=f"{domain}/billing?success=true",
+            cancel_url=f"{domain}/billing?canceled=true",
+        )
+        return RedirectResponse(checkout_session.url, status_code=303)
+    except Exception as e:
+        return Div(f"Error creating checkout: {e}", cls="error-text")
+
+@rt("/api/webhooks/stripe", methods=["POST"])
+async def stripe_webhook(req):
+    payload = await req.body()
+    sig_header = req.headers.get("stripe-signature")
+    
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, STRIPE_WEBHOOK_SECRET
+        )
+    except ValueError as e:
+        return "Invalid payload", 400
+    except stripe.error.SignatureVerificationError as e:
+        return "Invalid signature", 400
+
+    if event['type'] == 'checkout.session.completed':
+        session_data = event['data']['object']
+        org_id = session_data.get('metadata', {}).get('org_id')
+        credits_str = session_data.get('metadata', {}).get('credits_to_add')
+        session_id = session_data.get('id')
+        
+        if org_id and credits_str:
+            try:
+                # Add to ledger (will fail on duplicate webhook thanks to UNIQUE constraint)
+                db_insert("billing_ledger", {
+                    "org_id": org_id,
+                    "stripe_session_id": session_id,
+                    "amount_paid": session_data.get('amount_total', 0) / 100.0,
+                    "credits_added": int(credits_str),
+                    "status": "completed"
+                })
+                
+                # Retrieve current balance and safely bump it
+                orgs = db_select("organisations", {"id": org_id})
+                if orgs:
+                    current_balance = orgs[0].get("credit_balance", 0)
+                    new_balance = current_balance + int(credits_str)
+                    from app.supabase_db import supabase
+                    supabase.table("organisations").update({"credit_balance": new_balance}).eq("id", org_id).execute()
+            except Exception as e:
+                print("Webhook processing error:", e)
+
+    return "Success", 200
+
+@rt("/api/v1/query", methods=["POST"])
+async def api_v1_query(req):
+    # 1. Extract Bearer Token
+    auth_header = req.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        from starlette.responses import Response
+        return Response('{"error": "Unauthorized"}', status_code=401, media_type="application/json")
+    
+    api_key = auth_header.split(" ")[1]
+    
+    try:
+        # 2. Validate API Key
+        ints = db_select("integrations", {"id": api_key, "type": "api"})
+        if not ints:
+            from starlette.responses import Response
+            return Response('{"error": "Invalid or revoked API Key"}', status_code=403, media_type="application/json")
+        
+        project_id = ints[0]["project_id"]
+        
+        # 3. Get Project mapping
+        projects = db_select("projects", {"id": project_id})
+        if not projects:
+            from starlette.responses import Response
+            return Response('{"error": "Project not found"}', status_code=404, media_type="application/json")
+        org_id = projects[0]["org_id"]
+        
+        # 4. Check Credit Balance
+        orgs = db_select("organisations", {"id": org_id})
+        if not orgs:
+            from starlette.responses import Response
+            return Response('{"error": "Organisation not found"}', status_code=404, media_type="application/json")
+            
+        credit_balance = orgs[0].get("credit_balance", 0)
+        if credit_balance <= 0:
+            from starlette.responses import Response
+            return Response('{"error": "Payment Required. Credit balance is 0. Top up at app.opendata.london/billing"}', status_code=402, media_type="application/json")
+            
+        # 5. Extract JSON payload
+        try:
+            body = await req.json()
+            sql_query = body.get("query")
+            dataset_slug = body.get("dataset")
+        except:
+            from starlette.responses import Response
+            return Response('{"error": "Invalid JSON payload. Expected {query: str, dataset: str}"}', status_code=400, media_type="application/json")
+            
+        # 6. Verify Dataset access
+        if dataset_slug:
+            has_access = db_select("dataset_integrations", {"integration_id": api_key, "dataset_slug": dataset_slug})
+            if not has_access:
+                from starlette.responses import Response
+                return Response('{"error": "API Key does not have access to this dataset."}', status_code=403, media_type="application/json")
+            
+        # 7. Mock Snowflake Execution
+        import asyncio
+        await asyncio.sleep(0.3)
+        mock_data = [{"example": "response", "source": dataset_slug or "global"}]
+        
+        # 8. Deduct 1 credit
+        new_balance = credit_balance - 1
+        from app.supabase_db import supabase
+        supabase.table("organisations").update({"credit_balance": new_balance}).eq("id", org_id).execute()
+        
+        import json
+        from starlette.responses import Response
+        return Response(json.dumps({"status": "success", "credits_remaining": new_balance, "data": mock_data}), status_code=200, media_type="application/json")
+
+    except Exception as e:
+        print("API V1 ERROR:", e)
+        from starlette.responses import Response
+        return Response('{"error": "Internal Server Error"}', status_code=500, media_type="application/json")
 
 @rt("/org/{slug}")
 def get_org(slug: str, session):

@@ -2,7 +2,7 @@ from fasthtml.common import *
 from app.supabase_db import db_select, db_insert
 
 def ProjectsDashboard(user_id="", session=None):
-    from app.components import CATALOG_STYLE
+    from app.pages.catalog import CATALOG_STYLE
     
     # 1. Fetch which Orgs the user is in
     try:

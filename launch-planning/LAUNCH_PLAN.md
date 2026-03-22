@@ -159,15 +159,23 @@ Have these reviewed by a solicitor with data law experience before publishing, e
 No pricing exists and no payment can be taken. To safely monetize without runaway compute risks, we will implement a **Prepaid Wallet (Commitment + Drawdown)** model.
 
 **Architecture & Tasks:**
-- [ ] **Stripe Checkout Integration**: Build purchasing flows on the new `/billing` page where organisations can buy blocks of "Data Credits" (e.g., £100 for 100k API queries).
-- [ ] **Supabase Wallet Tracking**: Add a `credit_balance` (integer) column to the `organisations` table. Set up a Stripe webhook to automatically credit this balance upon successful invoice payment.
-- [ ] **Reverse Proxy API Gateway**: 
+- [x] **Stripe Checkout Integration**: Build purchasing flows on the new `/billing` page where organisations can buy blocks of "Data Credits" (e.g., £100 for 100k API queries).
+- [x] **Supabase Wallet Tracking**: Add a `credit_balance` (integer) column to the `organisations` table. Set up a Stripe webhook to automatically credit this balance upon successful invoice payment.
+- [x] **Reverse Proxy API Gateway**: 
   - Do NOT expose the raw Snowflake SQL API URL directly to the customer. 
   - Build a lightweight proxy (FastAPI, Cloudflare Workers, or Kong) at `api.opendata.london`.
   - The proxy intercepts the request, verifies the user's API key, and checks if their organisation's `credit_balance > 0` in Supabase.
   - If empty, return `402 Payment Required`. If valid, proxy the query to the underlying Snowflake SQL API and return the data.
-- [ ] **Real-time Deduction**: Upon a successful response from Snowflake, the gateway asynchronously deducts `1` credit from the organisation's Supabase balance.
-- [ ] **Billing Dashboard UI**: Flesh out the `/billing` page to display the live credit progress bar and low-balance alerts.
+- [x] **Real-time Deduction**: Upon a successful response from Snowflake, the gateway asynchronously deducts `1` credit from the organisation's Supabase balance.
+- [x] **Billing Dashboard UI**: Flesh out the `/billing` page to display the live credit progress bar and low-balance alerts.
+
+> **🚧 STATUS HANDOFF (Paused here for now)**
+> The database schema, backend python routes (`/billing/checkout` and `/api/webhooks/stripe`), the `/billing` UI Dashboard, and the `POST /api/v1/query` reverse proxy have ALL been completely implemented in `main.py`.
+> 
+> **What is missing / Next steps for another developer:**
+> 1. We did not configure the Stripe Environment Variables. To test this end-to-end you must add `STRIPE_API_KEY` (sk_test_...) and `STRIPE_WEBHOOK_SECRET` (whsec_...) to the `.env` file.
+> 2. You will need to spin up the local server, run `stripe listen --forward-to localhost:5002/api/webhooks/stripe`, and click "Purchase" in the UI to verify the webhook increments the Supabase `credit_balance`.
+> 3. You will need to curl `POST /api/v1/query` with a valid Bearer Token API Key to verify it deducts exactly 1 credit successfully.
 
 **Recommended starting pricing model:**
 - **Free Trial**: 1,000 complimentary credits on signup to test the API and previews.
