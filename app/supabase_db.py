@@ -29,6 +29,15 @@ def db_select(table: str, filters: dict = None):
     return r.json()
 
 
+def db_delete(table: str, filters: dict):
+    url = f"{SUPABASE_URL}/rest/v1/{table}"
+    params = {k: f"eq.{v}" for k, v in filters.items()}
+    h = _headers()
+    h["Prefer"] = "return=minimal"
+    r = httpx.delete(url, params=params, headers=h)
+    r.raise_for_status()
+
+
 def db_patch(table: str, data: dict, filters: dict):
     url = f"{SUPABASE_URL}/rest/v1/{table}"
     params = {k: f"eq.{v}" for k, v in filters.items()}

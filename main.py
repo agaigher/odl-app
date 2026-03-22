@@ -15,7 +15,7 @@ from app.pages.auth import AuthPage
 from app.pages.forgot_password import ForgotPasswordPage, ResetPasswordPage
 from app.pages.create_org import CreateOrgPage
 from app.pages.invite import InvitePage
-from app.supabase_db import db_insert, db_select, db_patch, auth_invite
+from app.supabase_db import db_insert, db_select, db_patch, db_delete, auth_invite
 from app.email import send_org_invite
 
 load_dotenv()
@@ -254,6 +254,13 @@ def post_create_org(org_name: str, slug: str, session):
             return Div("That slug is already taken. Choose a different one.", cls="error-text")
         return Div(f"Error: {err}", cls="error-text")
 
+def _get_user_id(session):
+    try:
+        user = supabase.auth.get_user(session.get('access_token'))
+        return str(user.user.id)
+    except Exception:
+        return ""
+
 @rt("/")
 def get(session):
     return RedirectResponse('/dashboard', status_code=303)
@@ -269,18 +276,75 @@ def get_dashboard(session):
     return page_layout("Dashboard", "/dashboard", user_email, Dashboard(user_id=user_id, user_email=user_email))
 
 @rt("/catalog")
-def get_catalog(session, q: str = "", category: str = ""):
-    return page_layout("London Database", "/catalog", session.get('user'), DataCatalog(category=category, q=q))
+def get_catalog(session, q: str = "", category: str = "", access: str = "", freq: str = ""):
+    user_id = _get_user_id(session)
+    return page_layout("London Database", "/catalog", session.get('user'),
+                       DataCatalog(category=category, q=q, user_id=user_id,
+                                   access_filter=access, freq_filter=freq))
 
 @rt("/catalog/search")
-def get_catalog_search(q: str = "", category: str = ""):
+def get_catalog_search(session, q: str = "", category: str = "", access: str = "", freq: str = ""):
     from app.pages.catalog import SearchCatalogResults
-    return SearchCatalogResults(q=q, category=category)
+    user_id = _get_user_id(session)
+    return SearchCatalogResults(q=q, category=category, user_id=user_id,
+                                access_filter=access, freq_filter=freq)
 
 @rt("/catalog/ai-search", methods=["POST"])
-def post_ai_search(query: str = ""):
+def post_ai_search(session, query: str = ""):
     from app.pages.catalog import AiSearchResults
-    return AiSearchResults(query=query)
+    user_id = _get_user_id(session)
+    return AiSearchResults(query=query, user_id=user_id)
+
+@rt("/catalog/{slug}/add", methods=["POST"])
+def post_add_dataset(slug: str, session):
+    from app.pages.catalog import _add_btn
+    user_id = _get_user_id(session)
+    if not user_id:
+        return Span("Not authenticated", style="color:#EF4444;font-size:12px;")
+    try:
+        db_insert("dataset_access", {
+            "user_id": user_id, "dataset_slug": slug,
+            "access_type": "api", "status": "active",
+        })
+    except Exception as e:
+        if "duplicate" not in str(e).lower() and "unique" not in str(e).lower():
+            return Span("Error", style="color:#EF4444;font-size:12px;")
+    return _add_btn(slug, is_added=True)
+
+@rt("/catalog/{slug}/remove", methods=["POST"])
+def post_remove_dataset(slug: str, session):
+    from app.pages.catalog import _add_btn
+    user_id = _get_user_id(session)
+    if not user_id:
+        return Span("Not authenticated", style="color:#EF4444;font-size:12px;")
+    try:
+        db_delete("dataset_access", {"user_id": user_id, "dataset_slug": slug})
+    except Exception:
+        pass
+    return _add_btn(slug, is_added=False)
+
+@rt("/catalog/{slug}/favourite", methods=["POST"])
+def post_toggle_favourite(slug: str, session):
+    from app.pages.catalog import _fav_btn
+    user_id = _get_user_id(session)
+    if not user_id:
+        return _fav_btn(slug, False)
+    try:
+        existing = db_select("favourites", {"user_id": user_id, "dataset_slug": slug})
+        if existing:
+            db_delete("favourites", {"user_id": user_id, "dataset_slug": slug})
+            return _fav_btn(slug, False)
+        else:
+            db_insert("favourites", {"user_id": user_id, "dataset_slug": slug})
+            return _fav_btn(slug, True)
+    except Exception:
+        return _fav_btn(slug, False)
+
+@rt("/favourites")
+def get_favourites(session):
+    from app.pages.catalog import FavouritesView
+    user_id = _get_user_id(session)
+    return page_layout("Favourites", "/favourites", session.get('user'), FavouritesView(user_id=user_id))
 
 @rt("/catalog/{slug}")
 def get_dataset(slug: str, session):

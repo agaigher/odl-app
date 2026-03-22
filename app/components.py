@@ -78,7 +78,8 @@ def odl_navbar(user=None):
 def odl_sidebar(current_path="/"):
     
     def nav_item(label, path, icon="•"):
-        is_active = current_path == path or (path not in ("/", "/dashboard") and current_path.startswith(path))
+        exact_match_only = ("/", "/dashboard", "/favourites")
+        is_active = current_path == path or (path not in exact_match_only and current_path.startswith(path))
         active_cls = "active" if is_active else ""
         return A(
             Span(icon, style="margin-right: 12px; font-size: 16px; opacity: 0.7;"),
@@ -141,6 +142,7 @@ def odl_sidebar(current_path="/"):
         Div(
             Div("Discovery", cls="sidebar-title"),
             nav_item("Data Catalog", "/catalog", "⚲"),
+            nav_item("Favourites", "/favourites", "☆"),
             nav_item("Saved Queries", "/queries", "★"),
             cls="sidebar-section"
         ),
