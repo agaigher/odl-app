@@ -47,73 +47,100 @@ CATALOG_STYLE = Style("""
         background: #F1F5F9; padding: 1px 6px; border-radius: 999px; }
 
     /* ── Search bar ── */
-    .search-outer { margin-bottom: 16px; }
+    .search-outer { max-width: 640px; margin: 0 auto 20px; }
 
-    /* Keyword bar — Google-style, constrained width */
-    .kw-bar { display: flex; align-items: center; gap: 0;
-        background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px;
-        padding: 6px 6px 6px 14px; max-width: 640px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        transition: box-shadow 0.2s; }
-    .kw-bar:focus-within { box-shadow: 0 2px 12px rgba(2,132,199,0.15); border-color: #BAE6FD; }
+    /* Search row: bar + filter icon side by side */
+    .search-row { display: flex; align-items: center; gap: 8px; }
+
+    /* Keyword bar */
+    .kw-bar { flex: 1; display: flex; align-items: center; gap: 0;
+        background: #FFFFFF; border: 1.5px solid #E2E8F0; border-radius: 12px;
+        padding: 6px 6px 6px 14px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: all 0.2s; }
+    .kw-bar:focus-within { border-color: #BAE6FD; box-shadow: 0 2px 14px rgba(2,132,199,0.14); }
     .kw-icon { color: #CBD5E1; flex-shrink: 0; margin-right: 10px; }
     .kw-input { flex: 1; border: none; outline: none; background: transparent;
         font-family: 'Inter', sans-serif; font-size: 14px; color: #1E293B; min-width: 0; }
     .kw-input::placeholder { color: #CBD5E1; }
-    .ai-pill-btn { display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    .ai-pill-btn { display: flex; align-items: center; gap: 5px; flex-shrink: 0;
         background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 60%, #EC4899 100%);
-        color: #fff; border: none; border-radius: 8px; padding: 7px 14px;
+        color: #fff; border: none; border-radius: 8px; padding: 7px 13px;
         font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif;
         white-space: nowrap; letter-spacing: 0.3px; transition: opacity 0.15s; }
     .ai-pill-btn:hover { opacity: 0.88; }
 
-    /* AI bar — gradient border, full width, expands from kw */
-    .ai-bar { display: none; align-items: center; gap: 10px; }
+    /* Filter icon button */
+    .filter-btn { width: 40px; height: 40px; flex-shrink: 0; border-radius: 10px;
+        border: 1.5px solid #E2E8F0; background: #FFFFFF; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        color: #94A3B8; transition: all 0.15s;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05); position: relative; }
+    .filter-btn:hover { border-color: #CBD5E1; color: #475569; }
+    .filter-btn.on { border-color: #0284C7; color: #0284C7; background: #E0F2FE; }
+    .filter-btn .filter-dot { display: none; position: absolute; top: 6px; right: 6px;
+        width: 6px; height: 6px; border-radius: 50%; background: #0284C7; }
+    .filter-btn.has-filters .filter-dot { display: block; }
+
+    /* Filter panel */
+    .filter-panel { display: none; margin-top: 8px; padding: 14px 16px;
+        background: #FFFFFF; border: 1.5px solid #E2E8F0; border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        animation: panelSlide 0.18s ease; }
+    .filter-panel.on { display: block; }
+    @keyframes panelSlide {
+        from { opacity: 0; transform: translateY(-6px); }
+        to   { opacity: 1; transform: translateY(0); } }
+    .filter-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+    .filter-row:last-child { margin-bottom: 0; }
+    .filter-label { font-size: 11px; font-weight: 700; color: #94A3B8;
+        text-transform: uppercase; letter-spacing: 0.08em; min-width: 72px; }
+
+    /* AI bar — same width, taller, gradient border */
+    .ai-bar { flex: 1; display: none; flex-direction: column; gap: 6px; }
     .ai-bar.active { display: flex; }
-    .ai-bar-inner { flex: 1; display: flex; align-items: center; gap: 0;
-        background: #fff;
-        border-radius: 12px; padding: 6px 6px 6px 16px;
+    .ai-bar-inner { display: flex; align-items: center; gap: 0;
+        background: #fff; border-radius: 12px;
+        padding: 10px 6px 10px 16px;
         border: 2px solid transparent;
-        background-image: linear-gradient(#fff,#fff),
+        background-image: linear-gradient(#fff, #fff),
             linear-gradient(135deg, #6366F1, #8B5CF6, #EC4899);
-        background-origin: border-box;
-        background-clip: padding-box, border-box;
+        background-origin: border-box; background-clip: padding-box, border-box;
         box-shadow: 0 4px 20px rgba(99,102,241,0.15);
-        animation: searchExpand 0.25s ease; }
-    @keyframes searchExpand {
-        from { opacity: 0; transform: scaleX(0.96); }
-        to   { opacity: 1; transform: scaleX(1); } }
-    .ai-sparkle { font-size: 16px; margin-right: 10px; flex-shrink: 0; }
+        animation: aiExpand 0.2s ease; }
+    @keyframes aiExpand {
+        from { opacity: 0; transform: scaleY(0.9); }
+        to   { opacity: 1; transform: scaleY(1); } }
+    .ai-sparkle { font-size: 15px; margin-right: 10px; flex-shrink: 0; }
     .ai-query-input { flex: 1; border: none; outline: none; background: transparent;
         font-family: 'Inter', sans-serif; font-size: 14px; color: #1E293B; min-width: 0; }
     .ai-query-input::placeholder { color: #C4B5FD; }
     .ai-submit-btn { flex-shrink: 0;
         background: linear-gradient(135deg, #6366F1, #8B5CF6);
-        color: #fff; border: none; border-radius: 8px; padding: 8px 18px;
+        color: #fff; border: none; border-radius: 8px; padding: 8px 16px;
         font-size: 13px; font-weight: 700; cursor: pointer;
-        font-family: 'Inter', sans-serif; transition: opacity 0.15s; }
+        font-family: 'Inter', sans-serif; transition: opacity 0.15s; white-space: nowrap; }
     .ai-submit-btn:hover { opacity: 0.88; }
     .ai-back-btn { background: none; border: none; color: #94A3B8; font-size: 12px;
-        cursor: pointer; font-family: 'Inter', sans-serif; padding: 0; flex-shrink: 0;
-        transition: color 0.15s; white-space: nowrap; }
+        cursor: pointer; font-family: 'Inter', sans-serif; padding: 0;
+        text-align: left; transition: color 0.15s; }
     .ai-back-btn:hover { color: #475569; }
 
     /* Thinking animation */
     .thinking-bar { display: none; align-items: center; gap: 10px;
-        margin-top: 10px; padding: 10px 16px; max-width: 640px;
+        margin-top: 8px; padding: 10px 14px;
         background: linear-gradient(135deg, rgba(99,102,241,0.06), rgba(236,72,153,0.04));
-        border: 1px solid rgba(139,92,246,0.2); border-radius: 10px; }
+        border: 1px solid rgba(139,92,246,0.18); border-radius: 10px; }
     .thinking-bar.active { display: flex; }
     .thinking-dots { display: flex; gap: 4px; align-items: center; }
     @keyframes dotPulse {
-        0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
-        40%            { transform: scale(1);   opacity: 1; } }
+        0%, 80%, 100% { transform: scale(0.7); opacity: 0.35; }
+        40%            { transform: scale(1.1); opacity: 1; } }
     .thinking-dot { width: 6px; height: 6px; border-radius: 50%;
         background: linear-gradient(135deg, #6366F1, #EC4899);
         animation: dotPulse 1.4s ease-in-out infinite; }
     .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
     .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
-    .thinking-msg { font-size: 13px; color: #6366F1; font-weight: 500; font-family: 'Inter', sans-serif; }
+    .thinking-msg { font-size: 13px; color: #6366F1; font-weight: 500; }
 
     .filters { display: flex; align-items: center; gap: 16px; margin: 12px 0; flex-wrap: wrap; }
     .filter-group { display: flex; align-items: center; gap: 5px; }
@@ -443,12 +470,16 @@ def _sidebar(all_datasets, active_cat):
 # ── Search area ───────────────────────────────────────────────────────────────
 
 def _search_area(q, category, access_f, freq_f):
-    search_icon = NotStr('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>')
+    search_svg = NotStr('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>')
+    filter_svg = NotStr('<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.5" fill="white"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="16" cy="12" r="2.5" fill="white"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2.5" fill="white"/></svg>')
+
+    has_filters = bool(access_f or freq_f)
+    filter_btn_cls = "filter-btn" + (" on has-filters" if has_filters else "")
 
     kw_bar = Div(
-        Div(search_icon, cls="kw-icon"),
+        Div(search_svg, cls="kw-icon"),
         Input(type="search", name="q", value=q,
-              placeholder="Search datasets by name, category or provider…",
+              placeholder="Search datasets…",
               cls="kw-input",
               hx_get="/catalog/search",
               hx_trigger="input changed delay:280ms, search",
@@ -458,10 +489,7 @@ def _search_area(q, category, access_f, freq_f):
         Input(type="hidden", name="category", value=category),
         Input(type="hidden", name="access",   value=access_f),
         Input(type="hidden", name="freq",     value=freq_f),
-        Button(NotStr("✦"), " AI Search",
-               type="button",
-               cls="ai-pill-btn",
-               onclick="activateAI()"),
+        Button(NotStr("✦ AI Search"), type="button", cls="ai-pill-btn", onclick="activateAI()"),
         id="kw-bar", cls="kw-bar"
     )
 
@@ -470,25 +498,46 @@ def _search_area(q, category, access_f, freq_f):
             Span("✦", cls="ai-sparkle"),
             Input(type="text", name="query",
                   placeholder="Describe what you're looking for, e.g. 'company directors for KYC'…",
-                  cls="ai-query-input",
-                  id="ai-query-input"),
+                  cls="ai-query-input", id="ai-query-input"),
             Button("Search →", type="submit", cls="ai-submit-btn"),
             cls="ai-bar-inner"
         ),
-        Button("← Keyword", type="button", cls="ai-back-btn", onclick="deactivateAI()"),
+        Button("← back to keyword search", type="button", cls="ai-back-btn", onclick="deactivateAI()"),
         hx_post="/catalog/ai-search",
         hx_target="#catalog-body",
-        cls="ai-bar",
-        id="ai-bar"
+        cls="ai-bar", id="ai-bar"
+    )
+
+    # Filter chips for the panel
+    def chip(label, param, value, current):
+        is_on = (current == value) or (value == "" and not current)
+        a = value if param == "access" else access_f
+        f = value if param == "freq"   else freq_f
+        qs = f"q={q}&category={category}&access={a}&freq={f}"
+        return A(label,
+                 hx_get=f"/catalog/search?{qs}",
+                 hx_target="#catalog-body",
+                 hx_push_url=f"/catalog?{qs}",
+                 cls=f"chip {'on' if is_on else ''}")
+
+    filter_panel = Div(
+        Div(
+            Span("Access", cls="filter-label"),
+            *[chip(l, "access", v, access_f) for l, v in ACCESS_FILTERS],
+            cls="filter-row"
+        ),
+        Div(
+            Span("Frequency", cls="filter-label"),
+            *[chip(l, "freq", v, freq_f) for l, v in FREQ_FILTERS],
+            cls="filter-row"
+        ),
+        id="filter-panel",
+        cls=f"filter-panel {'on' if has_filters else ''}"
     )
 
     thinking_bar = Div(
-        Div(
-            Div(cls="thinking-dot"),
-            Div(cls="thinking-dot"),
-            Div(cls="thinking-dot"),
-            cls="thinking-dots"
-        ),
+        Div(Div(cls="thinking-dot"), Div(cls="thinking-dot"), Div(cls="thinking-dot"),
+            cls="thinking-dots"),
         Span("Searching...", id="thinking-msg", cls="thinking-msg"),
         id="thinking-bar", cls="thinking-bar"
     )
@@ -499,8 +548,7 @@ def _search_area(q, category, access_f, freq_f):
 
         function activateAI() {
             document.getElementById('kw-bar').style.display = 'none';
-            const bar = document.getElementById('ai-bar');
-            bar.classList.add('active');
+            document.getElementById('ai-bar').classList.add('active');
             document.getElementById('ai-query-input').focus();
         }
         function deactivateAI() {
@@ -509,10 +557,15 @@ def _search_area(q, category, access_f, freq_f):
             document.getElementById('thinking-bar').classList.remove('active');
             clearInterval(_thinkTimer);
         }
+        function toggleFilters() {
+            const panel = document.getElementById('filter-panel');
+            const btn   = document.getElementById('filter-btn');
+            const open  = panel.classList.toggle('on');
+            btn.classList.toggle('on', open);
+        }
         document.body.addEventListener('htmx:beforeRequest', function(e) {
             if (e.target.id === 'ai-bar') {
-                const bar = document.getElementById('thinking-bar');
-                bar.classList.add('active');
+                document.getElementById('thinking-bar').classList.add('active');
                 _thinkIdx = 0;
                 _thinkTimer = setInterval(function() {
                     document.getElementById('thinking-msg').textContent =
@@ -528,7 +581,21 @@ def _search_area(q, category, access_f, freq_f):
         });
     """)
 
-    return Div(kw_bar, ai_bar, thinking_bar, script, cls="search-outer")
+    return Div(
+        Div(
+            Div(kw_bar, ai_bar, cls="search-row" , style="flex:1;"),
+            Button(filter_svg, Div(cls="filter-dot"),
+                   type="button", id="filter-btn",
+                   cls=filter_btn_cls,
+                   onclick="toggleFilters()",
+                   title="Filters"),
+            cls="search-row"
+        ),
+        filter_panel,
+        thinking_bar,
+        script,
+        cls="search-outer"
+    )
 
 
 # ── List body ─────────────────────────────────────────────────────────────────
@@ -536,14 +603,14 @@ def _search_area(q, category, access_f, freq_f):
 def _list_body(datasets, added, favs, heading, subtext):
     if not datasets:
         return Div(
-            Div(H1(heading, style="font-size:18px;font-weight:700;color:#F8FAFC;letter-spacing:-0.3px;"),
-                P(subtext, style="font-size:13px;color:#64748B;margin-top:3px;"),
+            Div(H1(heading, style="font-size:18px;font-weight:700;color:#1E293B;letter-spacing:-0.3px;"),
+                P(subtext, style="font-size:13px;color:#94A3B8;margin-top:3px;"),
                 style="margin-bottom:14px;"),
             Div(P("No datasets match.", cls="empty-msg"), cls="ds-list-box"),
         )
     return Div(
-        Div(H1(heading, style="font-size:18px;font-weight:700;color:#F8FAFC;letter-spacing:-0.3px;"),
-            P(subtext, style="font-size:13px;color:#64748B;margin-top:3px;"),
+        Div(H1(heading, style="font-size:18px;font-weight:700;color:#1E293B;letter-spacing:-0.3px;"),
+            P(subtext, style="font-size:13px;color:#94A3B8;margin-top:3px;"),
             style="margin-bottom:14px;"),
         Div(
             Div(f"{len(datasets)} dataset{'s' if len(datasets) != 1 else ''}", cls="ds-count-bar"),
@@ -573,7 +640,6 @@ def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="")
     return Div(
         CATALOG_STYLE,
         _search_area(q, category, access_filter, freq_filter),
-        _filter_chips(access_filter, freq_filter, category, q),
         Div(
             _sidebar(all_datasets, category),
             Div(_list_body(datasets, added, favs, heading, subtext),
@@ -647,7 +713,7 @@ def FavouritesView(user_id=""):
 
     return Div(
         CATALOG_STYLE,
-        H1("Favourites", style="font-size:18px;font-weight:700;color:#F8FAFC;letter-spacing:-0.3px;margin-bottom:24px;"),
+        H1("Favourites", style="font-size:18px;font-weight:700;color:#1E293B;letter-spacing:-0.3px;margin-bottom:24px;"),
         *sections if sections else [P("Your lists are empty.", style="color:#475569;font-size:14px;")]
     )
 
