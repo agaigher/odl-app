@@ -327,9 +327,8 @@ def _fav_btn(slug, is_fav, oob=False):
     return Button(
         "★" if is_fav else "☆",
         type="button",
-        hx_post=f"/catalog/{slug}/favourite",
-        hx_target=f"#fav-{slug}",
-        hx_swap="outerHTML",
+        hx_get=f"/catalog/{slug}/favourite-modal",
+        hx_target="#modal-root",
         id=f"fav-{slug}",
         cls=f"fav-btn {'on' if is_fav else ''}",
         title="Save to Favourites",
