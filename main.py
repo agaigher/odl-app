@@ -277,6 +277,11 @@ def get_catalog_search(q: str = "", category: str = ""):
     from app.pages.catalog import SearchCatalogResults
     return SearchCatalogResults(q=q, category=category)
 
+@rt("/catalog/ai-search", methods=["POST"])
+def post_ai_search(query: str = ""):
+    from app.pages.catalog import AiSearchResults
+    return AiSearchResults(query=query)
+
 @rt("/catalog/{slug}")
 def get_dataset(slug: str, session):
     return page_layout("Dataset Details", f"/catalog/{slug}", session.get('user'), DatasetDetail(slug, session))
