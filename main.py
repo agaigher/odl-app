@@ -411,9 +411,10 @@ def post_create_fav_list(name: str, session):
     if user_id and name.strip():
         try:
             db_insert("favourite_lists", {"user_id": user_id, "name": name.strip()})
+            return "ok"
         except Exception:
-            pass
-    return RedirectResponse("/favourites", status_code=303)
+            return "error"
+    return "unauthorized"
 
 @rt("/favourite-lists/{list_id}/items/{slug}/remove", methods=["POST"])
 def post_remove_fav_item(list_id: str, slug: str, session):

@@ -841,7 +841,8 @@ def FavouritesView(user_id=""):
         Input(type="text", name="name", placeholder="New list name…",
               required=True, cls="fav-new-input"),
         Button("+ Create", type="submit", cls="fav-create-btn"),
-        action="/favourite-lists/create", method="POST",
+        hx_post="/favourite-lists/create",
+        hx_on__after_request="if(event.detail.successful) window.location.reload()",
         cls="fav-new-form"
     )
     header = Div(
