@@ -257,12 +257,12 @@ def post_create_org(org_name: str, slug: str, session):
         return Div(f"Error: {err}", cls="error-text")
 
 def _get_user_id(session):
-    return "test-user-id"
-    #try:
-    #    user = supabase.auth.get_user(session.get('access_token'))
-    #    return str(user.user.id)
-    #except Exception:
-    #    return ""
+    try:
+        if not session.get('access_token'): return ""
+        user = supabase.auth.get_user(session.get('access_token'))
+        return str(user.user.id)
+    except Exception:
+        return ""
 
 
 @rt("/")
@@ -343,39 +343,57 @@ def post_toggle_favourite(slug: str, session):
     if lists:
         default_list_id = lists[0]["id"]
     else:
-        created = db_insert("favourite_lists", {"user_id": user_id, "name": "My Favourites"})
-        default_list_id = created[0]["id"]
+        try:
+            created = db_insert("favourite_lists", {"user_id": user_id, "name": "My Favourites"})
+            default_list_id = created[0]["id"]
+        except Exception:
+            return _fav_btn(slug, False)
     try:
         existing = db_select("favourite_items", {"list_id": default_list_id, "dataset_slug": slug, "user_id": user_id})
     except Exception:
         existing = []
     if existing:
-        db_delete("favourite_items", {"list_id": default_list_id, "dataset_slug": slug, "user_id": user_id})
+        try:
+            db_delete("favourite_items", {"list_id": default_list_id, "dataset_slug": slug, "user_id": user_id})
+        except Exception:
+            pass
         return _fav_btn(slug, False)
     else:
-        db_insert("favourite_items", {"list_id": default_list_id, "user_id": user_id, "dataset_slug": slug})
+        try:
+            db_insert("favourite_items", {"list_id": default_list_id, "user_id": user_id, "dataset_slug": slug})
+        except Exception:
+            pass
         return _fav_btn(slug, True)
 
 @rt("/favourite-lists/create", methods=["POST"])
 def post_create_fav_list(name: str, session):
     user_id = _get_user_id(session)
     if user_id and name.strip():
-        db_insert("favourite_lists", {"user_id": user_id, "name": name.strip()})
+        try:
+            db_insert("favourite_lists", {"user_id": user_id, "name": name.strip()})
+        except Exception:
+            pass
     return RedirectResponse("/favourites", status_code=303)
 
 @rt("/favourite-lists/{list_id}/items/{slug}/remove", methods=["POST"])
 def post_remove_fav_item(list_id: str, slug: str, session):
     user_id = _get_user_id(session)
     if user_id:
-        db_delete("favourite_items", {"list_id": list_id, "dataset_slug": slug, "user_id": user_id})
+        try:
+            db_delete("favourite_items", {"list_id": list_id, "dataset_slug": slug, "user_id": user_id})
+        except Exception:
+            pass
     return RedirectResponse("/favourites", status_code=303)
 
 @rt("/favourite-lists/{list_id}/delete", methods=["POST"])
 def post_delete_fav_list(list_id: str, session):
     user_id = _get_user_id(session)
     if user_id:
-        db_delete("favourite_items", {"list_id": list_id, "user_id": user_id})
-        db_delete("favourite_lists", {"id": list_id, "user_id": user_id})
+        try:
+            db_delete("favourite_items", {"list_id": list_id, "user_id": user_id})
+            db_delete("favourite_lists", {"id": list_id, "user_id": user_id})
+        except Exception:
+            pass
     return RedirectResponse("/favourites", status_code=303)
 
 @rt("/favourites")
@@ -397,8 +415,11 @@ def get_request_access(slug: str, session, type: str = "api"):
 def post_request_access(slug: str, access_type: str, snowflake_account: str = "", session=None):
     if not session or not session.get('user'):
         return Div("Not authenticated.", cls="error-text")
-    user = supabase.auth.get_user(session.get('access_token'))
-    user_id = str(user.user.id)
+    try:
+        user = supabase.auth.get_user(session.get('access_token'))
+        user_id = str(user.user.id)
+    except Exception:
+        return Div("Authentication error. Please log in again.", cls="error-text")
     try:
         if access_type == "snowflake":
             if not snowflake_account:
