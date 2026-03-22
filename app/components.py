@@ -168,6 +168,7 @@ def page_layout(page_title, current_path, user, *content):
     return Html(
         Head(
             Title(f"{page_title} | ODL App"),
+            Script(src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"),
             Link(rel="stylesheet", href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap"),
             get_app_style()
         ),
