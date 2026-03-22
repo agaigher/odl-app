@@ -154,20 +154,25 @@ Have these reviewed by a solicitor with data law experience before publishing, e
 ## Phase 3 — Make it commercial
 **Target: first paying customer**
 
-### 3.1 Billing and payments
+### 3.1 Billing and payments (Prepaid Wallet Model)
 
-No pricing exists and no payment can be taken.
+No pricing exists and no payment can be taken. To safely monetize without runaway compute risks, we will implement a **Prepaid Wallet (Commitment + Drawdown)** model.
 
-Tasks:
-- Define pricing model (recommendation below)
-- Stripe integration: checkout session, webhook to update user plan in Supabase, customer portal for self-service billing management
-- Plan-gated access: free tier (limited datasets, 100 API calls/day), professional tier, enterprise (custom)
-- Entitlement system: plan stored on user profile, API middleware checks plan before serving data
+**Architecture & Tasks:**
+- [ ] **Stripe Checkout Integration**: Build purchasing flows on the new `/billing` page where organisations can buy blocks of "Data Credits" (e.g., £100 for 100k API queries).
+- [ ] **Supabase Wallet Tracking**: Add a `credit_balance` (integer) column to the `organisations` table. Set up a Stripe webhook to automatically credit this balance upon successful invoice payment.
+- [ ] **Reverse Proxy API Gateway**: 
+  - Do NOT expose the raw Snowflake SQL API URL directly to the customer. 
+  - Build a lightweight proxy (FastAPI, Cloudflare Workers, or Kong) at `api.opendata.london`.
+  - The proxy intercepts the request, verifies the user's API key, and checks if their organisation's `credit_balance > 0` in Supabase.
+  - If empty, return `402 Payment Required`. If valid, proxy the query to the underlying Snowflake SQL API and return the data.
+- [ ] **Real-time Deduction**: Upon a successful response from Snowflake, the gateway asynchronously deducts `1` credit from the organisation's Supabase balance.
+- [ ] **Billing Dashboard UI**: Flesh out the `/billing` page to display the live credit progress bar and low-balance alerts.
 
-Recommended starting pricing model:
-- **Free**: access to 1–2 preview datasets, 100 API calls/day, no Snowflake shares
-- **Professional (£299/month)**: up to 5 datasets, 50k API calls/day, 1 Snowflake share
-- **Enterprise (custom)**: all datasets, unlimited API, multiple Snowflake shares, DPA, SLA
+**Recommended starting pricing model:**
+- **Free Trial**: 1,000 complimentary credits on signup to test the API and previews.
+- **Pay-As-You-Go**: £10 per 10,000 credits, purchased ad-hoc.
+- **Enterprise Commitment**: £1,000/month flat fee for dedicated Snowflake Zero-Copy Shares plus an allotment of 2 million combined API/compute credits.
 
 ### 3.2 Expand the data catalogue
 
