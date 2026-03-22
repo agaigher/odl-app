@@ -10,10 +10,10 @@ def odl_navbar(user=None):
     return Header(
         Style("""
             .app-navbar {
-                background-color: #0b0c0c;
-                border-bottom: 2px solid #29b5e8;
-                padding: 0 30px;
-                height: 65px;
+                background-color: #1E293B;
+                border-bottom: 2px solid #0284C7;
+                padding: 0 28px;
+                height: 60px;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
@@ -23,20 +23,20 @@ def odl_navbar(user=None):
             }
             .app-brand {
                 font-weight: 700;
-                font-size: 20px;
+                font-size: 18px;
                 color: #ffffff;
                 text-decoration: none;
                 font-family: "GDS Transport", arial, sans-serif;
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 10px;
             }
             .app-badge {
-                background: rgba(41, 181, 232, 0.15);
-                color: #29b5e8;
-                padding: 4px 8px;
+                background: rgba(2,132,199,0.2);
+                color: #7DD3FC;
+                padding: 3px 7px;
                 border-radius: 4px;
-                font-size: 11px;
+                font-size: 10px;
                 font-weight: 700;
                 font-family: 'Roboto Mono', monospace;
                 letter-spacing: 0.5px;
@@ -44,25 +44,26 @@ def odl_navbar(user=None):
             .nav-actions {
                 display: flex;
                 align-items: center;
-                gap: 20px;
+                gap: 16px;
             }
             .nav-user {
                 color: #94A3B8;
-                font-size: 14px;
+                font-size: 13px;
             }
             .logout-btn {
                 background: transparent;
-                border: 1px solid #334155;
-                color: #F8FAFC;
-                padding: 6px 12px;
-                border-radius: 4px;
+                border: 1px solid rgba(148,163,184,0.3);
+                color: #CBD5E1;
+                padding: 5px 12px;
+                border-radius: 5px;
                 font-size: 13px;
                 cursor: pointer;
-                transition: background 0.2s;
+                transition: all 0.15s;
                 text-decoration: none;
             }
             .logout-btn:hover {
-                background: #1E293B;
+                background: rgba(255,255,255,0.08);
+                color: #ffffff;
             }
         """),
         A(
@@ -91,47 +92,49 @@ def odl_sidebar(current_path="/"):
     return Nav(
         Style("""
             .app-sidebar {
-                width: 260px;
-                background: #0B1120;
-                border-right: 1px solid rgba(148, 163, 184, 0.1);
-                padding: 24px 0;
+                width: 240px;
+                background: #FFFFFF;
+                border-right: 1px solid #E2E8F0;
+                padding: 20px 0;
                 display: flex;
                 flex-direction: column;
                 flex-shrink: 0;
                 overflow-y: auto;
             }
             .sidebar-section {
-                padding: 0 24px;
-                margin-bottom: 32px;
+                padding: 0 16px;
+                margin-bottom: 28px;
             }
             .sidebar-title {
-                font-family: 'Roboto Mono', monospace;
-                font-size: 11px;
-                font-weight: 600;
-                color: #64748B;
+                font-family: 'Inter', sans-serif;
+                font-size: 10px;
+                font-weight: 700;
+                color: #94A3B8;
                 text-transform: uppercase;
-                letter-spacing: 1px;
-                margin-bottom: 12px;
+                letter-spacing: 1.2px;
+                margin-bottom: 6px;
+                padding: 0 8px;
             }
             .sidebar-item {
                 display: flex;
                 align-items: center;
-                padding: 10px 16px;
-                color: #CBD5E1;
+                padding: 8px 12px;
+                color: #475569;
                 text-decoration: none;
                 font-size: 14px;
                 font-weight: 500;
                 border-radius: 6px;
-                margin-bottom: 4px;
-                transition: all 0.2s;
+                margin-bottom: 2px;
+                transition: all 0.15s;
             }
             .sidebar-item:hover {
-                background: rgba(255, 255, 255, 0.05);
-                color: #F8FAFC;
+                background: #F1F5F9;
+                color: #1E293B;
             }
             .sidebar-item.active {
-                background: rgba(41, 181, 232, 0.1);
-                color: #29b5e8;
+                background: #E0F2FE;
+                color: #0284C7;
+                font-weight: 600;
             }
         """),
         Div(
@@ -186,51 +189,52 @@ def page_layout(page_title, current_path, user, *content):
             Div(id="modal-root"),
             Style("""
                 .modal-backdrop {
-                    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+                    position: fixed; inset: 0; background: rgba(15,23,42,0.5);
                     display: flex; align-items: center; justify-content: center;
                     z-index: 9999;
                 }
                 .modal-box {
-                    position: relative; background: #0F1929;
-                    border: 1px solid rgba(148,163,184,0.18); border-radius: 12px;
-                    padding: 28px; width: 380px; max-width: 92vw; z-index: 1;
+                    position: relative; background: #FFFFFF;
+                    border: 1px solid #E2E8F0; border-radius: 12px;
+                    padding: 28px; width: 400px; max-width: 92vw; z-index: 1;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
                 }
-                .modal-title { font-size: 16px; font-weight: 700; color: #F8FAFC;
+                .modal-title { font-size: 16px; font-weight: 700; color: #1E293B;
                     margin-bottom: 4px; }
-                .modal-sub { font-size: 13px; color: #475569; margin-bottom: 20px;
+                .modal-sub { font-size: 13px; color: #94A3B8; margin-bottom: 20px;
                     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-                .modal-divider { border: none; border-top: 1px solid rgba(148,163,184,0.1);
+                .modal-divider { border: none; border-top: 1px solid #F1F5F9;
                     margin: 16px 0; }
                 .list-check-row { display: flex; align-items: center; gap: 10px;
-                    padding: 8px 0; border-bottom: 1px solid rgba(148,163,184,0.06); }
+                    padding: 8px 0; border-bottom: 1px solid #F8FAFC; }
                 .list-check-row:last-child { border-bottom: none; }
                 .list-check-row input[type=checkbox] { width: 16px; height: 16px;
-                    accent-color: #29b5e8; cursor: pointer; flex-shrink: 0; }
-                .list-check-name { font-size: 14px; color: #CBD5E1; flex: 1; }
+                    accent-color: #0284C7; cursor: pointer; flex-shrink: 0; }
+                .list-check-name { font-size: 14px; color: #374151; flex: 1; }
                 .modal-new-list { display: flex; gap: 8px; margin-top: 4px; }
                 .modal-new-input {
-                    flex: 1; background: #020617; border: 1px solid rgba(148,163,184,0.18);
-                    color: #F8FAFC; padding: 8px 12px; border-radius: 6px;
+                    flex: 1; background: #F8FAFC; border: 1px solid #E2E8F0;
+                    color: #1E293B; padding: 8px 12px; border-radius: 6px;
                     font-family: 'Inter', sans-serif; font-size: 13px; outline: none;
                     transition: border-color 0.2s;
                 }
-                .modal-new-input:focus { border-color: #29b5e8; }
-                .modal-new-input::placeholder { color: #334155; }
+                .modal-new-input:focus { border-color: #0284C7; box-shadow: 0 0 0 3px rgba(2,132,199,0.1); }
+                .modal-new-input::placeholder { color: #CBD5E1; }
                 .modal-create-btn {
-                    background: rgba(41,181,232,0.1); color: #29b5e8; border: 1px solid rgba(41,181,232,0.25);
+                    background: #E0F2FE; color: #0284C7; border: 1px solid #BAE6FD;
                     padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600;
                     cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap;
                     transition: background 0.15s;
                 }
-                .modal-create-btn:hover { background: rgba(41,181,232,0.2); }
+                .modal-create-btn:hover { background: #BAE6FD; }
                 .modal-done-btn {
-                    background: #29b5e8; color: #020617; border: none;
+                    background: #0284C7; color: #ffffff; border: none;
                     padding: 9px 22px; border-radius: 6px; font-size: 13px; font-weight: 700;
                     cursor: pointer; font-family: 'Inter', sans-serif; float: right;
-                    transition: opacity 0.15s;
+                    transition: background 0.15s;
                 }
-                .modal-done-btn:hover { opacity: 0.88; }
-                .modal-empty { font-size: 13px; color: #475569; padding: 8px 0 12px; }
+                .modal-done-btn:hover { background: #0369A1; }
+                .modal-empty { font-size: 13px; color: #94A3B8; padding: 8px 0 12px; }
             """),
             cls="app-layout"
         )
