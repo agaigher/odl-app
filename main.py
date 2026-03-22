@@ -59,6 +59,8 @@ def before(req, session):
     if not is_open and not session.get('user'):
         return RedirectResponse('/login', status_code=303)
 
+bware = Beforeware(before, skip=[r'/favicon\.ico', r'/static/.*', r'.*\.css'])
+
 
 app, rt = fast_app(before=bware, secret_key=os.environ.get("SESSION_SECRET", "dev_secret_change_in_prod"))
 
@@ -89,6 +91,8 @@ def post_register(email: str, password: str, session):
     try:
         res = supabase.auth.sign_up({"email": email, "password": password})
         session['user'] = email
+        if res.session:
+            session['access_token'] = res.session.access_token
         return Script("window.location.href = '/';")
     except Exception as e:
         if "User already registered" in str(e):
