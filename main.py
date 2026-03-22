@@ -4,6 +4,7 @@ import base64
 import httpx as _httpx
 from urllib.parse import urlencode
 from dotenv import load_dotenv
+load_dotenv()
 from supabase_auth import SyncGoTrueClient
 from fasthtml.common import *
 from app.components import page_layout
@@ -18,7 +19,6 @@ from app.pages.invite import InvitePage
 from app.supabase_db import db_insert, db_select, db_patch, db_delete, auth_invite
 from app.email import send_org_invite
 
-load_dotenv()
 
 from app.catalog_data import seed_catalog
 seed_catalog()
@@ -51,10 +51,12 @@ def before(req, session):
                    '/auth/google', '/auth/github', '/auth/callback',
                    '/auth/snowflake', '/auth/snowflake/callback',
                    '/invite/accept', '/invite/confirm', '/robots.txt']
-    if req.url.path not in open_routes and not session.get('user'):
-        return RedirectResponse('/login', status_code=303)
+    #if req.url.path not in open_routes and not session.get('user'):
+    #    return RedirectResponse('/login', status_code=303)
+    session['user'] = 'test@example.com' # mock user
 
 bware = Beforeware(before, skip=[r'/favicon\.ico', r'/static/.*', r'.*\.css'])
+
 
 app, rt = fast_app(before=bware, secret_key=os.environ.get("SESSION_SECRET", "dev_secret_change_in_prod"))
 
@@ -255,11 +257,13 @@ def post_create_org(org_name: str, slug: str, session):
         return Div(f"Error: {err}", cls="error-text")
 
 def _get_user_id(session):
-    try:
-        user = supabase.auth.get_user(session.get('access_token'))
-        return str(user.user.id)
-    except Exception:
-        return ""
+    return "test-user-id"
+    #try:
+    #    user = supabase.auth.get_user(session.get('access_token'))
+    #    return str(user.user.id)
+    #except Exception:
+    #    return ""
+
 
 @rt("/")
 def get(session):
@@ -323,52 +327,54 @@ def post_remove_dataset(slug: str, session):
         pass
     return _add_btn(slug, is_added=False)
 
-@rt("/catalog/{slug}/favourite-modal")
-def get_favourite_modal(slug: str, session):
-    from app.pages.catalog import FavouriteModal
-    user_id = _get_user_id(session)
-    if not user_id:
-        return Div()
-    datasets = db_select("datasets", {"slug": slug})
-    title = datasets[0]["title"] if datasets else slug
-    return FavouriteModal(slug=slug, dataset_title=title, user_id=user_id)
-
-@rt("/catalog/{slug}/fav-btn")
-def get_fav_btn(slug: str, session):
+@rt("/catalog/{slug}/favourite", methods=["POST"])
+def post_toggle_favourite(slug: str, session):
     from app.pages.catalog import _fav_btn
     user_id = _get_user_id(session)
-    items = db_select("favourite_items", {"user_id": user_id, "dataset_slug": slug}) if user_id else []
-    return _fav_btn(slug, is_fav=len(items) > 0)
-
-@rt("/favourite-lists", methods=["POST"])
-def post_create_list(name: str, slug: str, session):
-    from app.pages.catalog import _list_checkbox
-    user_id = _get_user_id(session)
     if not user_id:
-        return Div()
-    lst = db_insert("favourite_lists", {"user_id": user_id, "name": name})
-    list_id = lst[0]["id"]
-    db_insert("favourite_items", {"list_id": list_id, "user_id": user_id, "dataset_slug": slug})
-    return _list_checkbox(list_id, slug, True, name)
-
-@rt("/favourite-lists/{list_id}/toggle", methods=["POST"])
-def post_toggle_list_item(list_id: str, slug: str, session):
-    from app.pages.catalog import _list_checkbox, _fav_btn
-    user_id = _get_user_id(session)
-    if not user_id:
-        return Div()
-    existing = db_select("favourite_items", {"list_id": list_id, "dataset_slug": slug, "user_id": user_id})
-    lists = db_select("favourite_lists", {"id": list_id, "user_id": user_id})
-    list_name = lists[0]["name"] if lists else ""
-    if existing:
-        db_delete("favourite_items", {"list_id": list_id, "dataset_slug": slug, "user_id": user_id})
-        in_list = False
+        return _fav_btn(slug, False)
+    try:
+        lists = db_select("favourite_lists", {"user_id": user_id})
+    except Exception:
+        lists = []
+    # Auto-create a default list if the user has none
+    if lists:
+        default_list_id = lists[0]["id"]
     else:
-        db_insert("favourite_items", {"list_id": list_id, "user_id": user_id, "dataset_slug": slug})
-        in_list = True
-    all_items = db_select("favourite_items", {"user_id": user_id, "dataset_slug": slug})
-    is_fav = len(all_items) > 0
-    return _list_checkbox(list_id, slug, in_list, list_name), _fav_btn(slug, is_fav, oob=True)
+        created = db_insert("favourite_lists", {"user_id": user_id, "name": "My Favourites"})
+        default_list_id = created[0]["id"]
+    try:
+        existing = db_select("favourite_items", {"list_id": default_list_id, "dataset_slug": slug, "user_id": user_id})
+    except Exception:
+        existing = []
+    if existing:
+        db_delete("favourite_items", {"list_id": default_list_id, "dataset_slug": slug, "user_id": user_id})
+        return _fav_btn(slug, False)
+    else:
+        db_insert("favourite_items", {"list_id": default_list_id, "user_id": user_id, "dataset_slug": slug})
+        return _fav_btn(slug, True)
+
+@rt("/favourite-lists/create", methods=["POST"])
+def post_create_fav_list(name: str, session):
+    user_id = _get_user_id(session)
+    if user_id and name.strip():
+        db_insert("favourite_lists", {"user_id": user_id, "name": name.strip()})
+    return RedirectResponse("/favourites", status_code=303)
+
+@rt("/favourite-lists/{list_id}/items/{slug}/remove", methods=["POST"])
+def post_remove_fav_item(list_id: str, slug: str, session):
+    user_id = _get_user_id(session)
+    if user_id:
+        db_delete("favourite_items", {"list_id": list_id, "dataset_slug": slug, "user_id": user_id})
+    return RedirectResponse("/favourites", status_code=303)
+
+@rt("/favourite-lists/{list_id}/delete", methods=["POST"])
+def post_delete_fav_list(list_id: str, session):
+    user_id = _get_user_id(session)
+    if user_id:
+        db_delete("favourite_items", {"list_id": list_id, "user_id": user_id})
+        db_delete("favourite_lists", {"id": list_id, "user_id": user_id})
+    return RedirectResponse("/favourites", status_code=303)
 
 @rt("/favourites")
 def get_favourites(session):

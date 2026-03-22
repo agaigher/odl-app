@@ -205,10 +205,55 @@ CATALOG_STYLE = Style("""
         font-size: 13px; color: #0369A1; }
     .empty-msg { padding: 40px 20px; color: #94A3B8; font-size: 14px; text-align: center; }
 
-    .fav-section { margin-bottom: 32px; }
-    .fav-section-title { font-size: 15px; font-weight: 600; color: #1E293B;
-        margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-    .fav-section-count { font-size: 12px; color: #94A3B8; font-weight: 400; }
+    /* ── Favourites page ── */
+    .fav-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .fav-page-title { font-size: 22px; font-weight: 700; color: #1E293B; letter-spacing: -0.3px; }
+    .fav-new-form { display: flex; gap: 8px; align-items: center; }
+    .fav-new-input { background: #FFF; border: 1.5px solid #E2E8F0; color: #1E293B;
+        padding: 8px 12px; border-radius: 8px; font-family: 'Inter', sans-serif;
+        font-size: 13px; outline: none; transition: border-color 0.2s; width: 180px; }
+    .fav-new-input:focus { border-color: #0284C7; box-shadow: 0 0 0 3px rgba(2,132,199,0.1); }
+    .fav-new-input::placeholder { color: #CBD5E1; }
+    .fav-create-btn { background: #0284C7; color: #fff; border: none;
+        padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+        cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap;
+        transition: background 0.15s; }
+    .fav-create-btn:hover { background: #0369A1; }
+
+    .fav-tabs { display: flex; gap: 0; border-bottom: 2px solid #F1F5F9; margin-bottom: 20px; }
+    .fav-tab { padding: 10px 18px; background: transparent; border: none;
+        border-bottom: 2px solid transparent; margin-bottom: -2px;
+        font-size: 14px; font-weight: 500; color: #64748B; cursor: pointer;
+        font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px;
+        transition: color 0.15s; white-space: nowrap; }
+    .fav-tab:hover { color: #374151; }
+    .fav-tab.active { color: #0284C7; border-bottom-color: #0284C7; font-weight: 600; }
+    .fav-tab-count { background: #F1F5F9; color: #64748B; font-size: 11px;
+        font-weight: 700; padding: 1px 7px; border-radius: 999px; }
+    .fav-tab.active .fav-tab-count { background: #E0F2FE; color: #0284C7; }
+
+    .fav-content { display: none; }
+    .fav-content.active { display: block; }
+    .fav-content-header { display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 12px; }
+    .fav-content-name { font-size: 15px; font-weight: 600; color: #1E293B; }
+    .fav-delete-btn { background: transparent; border: 1px solid #E2E8F0; color: #94A3B8;
+        padding: 5px 11px; border-radius: 6px; font-size: 12px; cursor: pointer;
+        font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .fav-delete-btn:hover { border-color: #FCA5A5; color: #EF4444; background: #FEF2F2; }
+
+    .fav-ds-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+        border-bottom: 1px solid #F8FAFC; }
+    .fav-ds-row:last-child { border-bottom: none; }
+    .fav-ds-row:hover { background: #F8FAFC; }
+    .fav-ds-title { flex: 1; font-size: 14px; font-weight: 500; color: #1E293B;
+        text-decoration: none; }
+    .fav-ds-title:hover { color: #0284C7; }
+    .fav-ds-meta { font-size: 12px; color: #94A3B8; }
+    .fav-remove-btn { background: transparent; border: none; color: #CBD5E1;
+        font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 6px;
+        border-radius: 4px; transition: all 0.15s; flex-shrink: 0; }
+    .fav-remove-btn:hover { background: #FEE2E2; color: #EF4444; }
 """)
 
 
@@ -264,13 +309,12 @@ def _fav_btn(slug, is_fav, oob=False):
     return Button(
         "★" if is_fav else "☆",
         type="button",
-        hx_get=f"/catalog/{slug}/favourite-modal",
-        hx_target="#modal-root",
-        hx_swap="innerHTML",
-        hx_trigger="click",
+        hx_post=f"/catalog/{slug}/favourite",
+        hx_target=f"#fav-{slug}",
+        hx_swap="outerHTML",
         id=f"fav-{slug}",
         cls=f"fav-btn {'on' if is_fav else ''}",
-        title="Save to a list",
+        title="Save to Favourites",
         **attrs
     )
 
@@ -669,52 +713,102 @@ def FavouritesView(user_id=""):
     except Exception:
         lists = []
 
-    if not lists:
-        return Div(
-            CATALOG_STYLE,
-            H1("Favourites", style="font-size:18px;font-weight:700;color:#F8FAFC;margin-bottom:8px;"),
-            P("You haven't saved anything yet.", style="font-size:14px;color:#64748B;margin-bottom:16px;"),
-            P("Click the ☆ star on any dataset to save it to a list.",
-              style="font-size:13px;color:#475569;margin-bottom:20px;"),
-            A("Browse the catalog →", href="/catalog", style="color:#29b5e8;font-size:14px;text-decoration:none;"),
-        )
-
     try:
         all_datasets = db_select("datasets")
     except Exception:
         all_datasets = []
     ds_map = {d["slug"]: d for d in all_datasets}
 
-    added, _ = _fetch_user_sets(user_id)
+    # Header with create-list form
+    new_list_form = Form(
+        Input(type="text", name="name", placeholder="New list name…",
+              required=True, cls="fav-new-input"),
+        Button("+ Create", type="submit", cls="fav-create-btn"),
+        action="/favourite-lists/create", method="POST",
+        cls="fav-new-form"
+    )
+    header = Div(
+        H1("Favourites", cls="fav-page-title"),
+        new_list_form,
+        cls="fav-header"
+    )
 
-    sections = []
-    for lst in lists:
+    if not lists:
+        return Div(
+            CATALOG_STYLE,
+            header,
+            Div(
+                P("No lists yet.", style="font-size:15px;font-weight:600;color:#1E293B;margin-bottom:8px;"),
+                P("Create a list above, then star ☆ any dataset in the catalog to add it.",
+                  style="font-size:14px;color:#64748B;line-height:1.6;margin-bottom:20px;"),
+                A("Browse the catalog →", href="/catalog",
+                  style="color:#0284C7;font-size:14px;font-weight:600;text-decoration:none;"),
+                cls="empty-msg", style="text-align:left;padding:32px 24px;"
+            )
+        )
+
+    # Build tabs and content panels
+    tabs, panels = [], []
+    for i, lst in enumerate(lists):
         try:
             items = db_select("favourite_items", {"list_id": lst["id"]})
         except Exception:
             items = []
         slugs = [item["dataset_slug"] for item in items]
         datasets = [ds_map[s] for s in slugs if s in ds_map]
-        if not datasets:
-            continue
-        sections.append(Div(
-            P(lst["name"],
-              Span(f"{len(datasets)} dataset{'s' if len(datasets)!=1 else ''}",
-                   cls="fav-section-count"),
-              cls="fav-section-title"),
+        is_first = (i == 0)
+        list_id = lst["id"]
+
+        tabs.append(Button(
+            lst["name"],
+            Span(str(len(datasets)), cls="fav-tab-count"),
+            type="button",
+            id=f"fav-tab-{list_id}",
+            cls=f"fav-tab {'active' if is_first else ''}",
+            onclick=f"selectFavList('{list_id}')"
+        ))
+
+        if datasets:
+            rows = [Div(
+                Span("★", style="color:#F59E0B;font-size:16px;flex-shrink:0;"),
+                A(d.get("title") or d["slug"], href=f"/catalog/{d['slug']}", cls="fav-ds-title"),
+                Span(d.get("category") or "", cls="fav-ds-meta"),
+                Form(
+                    Button("×", type="submit", cls="fav-remove-btn", title="Remove from list"),
+                    action=f"/favourite-lists/{list_id}/items/{d['slug']}/remove",
+                    method="POST"
+                ),
+                cls="fav-ds-row"
+            ) for d in datasets]
+        else:
+            rows = [P("No datasets in this list yet. Star ☆ datasets in the catalog to add them.",
+                      style="color:#94A3B8;font-size:13px;padding:20px 14px;")]
+
+        panels.append(Div(
             Div(
-                Div(f"{len(datasets)} dataset{'s' if len(datasets)!=1 else ''}", cls="ds-count-bar"),
-                Div(*[_list_row(d, is_added=d.get("slug") in added, is_fav=True)
-                      for d in datasets], cls="ds-list"),
-                cls="ds-list-box"
+                Span(lst["name"], cls="fav-content-name"),
+                Form(Button("Delete list", type="submit", cls="fav-delete-btn"),
+                     action=f"/favourite-lists/{list_id}/delete", method="POST"),
+                cls="fav-content-header"
             ),
-            cls="fav-section"
+            Div(*rows, cls="ds-list-box"),
+            id=f"fav-content-{list_id}",
+            cls=f"fav-content {'active' if is_first else ''}"
         ))
 
     return Div(
         CATALOG_STYLE,
-        H1("Favourites", style="font-size:18px;font-weight:700;color:#1E293B;letter-spacing:-0.3px;margin-bottom:24px;"),
-        *sections if sections else [P("Your lists are empty.", style="color:#475569;font-size:14px;")]
+        header,
+        Div(*tabs, cls="fav-tabs"),
+        *panels,
+        Script("""
+            function selectFavList(id) {
+                document.querySelectorAll('.fav-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.fav-content').forEach(c => c.classList.remove('active'));
+                document.getElementById('fav-tab-' + id).classList.add('active');
+                document.getElementById('fav-content-' + id).classList.add('active');
+            }
+        """)
     )
 
 
