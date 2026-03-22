@@ -41,6 +41,50 @@ def db_select(table: str, filters: dict = None, limit: int = 100000):
             
     return all_results
 
+def get_datasets_paginated(category="", q="", access="", freq="", page=1, per_page=25):
+    url = f"{SUPABASE_URL}/rest/v1/datasets"
+    params = {}
+    
+    if category: params["category"] = f"eq.{category}"
+    if freq:
+        freq_map = {"Real-time": "(Real-time,Streaming)", "Hourly": "(Hourly)", "Daily": "(Daily)", "Monthly": "(Monthly)", "Annual": "(Annual)"}
+        params["update_frequency"] = f"in.{freq_map[freq]}" if freq in freq_map else f"eq.{freq}"
+    if access: params["access_methods"] = f"cs.{{{access}}}"
+    if q: params["or"] = f"(title.ilike.*{q}*,description.ilike.*{q}*,provider.ilike.*{q}*,category.ilike.*{q}*)"
+
+    offset = (page - 1) * per_page
+    h = _headers()
+    h["Range-Unit"] = "items"
+    h["Range"] = f"{offset}-{offset + per_page - 1}"
+    h["Prefer"] = "count=exact"
+    
+    r = httpx.get(url, params=params, headers=h)
+    r.raise_for_status()
+    
+    cr = r.headers.get("Content-Range", "")
+    total = int(cr.split("/")[-1]) if "/" in cr else len(r.json())
+    return r.json(), total
+
+def get_category_counts():
+    url = f"{SUPABASE_URL}/rest/v1/datasets"
+    h = _headers()
+    params = {"select": "category"}
+    all_res = []
+    chunk_size = 1000
+    for offset in range(0, 50000, chunk_size):
+        h["Range-Unit"] = "items"
+        h["Range"] = f"{offset}-{offset + chunk_size - 1}"
+        r = httpx.get(url, params=params, headers=h)
+        if r.status_code != 200: break
+        chunk = r.json()
+        all_res.extend(chunk)
+        if len(chunk) < chunk_size: break
+        
+    counts = {}
+    for d in all_res:
+        c = d.get("category") or "Other"
+        counts[c] = counts.get(c, 0) + 1
+    return counts, len(all_res)
 
 def db_delete(table: str, filters: dict):
     url = f"{SUPABASE_URL}/rest/v1/{table}"

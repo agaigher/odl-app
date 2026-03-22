@@ -299,26 +299,6 @@ def _fetch_user_sets(user_id):
     return added, favs
 
 
-def _apply_filters(datasets, q, category, access_f, freq_f):
-    if q:
-        ql = q.lower()
-        datasets = [d for d in datasets
-                    if ql in (d.get("title") or "").lower()
-                    or ql in (d.get("description") or "").lower()
-                    or ql in " ".join(d.get("tags") or []).lower()
-                    or ql in (d.get("category") or "").lower()
-                    or ql in (d.get("provider") or "").lower()]
-    if category:
-        datasets = [d for d in datasets if d.get("category") == category]
-    if access_f:
-        datasets = [d for d in datasets if access_f in (d.get("access_methods") or [])]
-    if freq_f:
-        datasets = [d for d in datasets
-                    if FREQ_SHORT.get(d.get("update_frequency") or "", "") == freq_f
-                    or d.get("update_frequency") == freq_f]
-    return datasets
-
-
 # ── Row-level components ──────────────────────────────────────────────────────
 
 def _fav_btn(slug, is_fav, oob=False):
@@ -565,13 +545,7 @@ def _filter_chips(access_f, freq_f, category, q):
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 
-def _sidebar(all_datasets, active_cat):
-    counts = {}
-    for d in all_datasets:
-        c = d.get("category") or "Other"
-        counts[c] = counts.get(c, 0) + 1
-    total = len(all_datasets)
-
+def _sidebar(counts, active_cat, total):
     items = [
         Div("Browse", cls="cat-sidebar-title"),
         A(Span("All datasets", cls="cat-sidebar-label"),
@@ -585,6 +559,7 @@ def _sidebar(all_datasets, active_cat):
         Div("Categories", cls="cat-sidebar-title", style="margin-top:20px;"),
     ]
     for cat in sorted(counts):
+        if cat == "Other": continue
         items.append(A(
             Span(cat, cls="cat-sidebar-label"),
             Span(str(counts[cat]), cls="cat-sidebar-count"),
@@ -742,8 +717,8 @@ def _page_nums(page, total_pages):
     return result
 
 
-def _list_body(datasets, added, favs, heading, subtext, page=1, per_page=25, q="", category="", access_f="", freq_f=""):
-    if not datasets:
+def _list_body(page_datasets, total, added, favs, heading, subtext, page=1, per_page=25, q="", category="", access_f="", freq_f=""):
+    if not page_datasets:
         return Div(
             Div(H1(heading, style="font-size:18px;font-weight:700;color:#1E293B;letter-spacing:-0.3px;"),
                 P(subtext, style="font-size:13px;color:#94A3B8;margin-top:3px;"),
@@ -751,11 +726,8 @@ def _list_body(datasets, added, favs, heading, subtext, page=1, per_page=25, q="
             Div(P("No datasets match.", cls="empty-msg"), cls="ds-list-box"),
         )
 
-    total = len(datasets)
     total_pages = max(1, (total + per_page - 1) // per_page)
     page = max(1, min(page, total_pages))
-    start = (page - 1) * per_page
-    page_datasets = datasets[start:start + per_page]
 
     qs_base = f"q={q}&category={category}&access={access_f}&freq={freq_f}"
 
@@ -807,25 +779,26 @@ def _list_body(datasets, added, favs, heading, subtext, page=1, per_page=25, q="
 # ── Public components ─────────────────────────────────────────────────────────
 
 def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="", page=1, per_page=25):
+    from app.supabase_db import get_datasets_paginated, get_category_counts
     try:
-        all_datasets = db_select("datasets")
+        datasets, total_matches = get_datasets_paginated(category, q, access_filter, freq_filter, page, per_page)
+        counts, total_all = get_category_counts()
     except Exception:
-        all_datasets = []
+        datasets, counts, total_matches, total_all = [], {}, 0, 0
 
     added, favs = _fetch_user_sets(user_id)
-    datasets    = _apply_filters(all_datasets, q, category, access_filter, freq_filter)
 
     heading = f'Results for "{q}"' if q else (category or "London Database")
-    subtext = (f"{len(datasets)} dataset{'s' if len(datasets) != 1 else ''} found"
+    subtext = (f"{total_matches} dataset{'s' if total_matches != 1 else ''} found"
                if (q or category or access_filter or freq_filter)
-               else f"{len(datasets)} datasets — growing continuously")
+               else f"{total_matches} datasets — growing continuously")
 
     return Div(
         CATALOG_STYLE,
         _search_area(q, category, access_filter, freq_filter),
         Div(
-            _sidebar(all_datasets, category),
-            Div(_list_body(datasets, added, favs, heading, subtext,
+            _sidebar(counts, category, total_all),
+            Div(_list_body(datasets, total_matches, added, favs, heading, subtext,
                            page=page, per_page=per_page,
                            q=q, category=category, access_f=access_filter, freq_f=freq_filter),
                 id="catalog-body", cls="cat-main"),
@@ -835,17 +808,18 @@ def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="",
 
 
 def SearchCatalogResults(q="", category="", user_id="", access_filter="", freq_filter="", page=1, per_page=25):
+    from app.supabase_db import get_datasets_paginated
     try:
-        all_datasets = db_select("datasets")
+        datasets, total_matches = get_datasets_paginated(category, q, access_filter, freq_filter, page, per_page)
     except Exception:
-        all_datasets = []
+        datasets, total_matches = [], 0
+
     added, favs = _fetch_user_sets(user_id)
-    datasets    = _apply_filters(all_datasets, q, category, access_filter, freq_filter)
     heading = f'Results for "{q}"' if q else (category or "London Database")
-    subtext = (f"{len(datasets)} dataset{'s' if len(datasets) != 1 else ''} found"
+    subtext = (f"{total_matches} dataset{'s' if total_matches != 1 else ''} found"
                if (q or category or access_filter or freq_filter)
-               else f"{len(datasets)} datasets — growing continuously")
-    return _list_body(datasets, added, favs, heading, subtext,
+               else f"{total_matches} datasets — growing continuously")
+    return _list_body(datasets, total_matches, added, favs, heading, subtext,
                       page=page, per_page=per_page,
                       q=q, category=category, access_f=access_filter, freq_f=freq_filter)
 
