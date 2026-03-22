@@ -307,33 +307,47 @@ def post_ai_search(session, query: str = ""):
     user_id = _get_user_id(session)
     return AiSearchResults(query=query, user_id=user_id)
 
-@rt("/catalog/{slug}/add", methods=["POST"])
-def post_add_dataset(slug: str, session):
-    from app.pages.catalog import _add_btn
+@rt("/catalog/{slug}/integration-modal", methods=["GET"])
+def get_integration_modal(slug: str, session):
+    from app.pages.catalog import IntegrationModal
     user_id = _get_user_id(session)
-    if not user_id:
-        return Span("Not authenticated", style="color:#EF4444;font-size:12px;")
+    if not user_id: return Script("window.location.href='/login'")
     try:
-        db_insert("dataset_access", {
-            "user_id": user_id, "dataset_slug": slug,
-            "access_type": "api", "status": "active",
-        })
-    except Exception as e:
-        if "duplicate" not in str(e).lower() and "unique" not in str(e).lower():
-            return Span("Error", style="color:#EF4444;font-size:12px;")
-    return _add_btn(slug, is_added=True)
-
-@rt("/catalog/{slug}/remove", methods=["POST"])
-def post_remove_dataset(slug: str, session):
-    from app.pages.catalog import _add_btn
-    user_id = _get_user_id(session)
-    if not user_id:
-        return Span("Not authenticated", style="color:#EF4444;font-size:12px;")
-    try:
-        db_delete("dataset_access", {"user_id": user_id, "dataset_slug": slug})
+        ds = db_select("datasets", {"slug": slug})
+        title = ds[0].get("title") if ds else slug
     except Exception:
-        pass
-    return _add_btn(slug, is_added=False)
+        title = slug
+    return IntegrationModal(slug, title, user_id)
+
+@rt("/catalog/{slug}/add-btn", methods=["GET"])
+def get_add_btn(slug: str, session):
+    from app.pages.catalog import _add_btn
+    user_id = _get_user_id(session)
+    if not user_id: return _add_btn(slug, False)
+    try:
+        items = db_select("dataset_integrations", {"user_id": user_id, "dataset_slug": slug})
+        return _add_btn(slug, len(items) > 0)
+    except Exception:
+        return _add_btn(slug, False)
+
+@rt("/integrations/{int_id}/toggle", methods=["POST"])
+def post_toggle_integration(int_id: str, slug: str, session):
+    from app.pages.catalog import _int_checkbox
+    user_id = _get_user_id(session)
+    if not user_id: return ""
+    try:
+        existing = db_select("dataset_integrations", {"integration_id": int_id, "user_id": user_id, "dataset_slug": slug})
+        if existing:
+            db_delete("dataset_integrations", {"integration_id": int_id, "user_id": user_id, "dataset_slug": slug})
+            in_list = False
+        else:
+            db_insert("dataset_integrations", {"integration_id": int_id, "user_id": user_id, "dataset_slug": slug})
+            in_list = True
+        ints = db_select("user_integrations", {"id": int_id, "user_id": user_id})
+        int_name = ints[0]["name"] if ints else "Integration"
+        return _int_checkbox(int_id, slug, in_list, int_name)
+    except Exception:
+        return ""
 
 @rt("/catalog/{slug}/favourite-modal", methods=["GET"])
 def get_favourite_modal(slug: str, session):
@@ -471,13 +485,39 @@ def post_request_access(slug: str, access_type: str, snowflake_account: str = ""
             return Div("You already have access to this dataset.", cls="success-text")
         return Div(f"Error: {err}", cls="error-text")
 
-@rt("/keys")
-def get_keys(session):
-    return page_layout("API Keys", "/keys", session.get('user'), SettingsKeys())
+@rt("/integrations")
+def get_integrations(session):
+    from app.pages.integrations import IntegrationsView
+    user_id = _get_user_id(session)
+    return page_layout("Integrations", "/integrations", session.get('user'), IntegrationsView(user_id=user_id))
 
-@rt("/shares")
-def get_shares(session):
-    return page_layout("Snowflake Shares", "/shares", session.get('user'), SettingsShares())
+@rt("/integrations/create", methods=["POST"])
+def post_create_integration(name: str, type: str, session):
+    from app.pages.integrations import _integration_row
+    user_id = _get_user_id(session)
+    if not user_id or not name.strip() or type not in ("api", "snowflake"): return ""
+    try:
+        created = db_insert("user_integrations", {
+            "user_id": user_id, 
+            "name": name.strip(),
+            "type": type
+        })
+        if created:
+            return _integration_row(created[0])
+    except Exception:
+        pass
+    return ""
+
+@rt("/integrations/{int_id}/delete", methods=["POST"])
+def post_delete_integration(int_id: str, session):
+    user_id = _get_user_id(session)
+    if user_id:
+        try:
+            # Cascading deletes will handle dataset_integrations rows automatically (if ON DELETE CASCADE is set)
+            db_delete("user_integrations", {"id": int_id, "user_id": user_id})
+        except Exception:
+            pass
+    return ""
 
 # Dummy routes for completeness
 @rt("/queries")

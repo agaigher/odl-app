@@ -142,16 +142,32 @@ def DatasetDetail(slug: str, session=None):
     else:
         sample_table = P("Sample data not available.", style="color: #64748B; font-size: 13px;")
 
-    # Access buttons
-    access_btns = []
-    if "api" in access:
-        access_btns.append(
-            A("Get API Access", href=f"/catalog/{slug}/request-access?type=api", cls="access-btn btn-primary")
-        )
-    if "snowflake" in access:
-        access_btns.append(
-            A("Add to Snowflake", href=f"/catalog/{slug}/request-access?type=snowflake", cls="access-btn btn-secondary")
-        )
+    # Fetch user added/fav status
+    user_id = ""
+    try:
+        if session and session.get('access_token'):
+            from main import supabase
+            user = supabase.auth.get_user(session.get('access_token'))
+            user_id = str(user.user.id)
+    except Exception:
+        pass
+
+    is_added, is_fav = False, False
+    if user_id:
+        try:
+            ints = db_select("dataset_integrations", {"user_id": user_id, "dataset_slug": slug})
+            is_added = len(ints) > 0
+            favs = db_select("favourite_items", {"user_id": user_id, "dataset_slug": slug})
+            is_fav = len(favs) > 0
+        except Exception:
+            pass
+
+    from app.pages.catalog import _add_btn, _fav_btn
+    action_buttons = Div(
+        _fav_btn(slug, is_fav),
+        _add_btn(slug, is_added),
+        style="display: flex; gap: 8px; align-items: center;"
+    )
 
     # Sidebar
     sidebar = Div(
@@ -168,11 +184,11 @@ def DatasetDetail(slug: str, session=None):
         Div(
             Div("Update frequency", cls="sidebar-label"),
             Div(dataset.get("update_frequency") or "—", cls="sidebar-value"),
-            style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #F1F5F9;"
+            style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #F1F5F9;"
         ),
-        *access_btns,
+        action_buttons,
         Div(
-            Div("Snowflake table name", cls="sidebar-label"),
+            Div("Snowflake table name", cls="sidebar-label", style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #F1F5F9;"),
             Div(f"LONDON_DB.PUBLIC.{table_name}", cls="code-block"),
         ),
         cls="detail-sidebar"

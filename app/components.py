@@ -151,8 +151,7 @@ def odl_sidebar(current_path="/"):
         ),
         Div(
             Div("Access", cls="sidebar-title"),
-            nav_item("API Keys", "/keys", "🔑"),
-            nav_item("Snowflake Shares", "/shares", "❄"),
+            nav_item("Integrations", "/integrations", "🔌"),
             cls="sidebar-section"
         ),
         Div(

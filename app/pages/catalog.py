@@ -287,9 +287,8 @@ def _fetch_user_sets(user_id):
     if not user_id:
         return added, favs
     try:
-        for row in db_select("dataset_access", {"user_id": user_id}):
-            if row.get("status") != "removed":
-                added.add(row["dataset_slug"])
+        for row in db_select("dataset_integrations", {"user_id": user_id}):
+            added.add(row["dataset_slug"])
     except Exception:
         pass
     try:
@@ -336,26 +335,27 @@ def _fav_btn(slug, is_fav, oob=False):
     )
 
 
-def _add_btn(slug, is_added):
+def _add_btn(slug, is_added, oob=False):
+    attrs = {"hx_swap_oob": "true"} if oob else {}
     if is_added:
-        return Div(
-            Span("✓ Added", cls="added-badge"),
-            Button("Remove",
-                   hx_post=f"/catalog/{slug}/remove",
-                   hx_target=f"#add-{slug}",
-                   hx_swap="outerHTML",
-                   cls="remove-link"),
+        return Button(
+            "✓ Added",
+            hx_get=f"/catalog/{slug}/integration-modal",
+            hx_target="#modal-root",
             id=f"add-{slug}",
-            style="display:flex;align-items:center;gap:4px;",
+            cls="add-btn",
+            style="border-color: #10B981; color: #10B981; background: #ECFDF5;",
+            title="Edit dataset integrations",
+            **attrs
         )
     return Button(
         "+ Add",
-        hx_post=f"/catalog/{slug}/add",
-        hx_target=f"#add-{slug}",
-        hx_swap="outerHTML",
+        hx_get=f"/catalog/{slug}/integration-modal",
+        hx_target="#modal-root",
         id=f"add-{slug}",
         cls="add-btn",
-        title="Add this dataset to your account",
+        title="Add this dataset to your integrations",
+        **attrs
     )
 
 
@@ -403,10 +403,11 @@ def _list_row(d, is_added=False, is_fav=False, ai_reason=None):
         *([Span("API", cls="badge badge-api")] if "api" in access else []),
         *([Span("Snowflake", cls="badge badge-sf")] if "snowflake" in access else []),
         Div(title=status_label, style=f"width:7px;height:7px;border-radius:50%;background:{status_color};"),
+        _fav_btn(slug, is_fav),
         _add_btn(slug, is_added),
         cls="ds-row-right"
     )
-    return Div(_fav_btn(slug, is_fav), mid, right, cls="ds-row")
+    return Div(mid, right, cls="ds-row")
 
 
 # ── Favourite modal ───────────────────────────────────────────────────────────
@@ -462,6 +463,71 @@ def FavouriteModal(slug, dataset_title, user_id):
             Div(empty_msg, *list_rows, id="modal-lists"),
             Hr(cls="modal-divider"),
             new_list_form,
+            Hr(cls="modal-divider"),
+            Button("Done", id="modal-done", cls="modal-done-btn"),
+            close_and_update,
+            cls="modal-box"
+        ),
+        cls="modal-backdrop"
+    )
+
+# ── Integration modal ─────────────────────────────────────────────────────────
+
+def _int_checkbox(int_id, slug, in_list, int_name):
+    """A single integration row inside the integration modal — toggleable via HTMX."""
+    return Div(
+        Input(
+            type="checkbox",
+            checked=in_list,
+            hx_post=f"/integrations/{int_id}/toggle?slug={slug}",
+            hx_trigger="change",
+            hx_target=f"#icheck-{int_id}",
+            hx_swap="outerHTML",
+            hx_include="this",
+        ),
+        Span(int_name, cls="list-check-name"),
+        id=f"icheck-{int_id}",
+        cls="list-check-row",
+    )
+
+def IntegrationModal(slug, dataset_title, user_id):
+    try:
+        ints = db_select("user_integrations", {"user_id": user_id})
+    except Exception:
+        ints = []
+
+    try:
+        items = db_select("dataset_integrations", {"user_id": user_id, "dataset_slug": slug})
+    except Exception:
+        items = []
+
+    in_int_ids = {item["integration_id"] for item in items}
+
+    int_rows = [
+        _int_checkbox(i["id"], slug, i["id"] in in_int_ids, i["name"])
+        for i in ints
+    ]
+
+    empty_msg = Div(
+        P("No integrations created yet.", cls="modal-empty"),
+        A("Create connection targets →", href="/integrations", style="font-size: 13px; color: #0284C7; text-decoration: none;")
+    ) if not ints else None
+
+    close_and_update = Script(f"""
+        document.getElementById('modal-done').addEventListener('click', function() {{
+            htmx.ajax('GET', '/catalog/{slug}/add-btn', '#add-{slug}');
+            document.getElementById('modal-root').innerHTML = '';
+        }});
+    """)
+
+    return Div(
+        Div(style="position:absolute;inset:0;",
+            onclick="document.getElementById('modal-root').innerHTML=''"),
+        Div(
+            P("🔌 Connect Dataset", cls="modal-title"),
+            P(dataset_title, cls="modal-sub"),
+            Hr(cls="modal-divider"),
+            Div(empty_msg, *int_rows, id="modal-ints") if empty_msg or int_rows else None,
             Hr(cls="modal-divider"),
             Button("Done", id="modal-done", cls="modal-done-btn"),
             close_and_update,
