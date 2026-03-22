@@ -181,6 +181,56 @@ def page_layout(page_title, current_path, user, *content):
                 ),
                 cls="app-container"
             ),
+            # Modal root — favourite list picker renders here
+            Div(id="modal-root"),
+            Style("""
+                .modal-backdrop {
+                    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+                    display: flex; align-items: center; justify-content: center;
+                    z-index: 9999;
+                }
+                .modal-box {
+                    position: relative; background: #0F1929;
+                    border: 1px solid rgba(148,163,184,0.18); border-radius: 12px;
+                    padding: 28px; width: 380px; max-width: 92vw; z-index: 1;
+                }
+                .modal-title { font-size: 16px; font-weight: 700; color: #F8FAFC;
+                    margin-bottom: 4px; }
+                .modal-sub { font-size: 13px; color: #475569; margin-bottom: 20px;
+                    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                .modal-divider { border: none; border-top: 1px solid rgba(148,163,184,0.1);
+                    margin: 16px 0; }
+                .list-check-row { display: flex; align-items: center; gap: 10px;
+                    padding: 8px 0; border-bottom: 1px solid rgba(148,163,184,0.06); }
+                .list-check-row:last-child { border-bottom: none; }
+                .list-check-row input[type=checkbox] { width: 16px; height: 16px;
+                    accent-color: #29b5e8; cursor: pointer; flex-shrink: 0; }
+                .list-check-name { font-size: 14px; color: #CBD5E1; flex: 1; }
+                .modal-new-list { display: flex; gap: 8px; margin-top: 4px; }
+                .modal-new-input {
+                    flex: 1; background: #020617; border: 1px solid rgba(148,163,184,0.18);
+                    color: #F8FAFC; padding: 8px 12px; border-radius: 6px;
+                    font-family: 'Inter', sans-serif; font-size: 13px; outline: none;
+                    transition: border-color 0.2s;
+                }
+                .modal-new-input:focus { border-color: #29b5e8; }
+                .modal-new-input::placeholder { color: #334155; }
+                .modal-create-btn {
+                    background: rgba(41,181,232,0.1); color: #29b5e8; border: 1px solid rgba(41,181,232,0.25);
+                    padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600;
+                    cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap;
+                    transition: background 0.15s;
+                }
+                .modal-create-btn:hover { background: rgba(41,181,232,0.2); }
+                .modal-done-btn {
+                    background: #29b5e8; color: #020617; border: none;
+                    padding: 9px 22px; border-radius: 6px; font-size: 13px; font-weight: 700;
+                    cursor: pointer; font-family: 'Inter', sans-serif; float: right;
+                    transition: opacity 0.15s;
+                }
+                .modal-done-btn:hover { opacity: 0.88; }
+                .modal-empty { font-size: 13px; color: #475569; padding: 8px 0 12px; }
+            """),
             cls="app-layout"
         )
     )

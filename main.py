@@ -323,22 +323,52 @@ def post_remove_dataset(slug: str, session):
         pass
     return _add_btn(slug, is_added=False)
 
-@rt("/catalog/{slug}/favourite", methods=["POST"])
-def post_toggle_favourite(slug: str, session):
-    from app.pages.catalog import _fav_btn
+@rt("/catalog/{slug}/favourite-modal")
+def get_favourite_modal(slug: str, session):
+    from app.pages.catalog import FavouriteModal
     user_id = _get_user_id(session)
     if not user_id:
-        return _fav_btn(slug, False)
-    try:
-        existing = db_select("favourites", {"user_id": user_id, "dataset_slug": slug})
-        if existing:
-            db_delete("favourites", {"user_id": user_id, "dataset_slug": slug})
-            return _fav_btn(slug, False)
-        else:
-            db_insert("favourites", {"user_id": user_id, "dataset_slug": slug})
-            return _fav_btn(slug, True)
-    except Exception:
-        return _fav_btn(slug, False)
+        return Div()
+    datasets = db_select("datasets", {"slug": slug})
+    title = datasets[0]["title"] if datasets else slug
+    return FavouriteModal(slug=slug, dataset_title=title, user_id=user_id)
+
+@rt("/catalog/{slug}/fav-btn")
+def get_fav_btn(slug: str, session):
+    from app.pages.catalog import _fav_btn
+    user_id = _get_user_id(session)
+    items = db_select("favourite_items", {"user_id": user_id, "dataset_slug": slug}) if user_id else []
+    return _fav_btn(slug, is_fav=len(items) > 0)
+
+@rt("/favourite-lists", methods=["POST"])
+def post_create_list(name: str, slug: str, session):
+    from app.pages.catalog import _list_checkbox
+    user_id = _get_user_id(session)
+    if not user_id:
+        return Div()
+    lst = db_insert("favourite_lists", {"user_id": user_id, "name": name})
+    list_id = lst[0]["id"]
+    db_insert("favourite_items", {"list_id": list_id, "user_id": user_id, "dataset_slug": slug})
+    return _list_checkbox(list_id, slug, True, name)
+
+@rt("/favourite-lists/{list_id}/toggle", methods=["POST"])
+def post_toggle_list_item(list_id: str, slug: str, session):
+    from app.pages.catalog import _list_checkbox, _fav_btn
+    user_id = _get_user_id(session)
+    if not user_id:
+        return Div()
+    existing = db_select("favourite_items", {"list_id": list_id, "dataset_slug": slug, "user_id": user_id})
+    lists = db_select("favourite_lists", {"id": list_id, "user_id": user_id})
+    list_name = lists[0]["name"] if lists else ""
+    if existing:
+        db_delete("favourite_items", {"list_id": list_id, "dataset_slug": slug, "user_id": user_id})
+        in_list = False
+    else:
+        db_insert("favourite_items", {"list_id": list_id, "user_id": user_id, "dataset_slug": slug})
+        in_list = True
+    all_items = db_select("favourite_items", {"user_id": user_id, "dataset_slug": slug})
+    is_fav = len(all_items) > 0
+    return _list_checkbox(list_id, slug, in_list, list_name), _fav_btn(slug, is_fav, oob=True)
 
 @rt("/favourites")
 def get_favourites(session):
