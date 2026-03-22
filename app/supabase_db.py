@@ -21,15 +21,25 @@ def db_insert(table: str, data: dict):
     return r.json()
 
 
-def db_select(table: str, filters: dict = None, limit: int = 10000):
+def db_select(table: str, filters: dict = None, limit: int = 100000):
     url = f"{SUPABASE_URL}/rest/v1/{table}"
     params = {k: f"eq.{v}" for k, v in (filters or {}).items()}
     h = _headers()
-    h["Range-Unit"] = "items"
-    h["Range"] = f"0-{limit - 1}"
-    r = httpx.get(url, params=params, headers=h)
-    r.raise_for_status()
-    return r.json()
+    
+    all_results = []
+    chunk_size = 1000
+    for offset in range(0, limit, chunk_size):
+        end = min(offset + chunk_size - 1, limit - 1)
+        h["Range-Unit"] = "items"
+        h["Range"] = f"{offset}-{end}"
+        r = httpx.get(url, params=params, headers=h)
+        r.raise_for_status()
+        chunk = r.json()
+        all_results.extend(chunk)
+        if len(chunk) < chunk_size:
+            break
+            
+    return all_results
 
 
 def db_delete(table: str, filters: dict):
