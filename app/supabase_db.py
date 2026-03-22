@@ -21,10 +21,13 @@ def db_insert(table: str, data: dict):
     return r.json()
 
 
-def db_select(table: str, filters: dict = None):
+def db_select(table: str, filters: dict = None, limit: int = 10000):
     url = f"{SUPABASE_URL}/rest/v1/{table}"
     params = {k: f"eq.{v}" for k, v in (filters or {}).items()}
-    r = httpx.get(url, params=params, headers=_headers())
+    h = _headers()
+    h["Range-Unit"] = "items"
+    h["Range"] = f"0-{limit - 1}"
+    r = httpx.get(url, params=params, headers=h)
     r.raise_for_status()
     return r.json()
 
