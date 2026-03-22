@@ -470,18 +470,18 @@ def _int_checkbox(int_id, slug, in_list, int_name):
         cls="list-check-row",
     )
 
-def IntegrationModal(slug, dataset_title, user_id):
+def IntegrationModal(slug, dataset_title, project_id):
     try:
-        ints = db_select("user_integrations", {"user_id": user_id})
+        ints = db_select("integrations", {"project_id": project_id})
     except Exception:
         ints = []
 
     try:
-        items = db_select("dataset_integrations", {"user_id": user_id, "dataset_slug": slug})
+        items = db_select("dataset_integrations", {"dataset_slug": slug})
+        valid_int_ids = {i["id"] for i in ints}
+        in_int_ids = {item["integration_id"] for item in items if item["integration_id"] in valid_int_ids}
     except Exception:
-        items = []
-
-    in_int_ids = {item["integration_id"] for item in items}
+        in_int_ids = set()
 
     int_rows = [
         _int_checkbox(i["id"], slug, i["id"] in in_int_ids, i["name"])

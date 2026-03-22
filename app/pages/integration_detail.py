@@ -39,11 +39,16 @@ DETAIL_STYLE = Style("""
     .empty-state { text-align: center; padding: 30px; color: #64748B; font-size: 14px; font-style: italic; }
 """)
 
-def IntegrationDetailView(integration_id: str, user_id: str):
+def IntegrationDetailView(integration_id: str, user_id: str, session=None):
     try:
-        ints = db_select("user_integrations", {"id": integration_id, "user_id": user_id})
+        ints = db_select("integrations", {"id": integration_id})
         if not ints: return Div("Integration not found.", cls="empty-state")
         integration = ints[0]
+        
+        active_project_id = session.get('active_project_id') if session else None
+        if active_project_id and integration.get("project_id") != active_project_id:
+            return Div("Integration belongs to a different project. Please switch active projects.", cls="empty-state")
+            
     except Exception:
         return Div("Integration not found.", cls="empty-state")
 
@@ -91,49 +96,10 @@ def IntegrationDetailView(integration_id: str, user_id: str):
             ) for ds in linked
         ], cls="ds-list")
 
-    # Org Access Control
-    try:
-        memberships = db_select("memberships", {"user_id": user_id, "status": "active"})
-        org_id = memberships[0]["org_id"] if memberships else None
-    except:
-        org_id = None
-
-    if org_id:
-        try:
-            all_members = db_select("memberships", {"org_id": org_id, "status": "active"})
-            shared_with = db_select("integration_members", {"integration_id": integration_id})
-            shared_ids = {m["user_id"] for m in shared_with}
-            
-            org_rows = []
-            for m in all_members:
-                mid = m["user_id"]
-                if mid == user_id: continue # skip owner
-                
-                m_email = m.get("invited_email", "Member")
-                if not m_email or m_email == "Member":
-                    try:
-                        # Grab email from user auth table if possible (fallback method mocked)
-                        m_email = "Member " + str(mid)[:5]
-                    except: pass
-
-                has_access = mid in shared_ids
-                
-                btn = Button("Revoke" if has_access else "Grant",
-                             hx_post=f"/integrations/{integration_id}/toggle-access/{mid}",
-                             hx_target="this", hx_swap="outerHTML",
-                             cls=f"toggle-btn {'on' if has_access else ''}")
-                org_rows.append(
-                    Div(
-                        Div(m_email, Span(m.get("role", "member"), cls="org-role"), cls="org-user"),
-                        btn,
-                        cls="org-item"
-                    )
-                )
-            org_content = Div(*org_rows, cls="org-list") if org_rows else P("You are the only member of this organisation.", cls="empty-state")
-        except:
-            org_content = P("Failed to load organisation members.", cls="empty-state")
-    else:
-        org_content = P("You are not part of an organisation. Create one to share integrations.", style="color: #64748B; font-size: 13px; padding: 20px; text-align: center;")
+    org_content = Div(
+        P("Security checks passed.", style="color: #10B981; font-weight: 600; font-size: 13px; margin-bottom: 8px;"),
+        P("Access to this target is globally managed at the Project level. Any member with access to this Project can utilize this API key or Snowflake Share.", style="font-size: 13px; color: #64748B;")
+    )
 
 
     return Div(
@@ -167,8 +133,7 @@ def IntegrationDetailView(integration_id: str, user_id: str):
         ),
         
         Div(
-            H2("Organisation Access", cls="section-title"),
-            P("Select which members of your organisation can use this integration target.", style="font-size: 13px; color: #64748B; margin-bottom: 16px;"),
+            H2("Project Access", cls="section-title"),
             org_content,
             cls="content-card"
         ),

@@ -44,9 +44,17 @@ def _integration_row(row):
         id=f"int-{row['id']}"
     )
 
-def IntegrationsView(user_id: str):
+def IntegrationsView(user_id: str, session=None):
+    active_project_id = session.get('active_project_id') if session else None
+    if not active_project_id:
+        return Div(
+            INTEGRATIONS_STYLE,
+            Div(H1("Data Integrations", cls="int-title"), cls="int-header"),
+            Div("Please select or create an active Project from the Projects tab before managing integrations.", cls="empty-ints")
+        )
+
     try:
-        ints = db_select("user_integrations", {"user_id": user_id})
+        ints = db_select("integrations", {"project_id": active_project_id})
         ints.sort(key=lambda x: x.get("created_at", ""), reverse=True)
     except Exception:
         ints = []

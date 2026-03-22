@@ -490,23 +490,24 @@ def post_request_access(slug: str, access_type: str, snowflake_account: str = ""
 def get_integrations(session):
     from app.pages.integrations import IntegrationsView
     user_id = _get_user_id(session)
-    return page_layout("Integrations", "/integrations", session.get('user'), IntegrationsView(user_id=user_id))
+    return page_layout("Data Integrations", "/integrations", session.get('user'), IntegrationsView(user_id=user_id, session=session))
 
 @rt("/integrations/create", methods=["POST"])
 def post_create_integration(name: str, type: str, session):
     from app.pages.integrations import _integration_row
     user_id = _get_user_id(session)
-    if not user_id or not name.strip() or type not in ("api", "snowflake"): return ""
-    try:
-        created = db_insert("user_integrations", {
-            "user_id": user_id, 
-            "name": name.strip(),
-            "type": type
-        })
-        if created:
-            return _integration_row(created[0])
-    except Exception:
-        pass
+    project_id = session.get('active_project_id')
+    if user_id and project_id and name.strip() and type in ("api", "snowflake"):
+        try:
+            created = db_insert("integrations", {
+                "project_id": project_id, 
+                "name": name.strip(),
+                "type": type
+            })
+            if created:
+                return _integration_row(created[0])
+        except Exception:
+            pass
     return ""
 
 @rt("/integrations/{int_id}/delete", methods=["POST"])
@@ -514,8 +515,7 @@ def post_delete_integration(int_id: str, session):
     user_id = _get_user_id(session)
     if user_id:
         try:
-            # Cascading deletes will handle dataset_integrations rows automatically (if ON DELETE CASCADE is set)
-            db_delete("user_integrations", {"id": int_id, "user_id": user_id})
+            db_delete("integrations", {"id": int_id})
         except Exception:
             pass
     return ""
@@ -525,7 +525,7 @@ def get_integration_detail(int_id: str, session):
     from app.pages.integration_detail import IntegrationDetailView
     user_id = _get_user_id(session)
     if not user_id: return RedirectResponse("/login")
-    return page_layout("Integration Details", "/integrations", session.get('user'), IntegrationDetailView(integration_id=int_id, user_id=user_id))
+    return page_layout("Integration Details", "/integrations", session.get('user'), IntegrationDetailView(integration_id=int_id, user_id=user_id, session=session))
 
 @rt("/integrations/{int_id}/remove-dataset/{slug}", methods=["POST"])
 def post_int_remove_dataset(int_id: str, slug: str, session):
@@ -535,21 +535,26 @@ def post_int_remove_dataset(int_id: str, slug: str, session):
         except: pass
     return ""
 
-@rt("/integrations/{int_id}/toggle-access/{target_user_id}", methods=["POST"])
-def post_int_toggle_access(int_id: str, target_user_id: str, session):
+@rt("/integrations/{int_id}/toggle", methods=["POST"])
+def post_toggle_integration(int_id: str, slug: str, session):
     user_id = _get_user_id(session)
     if not user_id: return ""
     try:
-        from fasthtml.common import Button
-        existing = db_select("integration_members", {"integration_id": int_id, "user_id": target_user_id})
+        existing = db_select("dataset_integrations", {"integration_id": int_id, "dataset_slug": slug})
         if existing:
-            db_delete("integration_members", {"integration_id": int_id, "user_id": target_user_id})
-            return Button("Grant", hx_post=f"/integrations/{int_id}/toggle-access/{target_user_id}", hx_target="this", hx_swap="outerHTML", cls="toggle-btn")
+            db_delete("dataset_integrations", {"integration_id": int_id, "dataset_slug": slug})
+            in_list = False
         else:
-            db_insert("integration_members", {"integration_id": int_id, "user_id": target_user_id, "assigned_by": user_id})
-            return Button("Revoke", hx_post=f"/integrations/{int_id}/toggle-access/{target_user_id}", hx_target="this", hx_swap="outerHTML", cls="toggle-btn on")
+            db_insert("dataset_integrations", {"integration_id": int_id, "dataset_slug": slug})
+            in_list = True
+        
+        ints = db_select("integrations", {"id": int_id})
+        int_name = ints[0]["name"] if ints else "Integration"
+        
+        from app.pages.catalog import _int_checkbox
+        return _int_checkbox(int_id, slug, in_list, int_name)
     except Exception:
-        return Button("Error", cls="toggle-btn")
+        return ""
 
 # Dummy routes for completeness
 @rt("/queries")
@@ -722,9 +727,30 @@ Disallow: /reset-password
 """
     return PlainTextResponse(content)
 
+@rt("/projects/create", methods=["POST"])
+def post_create_project(name: str, org_id: str, session):
+    user_id = _get_user_id(session)
+    if not user_id: return "unauthorized"
+    try:
+        new_p = db_insert("projects", {"org_id": org_id, "name": name.strip()})
+        p_id = new_p[0]["id"]
+        db_insert("project_members", {"project_id": p_id, "user_id": user_id, "role": "admin"})
+        session['active_project_id'] = p_id
+        return "ok"
+    except Exception:
+        return "error"
+
+@rt("/projects/{p_id}/select", methods=["GET"])
+def get_select_project(p_id: str, session):
+    session['active_project_id'] = p_id
+    return RedirectResponse("/projects", status_code=303)
+
 @rt("/projects")
 def get_projects(session):
-    return page_layout("Projects", "/projects", session.get('user'), Div(H1("Projects (Coming Soon)", cls="fav-page-title"), P("Manage active data environments here.", style="color:#64748B; margin-top: 10px;"), style="padding: 40px; text-align: center;"))
+    from app.pages.projects import ProjectsDashboard
+    user_id = _get_user_id(session)
+    if not user_id: return RedirectResponse("/login", status_code=303)
+    return page_layout("Projects", "/projects", session.get('user'), ProjectsDashboard(user_id=user_id, session=session))
 
 @rt("/team")
 def get_team(session):
