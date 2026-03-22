@@ -280,18 +280,20 @@ def get_dashboard(session):
     return page_layout("Dashboard", "/dashboard", user_email, Dashboard(user_id=user_id, user_email=user_email))
 
 @rt("/catalog")
-def get_catalog(session, q: str = "", category: str = "", access: str = "", freq: str = ""):
+def get_catalog(session, q: str = "", category: str = "", access: str = "", freq: str = "", page: int = 1, per_page: int = 25):
     user_id = _get_user_id(session)
     return page_layout("London Database", "/catalog", session.get('user'),
                        DataCatalog(category=category, q=q, user_id=user_id,
-                                   access_filter=access, freq_filter=freq))
+                                   access_filter=access, freq_filter=freq,
+                                   page=page, per_page=per_page))
 
 @rt("/catalog/search")
-def get_catalog_search(session, q: str = "", category: str = "", access: str = "", freq: str = ""):
+def get_catalog_search(session, q: str = "", category: str = "", access: str = "", freq: str = "", page: int = 1, per_page: int = 25):
     from app.pages.catalog import SearchCatalogResults
     user_id = _get_user_id(session)
     return SearchCatalogResults(q=q, category=category, user_id=user_id,
-                                access_filter=access, freq_filter=freq)
+                                access_filter=access, freq_filter=freq,
+                                page=page, per_page=per_page)
 
 @rt("/catalog/ai-search", methods=["POST"])
 def post_ai_search(session, query: str = ""):

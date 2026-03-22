@@ -155,8 +155,26 @@ CATALOG_STYLE = Style("""
     .ds-list-box { background: #FFFFFF; border: 1px solid #E2E8F0;
         border-radius: 10px; overflow: hidden;
         box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-    .ds-count-bar { padding: 8px 16px; border-bottom: 1px solid #F1F5F9;
+    .ds-count-bar { display: flex; align-items: center; justify-content: space-between;
+        padding: 8px 16px; border-bottom: 1px solid #F1F5F9;
         font-size: 12px; color: #94A3B8; background: #FAFAFA; }
+    .per-page-wrap { display: flex; align-items: center; gap: 6px; }
+    .per-page-label { font-size: 11px; color: #94A3B8; }
+    .per-page-select { font-size: 12px; color: #475569; background: #FFFFFF;
+        border: 1px solid #E2E8F0; border-radius: 5px; padding: 2px 6px;
+        cursor: pointer; font-family: 'Inter', sans-serif; outline: none; }
+    .per-page-select:focus { border-color: #0284C7; }
+    .ds-pagination { display: flex; align-items: center; justify-content: center;
+        gap: 4px; padding: 12px 16px; border-top: 1px solid #F1F5F9; }
+    .page-btn { display: inline-flex; align-items: center; justify-content: center;
+        min-width: 32px; height: 32px; padding: 0 8px; border-radius: 6px;
+        font-size: 13px; font-weight: 500; text-decoration: none;
+        border: 1px solid #E2E8F0; color: #475569; background: #FFFFFF;
+        cursor: pointer; transition: all 0.12s; }
+    .page-btn:hover { border-color: #CBD5E1; background: #F8FAFC; color: #1E293B; }
+    .page-btn.active { background: #0284C7; border-color: #0284C7; color: #FFFFFF; font-weight: 600; }
+    .page-btn.disabled { color: #CBD5E1; cursor: default; pointer-events: none; border-color: #F1F5F9; }
+    .page-ellipsis { color: #94A3B8; font-size: 13px; padding: 0 4px; }
     .ds-list { display: flex; flex-direction: column; }
     .ds-row { display: flex; align-items: center; gap: 10px; padding: 11px 14px;
         border-bottom: 1px solid #F8FAFC; transition: background 0.1s; }
@@ -644,7 +662,22 @@ def _search_area(q, category, access_f, freq_f):
 
 # ── List body ─────────────────────────────────────────────────────────────────
 
-def _list_body(datasets, added, favs, heading, subtext):
+def _page_nums(page, total_pages):
+    if total_pages <= 7:
+        return list(range(1, total_pages + 1))
+    pages = {1, total_pages}
+    for p in range(max(1, page - 2), min(total_pages + 1, page + 3)):
+        pages.add(p)
+    result, prev = [], None
+    for p in sorted(pages):
+        if prev is not None and p - prev > 1:
+            result.append(None)
+        result.append(p)
+        prev = p
+    return result
+
+
+def _list_body(datasets, added, favs, heading, subtext, page=1, per_page=25, q="", category="", access_f="", freq_f=""):
     if not datasets:
         return Div(
             Div(H1(heading, style="font-size:18px;font-weight:700;color:#1E293B;letter-spacing:-0.3px;"),
@@ -652,14 +685,55 @@ def _list_body(datasets, added, favs, heading, subtext):
                 style="margin-bottom:14px;"),
             Div(P("No datasets match.", cls="empty-msg"), cls="ds-list-box"),
         )
+
+    total = len(datasets)
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    page = max(1, min(page, total_pages))
+    start = (page - 1) * per_page
+    page_datasets = datasets[start:start + per_page]
+
+    qs_base = f"q={q}&category={category}&access={access_f}&freq={freq_f}"
+
+    per_page_select = Select(
+        *[Option(str(n), value=str(n), selected=(n == per_page)) for n in [25, 50, 100, 200]],
+        cls="per-page-select",
+        onchange=f"htmx.ajax('GET', '/catalog/search?{qs_base}&page=1&per_page=' + this.value, "
+                 f"{{target:'#catalog-body', pushUrl:'/catalog?{qs_base}&page=1&per_page=' + this.value}})"
+    )
+
+    count_bar = Div(
+        Span(f"{total} dataset{'s' if total != 1 else ''}"),
+        Div(Span("View", cls="per-page-label"), per_page_select, cls="per-page-wrap"),
+        cls="ds-count-bar"
+    )
+
+    def page_link(label, page_n, is_active=False, is_disabled=False):
+        if is_disabled:
+            return Span(label, cls="page-btn disabled")
+        qs = f"{qs_base}&page={page_n}&per_page={per_page}"
+        return A(label,
+                 hx_get=f"/catalog/search?{qs}",
+                 hx_target="#catalog-body",
+                 hx_push_url=f"/catalog?{qs}",
+                 cls=f"page-btn {'active' if is_active else ''}")
+
+    page_items = [page_link("‹", page - 1, is_disabled=(page == 1))]
+    for p in _page_nums(page, total_pages):
+        if p is None:
+            page_items.append(Span("…", cls="page-ellipsis"))
+        else:
+            page_items.append(page_link(str(p), p, is_active=(p == page)))
+    page_items.append(page_link("›", page + 1, is_disabled=(page == total_pages)))
+
     return Div(
         Div(H1(heading, style="font-size:18px;font-weight:700;color:#1E293B;letter-spacing:-0.3px;"),
             P(subtext, style="font-size:13px;color:#94A3B8;margin-top:3px;"),
             style="margin-bottom:14px;"),
         Div(
-            Div(f"{len(datasets)} dataset{'s' if len(datasets) != 1 else ''}", cls="ds-count-bar"),
+            count_bar,
             Div(*[_list_row(d, is_added=d.get("slug") in added, is_fav=d.get("slug") in favs)
-                  for d in datasets], cls="ds-list"),
+                  for d in page_datasets], cls="ds-list"),
+            Div(*page_items, cls="ds-pagination") if total_pages > 1 else None,
             cls="ds-list-box"
         )
     )
@@ -667,7 +741,7 @@ def _list_body(datasets, added, favs, heading, subtext):
 
 # ── Public components ─────────────────────────────────────────────────────────
 
-def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter=""):
+def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="", page=1, per_page=25):
     try:
         all_datasets = db_select("datasets")
     except Exception:
@@ -686,14 +760,16 @@ def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="")
         _search_area(q, category, access_filter, freq_filter),
         Div(
             _sidebar(all_datasets, category),
-            Div(_list_body(datasets, added, favs, heading, subtext),
+            Div(_list_body(datasets, added, favs, heading, subtext,
+                           page=page, per_page=per_page,
+                           q=q, category=category, access_f=access_filter, freq_f=freq_filter),
                 id="catalog-body", cls="cat-main"),
             cls="cat-wrap"
         )
     )
 
 
-def SearchCatalogResults(q="", category="", user_id="", access_filter="", freq_filter=""):
+def SearchCatalogResults(q="", category="", user_id="", access_filter="", freq_filter="", page=1, per_page=25):
     try:
         all_datasets = db_select("datasets")
     except Exception:
@@ -704,7 +780,9 @@ def SearchCatalogResults(q="", category="", user_id="", access_filter="", freq_f
     subtext = (f"{len(datasets)} dataset{'s' if len(datasets) != 1 else ''} found"
                if (q or category or access_filter or freq_filter)
                else f"{len(datasets)} datasets — growing continuously")
-    return _list_body(datasets, added, favs, heading, subtext)
+    return _list_body(datasets, added, favs, heading, subtext,
+                      page=page, per_page=per_page,
+                      q=q, category=category, access_f=access_filter, freq_f=freq_filter)
 
 
 def FavouritesView(user_id=""):
