@@ -722,6 +722,22 @@ Disallow: /reset-password
 """
     return PlainTextResponse(content)
 
+@rt("/projects")
+def get_projects(session):
+    return page_layout("Projects", "/projects", session.get('user'), Div(H1("Projects (Coming Soon)", cls="fav-page-title"), P("Manage active data environments here.", style="color:#64748B; margin-top: 10px;"), style="padding: 40px; text-align: center;"))
+
+@rt("/team")
+def get_team(session):
+    return page_layout("Team", "/team", session.get('user'), Div(H1("Team Management (Coming Soon)", cls="fav-page-title"), P("Invite your organisation members here.", style="color:#64748B; margin-top: 10px;"), style="padding: 40px; text-align: center;"))
+
+@rt("/usage")
+def get_usage(session):
+    return page_layout("Usage", "/usage", session.get('user'), Div(H1("Usage Data (Coming Soon)", cls="fav-page-title"), P("Monitor query execution stats and limits.", style="color:#64748B; margin-top: 10px;"), style="padding: 40px; text-align: center;"))
+
+@rt("/billing")
+def get_billing(session):
+    return page_layout("Billing", "/billing", session.get('user'), Div(H1("Billing (Coming Soon)", cls="fav-page-title"), P("Manage your subscription plan.", style="color:#64748B; margin-top: 10px;"), style="padding: 40px; text-align: center;"))
+
 if __name__ == '__main__':
     # Ensure port is open, using 5002 since odl-web is likely 5001
     serve(port=5002)

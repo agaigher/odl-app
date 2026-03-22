@@ -150,14 +150,13 @@ def odl_sidebar(current_path="/"):
             cls="sidebar-section"
         ),
         Div(
-            Div("Access", cls="sidebar-title"),
-            nav_item("Integrations", "/integrations", "🔌"),
-            cls="sidebar-section"
-        ),
-        Div(
-            Div("Account", cls="sidebar-title"),
-            nav_item("Settings", "/settings", "⚙"),
-            nav_item("Documentation", "/docs", "📄"),
+            Div("Workspace", cls="sidebar-title"),
+            nav_item("Projects", "/projects", "📦"),
+            nav_item("Team", "/team", "👥"),
+            nav_item("Integrations", "/integrations", "⊞"),
+            nav_item("Usage", "/usage", "📈"),
+            nav_item("Billing", "/billing", "💲"),
+            nav_item("Organization Settings", "/settings", "⚙"),
             cls="sidebar-section"
         ),
         cls="app-sidebar"
