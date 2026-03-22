@@ -78,12 +78,35 @@ def odl_navbar(user=None):
 
 def odl_sidebar(current_path="/"):
     
-    def nav_item(label, path, icon="•"):
+    @dataclass
+    class IC:
+        grid = "M3 3h7v7H3z M14 3h7v7h-7z M14 14h7v7h-7z M3 14h7v7H3z"
+        book = "M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"
+        star = "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+        code = "m18 16 4-4-4-4 M6 8 2 12l4 4 M14.5 4l-5 16"
+        box = "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z M3.27 6.96L12 12.01l8.73-5.05 M12 22.08V12"
+        users = "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75"
+        link = "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+        chart = "M18 20V10 M12 20V4 M6 20v-6"
+        wallet = "M21 12V7H5a2 2 0 0 1 0-4h14v2 M3 5v14a2 2 0 0 0 2 2h16v-5H5"
+        cog = "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
+
+    def icon_svg(d_path):
+        return Svg(
+            Path(d=d_path),
+            xmlns="http://www.w3.org/2000/svg",
+            width="18", height="18", viewBox="0 0 24 24",
+            fill="none", stroke="currentColor",
+            stroke_width="2", stroke_linecap="round", stroke_linejoin="round",
+            style="display: block;"
+        )
+
+    def nav_item(label, path, icon_path):
         exact_match_only = ("/", "/dashboard", "/favourites")
         is_active = current_path == path or (path not in exact_match_only and current_path.startswith(path))
         active_cls = "active" if is_active else ""
         return A(
-            Span(icon, style="margin-right: 12px; font-size: 16px; opacity: 0.7;"),
+            Span(icon_svg(icon_path), style="margin-right: 12px; display: flex; align-items: center; opacity: 0.85;"),
             label,
             href=path,
             cls=f"sidebar-item {active_cls}"
@@ -112,19 +135,19 @@ def odl_sidebar(current_path="/"):
                 color: #94A3B8;
                 text-transform: uppercase;
                 letter-spacing: 1.2px;
-                margin-bottom: 6px;
+                margin-bottom: 8px;
                 padding: 0 8px;
             }
             .sidebar-item {
                 display: flex;
                 align-items: center;
-                padding: 8px 12px;
+                padding: 9px 12px;
                 color: #475569;
                 text-decoration: none;
                 font-size: 14px;
                 font-weight: 500;
                 border-radius: 6px;
-                margin-bottom: 2px;
+                margin-bottom: 4px;
                 transition: all 0.15s;
             }
             .sidebar-item:hover {
@@ -136,27 +159,30 @@ def odl_sidebar(current_path="/"):
                 color: #0284C7;
                 font-weight: 600;
             }
+            .sidebar-item.active span {
+                opacity: 1;
+            }
         """),
         Div(
             Div("Home", cls="sidebar-title"),
-            nav_item("Dashboard", "/dashboard", "⊞"),
+            nav_item("Dashboard", "/dashboard", IC.grid),
             cls="sidebar-section"
         ),
         Div(
             Div("Discovery", cls="sidebar-title"),
-            nav_item("Data Catalog", "/catalog", "⚲"),
-            nav_item("Favourites", "/favourites", "☆"),
-            nav_item("Saved Queries", "/queries", "★"),
+            nav_item("Data Catalog", "/catalog", IC.book),
+            nav_item("Favourites", "/favourites", IC.star),
+            nav_item("Saved Queries", "/queries", IC.code),
             cls="sidebar-section"
         ),
         Div(
             Div("Workspace", cls="sidebar-title"),
-            nav_item("Projects", "/projects", "📦"),
-            nav_item("Team", "/team", "👥"),
-            nav_item("Integrations", "/integrations", "⊞"),
-            nav_item("Usage", "/usage", "📈"),
-            nav_item("Billing", "/billing", "💲"),
-            nav_item("Organization Settings", "/settings", "⚙"),
+            nav_item("Projects", "/projects", IC.box),
+            nav_item("Team", "/team", IC.users),
+            nav_item("Integrations", "/integrations", IC.link),
+            nav_item("Usage", "/usage", IC.chart),
+            nav_item("Billing", "/billing", IC.wallet),
+            nav_item("Organization Settings", "/settings", IC.cog),
             cls="sidebar-section"
         ),
         cls="app-sidebar"
