@@ -20,6 +20,12 @@ class IC:
     chevron_up_down = "m7 15 5 5 5-5 M7 9l5-5 5 5"
     search = "M21 21l-4.35-4.35M19 11a8 8 0 11-16 0 8 8 0 0116 0z"
     check = "M20 6L9 17l-5-5"
+    info = "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 16v-4 M12 8h.01"
+    file_text = "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8"
+    external_link = "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6 M15 3h6v6 M10 14L21 3"
+    chevron_left = "m15 18-6-6 6-6"
+    chevron_right = "m9 18 6-6-6-6"
+    credit_card = "M2 10h20 M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
 
 def icon_svg(d_path, **kwargs):
     if 'style' not in kwargs: kwargs['style'] = "display: block;"
