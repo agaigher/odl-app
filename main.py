@@ -249,9 +249,11 @@ def post_create_org(org_name: str, slug: str, session):
             "created_by": user_id,
         })
         org_id = orgs[0]["id"]
-        # Add creator as admin member
+        # Add creator as owner member
         db_insert("memberships", {
-            "role": "admin",
+            "org_id": org_id,
+            "user_id": user_id,
+            "role": "owner",
             "status": "active",
         })
         log_audit(org_id, user_id, "Organization created", "organisation", org_id)
@@ -283,7 +285,7 @@ def get_dashboard(session):
         user_id = str(user.user.id)
     except Exception:
         user_id = ""
-    return page_layout("Dashboard", "/dashboard", user_email, Dashboard(user_id=user_id, user_email=user_email))
+    return page_layout("Dashboard", "/dashboard", user_email, Dashboard(user_id=user_id, user_email=user_email), session=session)
 
 @rt("/catalog")
 def get_catalog(session, q: str = "", category: str = "", access: str = "", freq: str = "", page: int = 1, per_page: int = 25):
@@ -291,7 +293,7 @@ def get_catalog(session, q: str = "", category: str = "", access: str = "", freq
     return page_layout("London Database", "/catalog", session.get('user'),
                        DataCatalog(category=category, q=q, user_id=user_id,
                                    access_filter=access, freq_filter=freq,
-                                   page=page, per_page=per_page))
+                                   page=page, per_page=per_page), session=session)
 
 @rt("/catalog/search")
 def get_catalog_search(session, q: str = "", category: str = "", access: str = "", freq: str = "", page: int = 1, per_page: int = 25):
@@ -454,11 +456,11 @@ def post_delete_fav_list(list_id: str, session):
 def get_favourites(session):
     from app.pages.catalog import FavouritesView
     user_id = _get_user_id(session)
-    return page_layout("Favourites", "/favourites", session.get('user'), FavouritesView(user_id=user_id))
+    return page_layout("Favourites", "/favourites", session.get('user'), FavouritesView(user_id=user_id), session=session)
 
 @rt("/catalog/{slug}")
 def get_dataset(slug: str, session):
-    return page_layout("Dataset Details", f"/catalog/{slug}", session.get('user'), DatasetDetail(slug, session))
+    return page_layout("Dataset Details", f"/catalog/{slug}", session.get('user'), DatasetDetail(slug, session), session=session)
 
 @rt("/catalog/{slug}/request-access", methods=["GET"])
 def get_request_access(slug: str, session, type: str = "api"):
@@ -574,11 +576,11 @@ def post_toggle_integration(int_id: str, slug: str, session):
 # Dummy routes for completeness
 @rt("/queries")
 def get_queries(session):
-    return page_layout("SQL Queries", "/queries", session.get('user'), Div(H1("Coming Soon", style="color: white;")))
+    return page_layout("SQL Queries", "/queries", session.get('user'), Div(H1("Coming Soon", style="color: white;")), session=session)
     
 @rt("/settings")
 def get_settings(session):
-    return page_layout("Settings", "/settings", session.get('user'), Div(H1("Account Settings", style="color: white;")))
+    return page_layout("Settings", "/settings", session.get('user'), Div(H1("Account Settings", style="color: white;")), session=session)
 
 @rt("/billing")
 def get_billing(session):
@@ -760,7 +762,7 @@ def get_settings(session):
     from app.pages.settings import OrganizationSettings
     user_id = _get_user_id(session)
     if not user_id: return RedirectResponse("/login", status_code=303)
-    return page_layout("Settings", "/settings", session.get('user'), OrganizationSettings(user_id=user_id, session=session))
+    return page_layout("Settings", "/settings", session.get('user'), OrganizationSettings(user_id=user_id, session=session), session=session)
 
 import time
 from starlette.datastructures import UploadFile
@@ -967,16 +969,21 @@ def post_org_switch(session, org_id: str):
         return Script(f"window.location.href = '/org/{slug}';")
     except Exception: return "Error", 500
 
-from app.pages.organisations import OrganisationsPage
 @rt("/organisations")
 def get_organisations(session):
     user_id = _get_user_id(session)
     user = _get_user(session)
+    if not user_id: return RedirectResponse("/login", status_code=303)
+    
     m = db_select("memberships", {"user_id": user_id, "status": "active"})
     org_ids = [row["org_id"] for row in m]
-    from app.supabase_db import supabase
-    res = supabase.table("organisations").select("*").in_("id", org_ids).execute()
-    orgs = res.data
+    
+    orgs = []
+    if org_ids:
+        from app.supabase_db import supabase
+        res = supabase.table("organisations").select("*").in_("id", org_ids).execute()
+        orgs = res.data
+        
     return page_layout("Organizations", "/organisations", user, OrganisationsPage(orgs), session=session)
 
 @rt("/org/{slug}")
@@ -1121,7 +1128,7 @@ async def post_invite_confirm(req, session):
 
 @rt("/docs")
 def get_docs(session):
-    return page_layout("Documentation", "/docs", session.get('user'), Div(H1("API Documentation", style="color: white;")))
+    return page_layout("Documentation", "/docs", session.get('user'), Div(H1("API Documentation", style="color: white;")), session=session)
 
 @rt("/robots.txt")
 def get_robots():
@@ -1173,15 +1180,15 @@ def get_projects(session):
     from app.pages.projects import ProjectsDashboard
     user_id = _get_user_id(session)
     if not user_id: return RedirectResponse("/login", status_code=303)
-    return page_layout("Projects", "/projects", session.get('user'), ProjectsDashboard(user_id=user_id, session=session))
+    return page_layout("Projects", "/projects", session.get('user'), ProjectsDashboard(user_id=user_id, session=session), session=session)
 
 @rt("/team")
 def get_team(session):
-    return page_layout("Team", "/team", session.get('user'), Div(H1("Team Management (Coming Soon)", cls="fav-page-title"), P("Invite your organisation members here.", style="color:#64748B; margin-top: 10px;"), style="padding: 40px; text-align: center;"))
+    return page_layout("Team", "/team", session.get('user'), Div(H1("Team Management (Coming Soon)", cls="fav-page-title"), P("Invite your organisation members here.", style="color:#64748B; margin-top: 10px;"), style="padding: 40px; text-align: center;"), session=session)
 
 @rt("/usage")
 def get_usage(session):
-    return page_layout("Usage", "/usage", session.get('user'), Div(H1("Usage Data (Coming Soon)", cls="fav-page-title"), P("Monitor query execution stats and limits.", style="color:#64748B; margin-top: 10px;"), style="padding: 40px; text-align: center;"))
+    return page_layout("Usage", "/usage", session.get('user'), Div(H1("Usage Data (Coming Soon)", cls="fav-page-title"), P("Monitor query execution stats and limits.", style="color:#64748B; margin-top: 10px;"), style="padding: 40px; text-align: center;"), session=session)
 
 @rt("/billing")
 def get_billing(session):
