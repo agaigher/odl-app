@@ -238,14 +238,19 @@ CATALOG_STYLE = Style("""
         transition: background 0.15s; }
     .fav-create-btn:hover { background: #0369A1; }
 
-    .fav-tabs { display: flex; gap: 0; border-bottom: 2px solid #F1F5F9; margin-bottom: 20px; }
-    .fav-tab { padding: 10px 18px; background: transparent; border: none;
-        border-bottom: 2px solid transparent; margin-bottom: -2px;
-        font-size: 14px; font-weight: 500; color: #64748B; cursor: pointer;
-        font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px;
-        transition: color 0.15s; white-space: nowrap; }
-    .fav-tab:hover { color: #374151; }
-    .fav-tab.active { color: #0284C7; border-bottom-color: #0284C7; font-weight: 600; }
+    .fav-create-btn:hover { background: #0369A1; }
+    
+    .fav-selector-wrap { padding: 0 24px; margin-bottom: 32px; max-width: 420px; }
+    .fav-list-select {
+        width: 100%; background: #FFFFFF; border: 1.5px solid #E2E8F0;
+        border-radius: 8px; padding: 10px 36px 10px 14px; font-family: 'Inter', sans-serif;
+        font-size: 14px; color: #1E293B; cursor: pointer; outline: none;
+        transition: border-color 0.2s; appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394A3B8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 12px center; background-size: 16px;
+    }
+    .fav-list-select:focus { border-color: #0284C7; box-shadow: 0 0 0 3px rgba(2,132,199,0.1); }
+
     .fav-tab-count { background: #F1F5F9; color: #64748B; font-size: 11px;
         font-weight: 700; padding: 1px 7px; border-radius: 999px; }
     .fav-tab.active .fav-tab-count { background: #E0F2FE; color: #0284C7; }
@@ -865,8 +870,8 @@ def FavouritesView(user_id=""):
             )
         )
 
-    # Build tabs and content panels
-    tabs, panels = [], []
+    # Build options and content panels
+    options, panels = [], []
     for i, lst in enumerate(lists):
         try:
             items = db_select("favourite_items", {"list_id": lst["id"]})
@@ -877,14 +882,7 @@ def FavouritesView(user_id=""):
         is_first = (i == 0)
         list_id = lst["id"]
 
-        tabs.append(Button(
-            lst["name"],
-            Span(str(len(datasets)), cls="fav-tab-count"),
-            type="button",
-            id=f"fav-tab-{list_id}",
-            cls=f"fav-tab {'active' if is_first else ''}",
-            onclick=f"selectFavList('{list_id}')"
-        ))
+        options.append(Option(f"{lst['name']} ({len(datasets)})", value=list_id, selected=is_first))
 
         if datasets:
             rows = [Div(
@@ -917,13 +915,15 @@ def FavouritesView(user_id=""):
     return Div(
         CATALOG_STYLE,
         header,
-        Div(*tabs, cls="fav-tabs"),
+        Div(
+            Label("Select Collection:", style="font-size:12px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:8px; display:block;"),
+            Select(*options, cls="fav-list-select", onchange="selectFavList(this.value)"),
+            cls="fav-selector-wrap"
+        ),
         *panels,
         Script("""
             function selectFavList(id) {
-                document.querySelectorAll('.fav-tab').forEach(t => t.classList.remove('active'));
                 document.querySelectorAll('.fav-content').forEach(c => c.classList.remove('active'));
-                document.getElementById('fav-tab-' + id).classList.add('active');
                 document.getElementById('fav-content-' + id).classList.add('active');
             }
         """)

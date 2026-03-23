@@ -902,6 +902,54 @@ def post_settings_sso(session, domain: str, metadata_url: str, is_active: bool =
     except Exception as e:
         return Div(f"Failed to save SSO config: {e}", cls="error-text", style="margin-top: 8px;")
 
+@rt("/billing/spend-cap", methods=["POST"])
+def post_billing_spend_cap(session, enabled: bool = False):
+    user_id = _get_user_id(session)
+    if not user_id: return "Unauthorized", 401
+    try:
+        from app.supabase_db import db_select, supabase
+        memberships = db_select("memberships", {"user_id": user_id, "status": "active"})
+        if not memberships: return "No active organization", 400
+        org_id = memberships[0]["org_id"]
+        supabase.table("organisations").update({"spend_cap_enabled": enabled}).eq("id", org_id).execute()
+        log_audit(org_id, user_id, f"{'Enabled' if enabled else 'Disabled'} billing spend cap", "billing", org_id)
+        return "" # HTMX toggle doesn't need response body usually, but we could return a small toast
+    except Exception: return "Error", 500
+
+@rt("/billing/emails", methods=["POST"])
+def post_billing_emails(session, billing_email: str, additional_emails: str = ""):
+    user_id = _get_user_id(session)
+    if not user_id: return "Unauthorized", 401
+    try:
+        from app.supabase_db import db_select, supabase
+        memberships = db_select("memberships", {"user_id": user_id, "status": "active"})
+        if not memberships: return "No active organization", 400
+        org_id = memberships[0]["org_id"]
+        supabase.table("organisations").update({
+            "billing_email": billing_email,
+            "additional_billing_emails": additional_emails
+        }).eq("id", org_id).execute()
+        log_audit(org_id, user_id, "Updated billing email recipients", "billing", org_id)
+        return Div("Billing emails saved.", cls="success-text", style="margin-top: 8px;")
+    except Exception: return "Error", 500
+
+@rt("/billing/address", methods=["POST"])
+def post_billing_address(session, address: str, tax_id: str = ""):
+    user_id = _get_user_id(session)
+    if not user_id: return "Unauthorized", 401
+    try:
+        from app.supabase_db import db_select, supabase
+        memberships = db_select("memberships", {"user_id": user_id, "status": "active"})
+        if not memberships: return "No active organization", 400
+        org_id = memberships[0]["org_id"]
+        supabase.table("organisations").update({
+            "billing_address": address,
+            "tax_id": tax_id
+        }).eq("id", org_id).execute()
+        log_audit(org_id, user_id, "Updated billing address and Tax ID", "billing", org_id)
+        return Div("Billing address saved.", cls="success-text", style="margin-top: 8px;")
+    except Exception: return "Error", 500
+
 @rt("/org/{slug}")
 def get_org(slug: str, session):
     from app.pages.org_dashboard import OrgDashboard
