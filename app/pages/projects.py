@@ -148,7 +148,7 @@ def _project_card(p, is_active):
         Div(name[0].upper(), cls="proj-logo-large"),
         Div(name, cls="proj-name"),
         Div(*meta_bits, cls="proj-meta"),
-        Div(Span("Select project", cls="proj-open-btn"), cls="proj-action-bar"),
+        Div(Span("Open project overview", cls="proj-open-btn"), cls="proj-action-bar"),
         href=f"/projects/{p['id']}/select",
         cls="proj-card",
     )

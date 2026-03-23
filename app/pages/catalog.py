@@ -54,7 +54,7 @@ CATALOG_STYLE = Style("""
     .kw-bar { flex: 1; display: flex; align-items: center; gap: 0;
         background: rgba(255,255,255,0.04);
         border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
-        padding: 6px 6px 6px 14px;
+        padding: 10px 14px;
         box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset; transition: all 0.2s; }
     .kw-bar:focus-within { border-color: rgba(56,189,248,0.35);
         box-shadow: 0 0 0 1px rgba(2,132,199,0.12); }
@@ -62,10 +62,11 @@ CATALOG_STYLE = Style("""
     .kw-input { flex: 1; border: none; outline: none; background: transparent;
         font-family: 'Inter', sans-serif; font-size: 14px; color: #F1F5F9; min-width: 0; }
     .kw-input::placeholder { color: #64748B; }
-    .ai-pill-btn { display: flex; align-items: center; gap: 5px; flex-shrink: 0;
+    .ai-pill-btn { display: flex; align-items: center; gap: 6px; flex-shrink: 0;
         background: linear-gradient(135deg, rgba(99,102,241,0.88) 0%, rgba(139,92,246,0.85) 55%, rgba(236,72,153,0.78) 100%);
-        color: #fff; border: none; border-radius: 8px; padding: 7px 13px;
-        font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif;
+        color: #fff; border: none; border-radius: 10px; padding: 10px 18px;
+        font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif;
+        height: 44px;
         white-space: nowrap; letter-spacing: 0.3px; transition: opacity 0.15s; }
     .ai-pill-btn:hover { opacity: 0.9; }
 
@@ -80,15 +81,11 @@ CATALOG_STYLE = Style("""
         width: 6px; height: 6px; border-radius: 50%; background: #38bdf8; }
     .filter-btn.has-filters .filter-dot { display: block; }
 
-    .filter-panel { display: none; margin-top: 8px; padding: 14px 16px;
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-        animation: panelSlide 0.18s ease; }
-    .filter-panel.on { display: block; }
-    @keyframes panelSlide {
-        from { opacity: 0; transform: translateY(-6px); }
-        to   { opacity: 1; transform: translateY(0); } }
+    .filter-panel { display: block; margin-top: 16px; padding: 14px 16px;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.06); border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
     .filter-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
     .filter-row:last-child { margin-bottom: 0; }
     .filter-label { font-size: 11px; font-weight: 700; color: #64748B;
@@ -593,9 +590,10 @@ def _search_area(q, category, access_f, freq_f):
         Input(type="hidden", name="category", value=category),
         Input(type="hidden", name="access",   value=access_f),
         Input(type="hidden", name="freq",     value=freq_f),
-        Button(NotStr("✦ AI Search"), type="button", cls="ai-pill-btn", onclick="activateAI()"),
         id="kw-bar", cls="kw-bar"
     )
+
+    ai_btn = Button(NotStr("✦ AI Search"), type="button", cls="ai-pill-btn", onclick="activateAI()")
 
     ai_bar = Form(
         Div(
@@ -636,7 +634,7 @@ def _search_area(q, category, access_f, freq_f):
             cls="filter-row"
         ),
         id="filter-panel",
-        cls=f"filter-panel {'on' if has_filters else ''}"
+        cls="filter-panel"
     )
 
     thinking_bar = Div(
@@ -651,21 +649,15 @@ def _search_area(q, category, access_f, freq_f):
         let _thinkIdx = 0, _thinkTimer = null;
 
         function activateAI() {
-            document.getElementById('kw-bar').style.display = 'none';
+            document.getElementById('kw-bar-wrap').style.display = 'none';
             document.getElementById('ai-bar').classList.add('active');
             document.getElementById('ai-query-input').focus();
         }
         function deactivateAI() {
-            document.getElementById('kw-bar').style.display = '';
+            document.getElementById('kw-bar-wrap').style.display = '';
             document.getElementById('ai-bar').classList.remove('active');
             document.getElementById('thinking-bar').classList.remove('active');
             clearInterval(_thinkTimer);
-        }
-        function toggleFilters() {
-            const panel = document.getElementById('filter-panel');
-            const btn   = document.getElementById('filter-btn');
-            const open  = panel.classList.toggle('on');
-            btn.classList.toggle('on', open);
         }
         document.body.addEventListener('htmx:beforeRequest', function(e) {
             if (e.target.id === 'ai-bar') {
@@ -687,12 +679,8 @@ def _search_area(q, category, access_f, freq_f):
 
     return Div(
         Div(
-            Div(kw_bar, ai_bar, cls="search-row" , style="flex:1;"),
-            Button(filter_svg, Div(cls="filter-dot"),
-                   type="button", id="filter-btn",
-                   cls=filter_btn_cls,
-                   onclick="toggleFilters()",
-                   title="Filters"),
+            Div(kw_bar, ai_btn, cls="search-row", id="kw-bar-wrap"),
+            ai_bar,
             cls="search-row"
         ),
         filter_panel,

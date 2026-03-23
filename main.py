@@ -325,7 +325,7 @@ def get_dashboard(session):
         user_id = str(user.user.id)
     except Exception:
         user_id = ""
-    return page_layout("Dashboard", "/dashboard", user_email, Dashboard(user_id=user_id, user_email=user_email), session=session)
+    return page_layout("Project Overview", "/dashboard", user_email, Dashboard(user_id=user_id, user_email=user_email), session=session)
 
 @rt("/catalog")
 def get_catalog(session, q: str = "", category: str = "", access: str = "", freq: str = "", page: int = 1, per_page: int = 25):
@@ -1276,8 +1276,10 @@ def post_create_project(name: str, org_id: str, session):
 
 @rt("/projects/{p_id}/select", methods=["GET"])
 def get_select_project(p_id: str, session):
-    session['active_project_id'] = p_id
-    return RedirectResponse("/projects", status_code=303)
+    """Set active project and go to Project Overview (dashboard)."""
+    session["active_project_id"] = p_id
+    session["force_header_refresh"] = True
+    return RedirectResponse("/dashboard", status_code=303)
 
 @rt("/projects")
 def get_projects(session):

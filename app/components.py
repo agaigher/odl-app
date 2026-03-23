@@ -381,7 +381,7 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None):
                 style="display: flex; align-items: center; padding: 0 12px; margin-bottom: 20px;"
             ),
             Div("Home", cls="sidebar-title"),
-            nav_item("Dashboard", "/dashboard", IC.grid),
+            nav_item("Project Overview", "/dashboard", IC.grid),
             cls="sidebar-section"
         ),
         Div(
