@@ -328,9 +328,15 @@ def page_layout(page_title, current_path, user, *content, session=None):
     
     if user:
         try:
-            from app.supabase_db import db_select
-            # Fetch all memberships to get ALL organisations for the switcher
-            memberships = db_select("memberships", {"user_id": user["id"], "status": "active"})
+            from app.supabase_db import db_select, get_user_id_from_session
+            # Priority: dict with id > session access token
+            u_id = user.get('id') if isinstance(user, dict) else None
+            if not u_id and session:
+                u_id = get_user_id_from_session(session)
+            
+            if u_id:
+                # Fetch all memberships to get ALL organisations for the switcher
+                memberships = db_select("memberships", {"user_id": u_id, "status": "active"})
             if memberships:
                 org_ids = [m["org_id"] for m in memberships]
                 # Fetch details for all orgs

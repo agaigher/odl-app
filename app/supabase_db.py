@@ -144,3 +144,20 @@ def log_audit(org_id: str, actor_id: str, action: str, resource_type: str = None
         })
     except Exception as e:
         print(f"Audit Log Error: {e}")
+
+def get_user_id_from_session(session):
+    """Retrieves user ID from Supabase auth using the access_token in session."""
+    if not session or not session.get('access_token'):
+        return None
+    try:
+        url = f"{SUPABASE_URL}/auth/v1/user"
+        headers = {
+            "apikey": SERVICE_KEY,
+            "Authorization": f"Bearer {session.get('access_token')}"
+        }
+        r = httpx.get(url, headers=headers)
+        r.raise_for_status()
+        return r.json().get("id")
+    except Exception as e:
+        print(f"Error fetching user ID: {e}")
+        return None

@@ -17,7 +17,7 @@ from app.pages.forgot_password import ForgotPasswordPage, ResetPasswordPage
 from app.pages.create_org import CreateOrgPage
 from app.pages.invite import InvitePage
 from app.pages.organisations import OrganisationsPage
-from app.supabase_db import db_insert, db_select, db_patch, db_delete, auth_invite, log_audit
+from app.supabase_db import db_insert, db_select, db_patch, db_delete, auth_invite, log_audit, get_user_id_from_session
 from app.email import send_org_invite
 
 
@@ -265,12 +265,7 @@ def post_create_org(org_name: str, slug: str, session):
         return Div(f"Error: {err}", cls="error-text")
 
 def _get_user_id(session):
-    try:
-        if not session.get('access_token'): return ""
-        user = supabase.auth.get_user(session.get('access_token'))
-        return str(user.user.id)
-    except Exception:
-        return ""
+    return get_user_id_from_session(session)
 
 
 @rt("/")
