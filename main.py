@@ -573,7 +573,7 @@ def post_toggle_integration(int_id: str, slug: str, session):
 # Dummy routes for completeness
 @rt("/queries")
 def get_queries(session):
-    return page_layout("Saved Queries", "/queries", session.get('user'), Div(H1("Coming Soon", style="color: white;")))
+    return page_layout("SQL Queries", "/queries", session.get('user'), Div(H1("Coming Soon", style="color: white;")))
     
 @rt("/settings")
 def get_settings(session):

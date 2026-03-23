@@ -177,7 +177,7 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None):
             Div("Discovery", cls="sidebar-title"),
             nav_item("Data Catalog", "/catalog", IC.book),
             nav_item("Favourites", "/favourites", IC.star),
-            nav_item("Saved Queries", "/queries", IC.code),
+            nav_item("SQL Queries", "/queries", IC.code),
             cls="sidebar-section"
         ),
         Div(
