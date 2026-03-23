@@ -42,13 +42,13 @@ def send_org_invite(*, invited_email: str, org_name: str, role: str, invite_link
     html = f"""
     <div style='font-family:Inter,sans-serif;background:#0B1120;padding:40px 0;'>
       <div style='max-width:480px;margin:0 auto;background:#0F1929;border:1px solid rgba(148,163,184,0.12);border-radius:12px;padding:40px;'>
-        <p style='font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#29b5e8;margin:0 0 20px;'>OpenData.London</p>
+        <p style='font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#0284C7;margin:0 0 20px;'>OpenData.London</p>
         <h1 style='font-size:22px;font-weight:700;color:#F8FAFC;margin:0 0 10px;letter-spacing:-0.3px;'>You've been invited</h1>
         <p style='color:#94A3B8;font-size:14px;line-height:1.6;margin:0 0 6px;'>
           You've been invited to join <strong style='color:#F8FAFC;'>{org_name}</strong> on OpenData.London as a <strong style='color:#F8FAFC;'>{role_label}</strong>.
         </p>
         {invited_by_line}
-        <a href='{invite_link}' style='display:inline-block;background:#29b5e8;color:#020617;font-weight:700;font-size:14px;padding:12px 24px;border-radius:7px;text-decoration:none;margin:8px 0 24px;'>
+        <a href='{invite_link}' style='display:inline-block;background:#0284C7;color:#020617;font-weight:700;font-size:14px;padding:12px 24px;border-radius:7px;text-decoration:none;margin:8px 0 24px;'>
           Accept invitation
         </a>
         <p style='color:#475569;font-size:12px;line-height:1.6;margin:0;'>
@@ -56,7 +56,7 @@ def send_org_invite(*, invited_email: str, org_name: str, role: str, invite_link
         </p>
         <hr style='border:none;border-top:1px solid rgba(148,163,184,0.08);margin:28px 0 20px;'>
         <p style='color:#334155;font-size:12px;margin:0;'>
-          OpenData.London &nbsp;·&nbsp; <a href='https://app.opendata.london' style='color:#29b5e8;text-decoration:none;'>app.opendata.london</a>
+          OpenData.London &nbsp;·&nbsp; <a href='https://app.opendata.london' style='color:#0284C7;text-decoration:none;'>app.opendata.london</a>
         </p>
       </div>
     </div>

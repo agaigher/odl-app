@@ -45,7 +45,7 @@ def ProjectsDashboard(user_id="", session=None):
             ),
             Div(
                 A("Open Project Dashboard →", href=f"/projects/{p['id']}/select", 
-                  style="color:#29b5e8; font-size:13px; font-weight:600; text-decoration: none;"),
+                  style="color:#0284C7; font-size:13px; font-weight:600; text-decoration: none;"),
                 style="margin-top: auto;"
             ),
             cls="int-card",
@@ -57,7 +57,7 @@ def ProjectsDashboard(user_id="", session=None):
               style="background: #0F172A; border: 1px solid rgba(148,163,184,0.2); color: #F8FAFC; padding: 10px 14px; border-radius: 8px; font-size: 14px; flex: 1;"),
         Input(type="hidden", name="org_id", value=active_org_id),
         Button("+ Create Project", type="submit", 
-               style="background: #29b5e8; color: #0F172A; font-weight: 700; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;"),
+               style="background: #0284C7; color: #0F172A; font-weight: 700; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;"),
         hx_post="/projects/create",
         hx_on__after_request="if(event.detail.successful) window.location.reload()",
         style="display:flex; gap:12px; margin-top:16px; max-width: 600px;"

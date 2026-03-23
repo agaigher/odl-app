@@ -2,18 +2,29 @@ from fasthtml.common import *
 from app.components import odl_navbar, odl_sidebar
 
 def get_app_style():
-    # Base application styling
+    # Base application styling — shared OpenData.London palette (aligned with odl-web marketing site)
     return Style("""
         :root {
+            /* Canvas (slate) */
             --bg-page: #0F172A;
+            --bg-elevated: #111827;
             --bg-surface: #1E293B;
             --bg-card: #1E293B;
+            --bg-muted: #0F1929;
+            /* Text */
             --text-main: #F8FAFC;
             --text-muted: #94A3B8;
             --text-faint: #475569;
+            /* Light surfaces (cards, modals, catalog on dark shell) */
+            --surface-light: #FFFFFF;
+            --text-on-light: #1E293B;
+            --border-light: #E2E8F0;
+            /* Brand */
             --accent: #0284C7;
+            --accent-hover: #0369A1;
             --accent-light: rgba(2, 132, 199, 0.15);
-            --border: rgba(255, 255, 255, 0.05);
+            --brand-green: #10B981;
+            --border: rgba(255, 255, 255, 0.06);
             --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
         }
 
@@ -80,10 +91,10 @@ def get_app_style():
         }
 
         button.odl-btn-primary:hover {
-            background: #0369A1;
+            background: var(--accent-hover);
         }
 
-        .success-text { color: #16A34A; font-size: 14px; }
-        .error-text   { color: #DC2626; font-size: 14px; }
+        .success-text { color: var(--brand-green); font-size: 14px; }
+        .error-text   { color: #EF4444; font-size: 14px; }
     """)
     

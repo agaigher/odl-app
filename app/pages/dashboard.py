@@ -5,7 +5,8 @@ from datetime import datetime
 DASHBOARD_STYLE = Style("""
     .dash-wrap { max-width: 1100px; }
     .dash-greeting { margin-bottom: 28px; }
-    .dash-greeting h1 { font-size: 22px; font-weight: 700; color: #1E293B; letter-spacing: -0.3px; }
+    /* Headings sit on dark main canvas — use light text; cards below stay light-surface */
+    .dash-greeting h1 { font-size: 22px; font-weight: 700; color: #F8FAFC; letter-spacing: -0.3px; }
     .dash-greeting p { font-size: 14px; color: #94A3B8; margin-top: 4px; }
 
     .dash-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 36px; }
@@ -19,7 +20,7 @@ DASHBOARD_STYLE = Style("""
 
     .dash-section { margin-bottom: 36px; }
     .dash-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-    .dash-section-title { font-size: 15px; font-weight: 600; color: #1E293B; }
+    .dash-section-title { font-size: 15px; font-weight: 600; color: #E2E8F0; }
     .dash-section-link { font-size: 13px; color: #0284C7; text-decoration: none; }
     .dash-section-link:hover { text-decoration: underline; }
 

@@ -133,7 +133,7 @@ def SettingsShares():
             *[Div(
                 Div(
                     Div(
-                        Span("❄", style="color: #29b5e8; font-size: 20px; margin-right: 12px;"),
+                        Span("❄", style="color: #0284C7; font-size: 20px; margin-right: 12px;"),
                         Span("Account Locator: ", style="color: #64748B; font-size: 13px;"),
                         Span(share["account"], style="font-family: 'Roboto Mono', monospace; color: #F8FAFC; font-weight: 500; font-size: 16px;"),
                         style="display: flex; align-items: center;"

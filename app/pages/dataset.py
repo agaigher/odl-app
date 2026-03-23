@@ -63,7 +63,7 @@ DETAIL_STYLE = Style("""
         font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; text-decoration: none;
         cursor: pointer; border: none; transition: opacity 0.2s; margin-bottom: 10px;
     }
-    .btn-primary { background: #29b5e8; color: #FFFFFF; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+    .btn-primary { background: #0284C7; color: #FFFFFF; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
     .btn-primary:hover { opacity: 0.9; }
     .btn-secondary { background: #F8FAFC; color: #0369a1;
                      border: 1px solid #E2E8F0; }
@@ -89,8 +89,11 @@ def DatasetDetail(slug: str, session=None):
     if not dataset:
         return Div(
             A("← Catalog", href="/", cls="back-link"),
-            H1("Dataset not found", style="color: #0F1929; margin-bottom: 10px;"),
-            P("This dataset doesn't exist or you don't have access.", style="color: #475569;"),
+            Div(
+                H1("Dataset not found", style="color: #1E293B; margin-bottom: 10px;"),
+                P("This dataset doesn't exist or you don't have access.", style="color: #64748B;"),
+                style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 40px 32px; max-width: 520px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);",
+            ),
         )
 
     schema_fields = dataset.get("schema_fields") or []
