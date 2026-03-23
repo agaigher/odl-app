@@ -746,6 +746,51 @@ async def api_v1_query(req):
         from starlette.responses import Response
         return Response('{"error": "Internal Server Error"}', status_code=500, media_type="application/json")
 
+@rt("/settings")
+def get_settings(session):
+    from app.pages.settings import OrganizationSettings
+    user_id = _get_user_id(session)
+    if not user_id: return RedirectResponse("/login", status_code=303)
+    return page_layout("Settings", "/settings", session.get('user'), OrganizationSettings(user_id=user_id, session=session))
+
+@rt("/settings/rename", methods=["POST"])
+def post_settings_rename(session, org_name: str):
+    user_id = _get_user_id(session)
+    if not user_id: return "Unauthorized", 401
+    
+    try:
+        memberships = db_select("memberships", {"user_id": user_id, "status": "active"})
+        if not memberships: return "No active organization", 400
+        org_id = memberships[0]["org_id"]
+        
+        # Perform DB Patch via Supabase client directly
+        from app.supabase_db import supabase
+        res = supabase.table('organisations').update({"name": org_name}).eq('id', org_id).execute()
+        
+        return Div("Organization name updated successfully.", cls="success-text", style="margin-top: 8px;")
+    except Exception as e:
+        return Div(f"Failed to update name: {e}", cls="error-text", style="margin-top: 8px;")
+
+@rt("/settings/delete", methods=["POST"])
+def post_settings_delete(session):
+    user_id = _get_user_id(session)
+    if not user_id: return "Unauthorized", 401
+    
+    try:
+        memberships = db_select("memberships", {"user_id": user_id, "status": "active"})
+        if not memberships: return "No active organization", 400
+        org_id = memberships[0]["org_id"]
+        
+        from app.supabase_db import supabase
+        # Supabase foreign keys should cascade deletes for projects, keys, etc. 
+        # But we must manually delete the organisation row explicitly.
+        res = supabase.table('organisations').delete().eq('id', org_id).execute()
+        
+        # Because cascading deleted the membership too, we bounce them to /projects landing
+        return RedirectResponse("/projects", status_code=303)
+    except Exception as e:
+        return f"Failed to delete organization: {e}", 500
+
 @rt("/org/{slug}")
 def get_org(slug: str, session):
     from app.pages.org_dashboard import OrgDashboard
