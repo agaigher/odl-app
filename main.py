@@ -16,7 +16,7 @@ from app.pages.auth import AuthPage
 from app.pages.forgot_password import ForgotPasswordPage, ResetPasswordPage
 from app.pages.create_org import CreateOrgPage
 from app.pages.invite import InvitePage
-from app.supabase_db import db_insert, db_select, db_patch, db_delete, auth_invite
+from app.supabase_db import db_insert, db_select, db_patch, db_delete, auth_invite, log_audit
 from app.email import send_org_invite
 
 
@@ -250,11 +250,10 @@ def post_create_org(org_name: str, slug: str, session):
         org_id = orgs[0]["id"]
         # Add creator as admin member
         db_insert("memberships", {
-            "org_id": org_id,
-            "user_id": user_id,
             "role": "admin",
             "status": "active",
         })
+        log_audit(org_id, user_id, "Organization created", "organisation", org_id)
         return Script(f"window.location.href = '/org/{slug}';")
     except Exception as e:
         err = str(e)
@@ -518,6 +517,7 @@ def post_create_integration(name: str, type: str, session):
                 "type": type
             })
             if created:
+                log_audit(session.get('active_org_id'), user_id, f"Created integration '{name}'", "integration", created[0]["id"])
                 return _integration_row(created[0])
         except Exception:
             pass
@@ -529,6 +529,7 @@ def post_delete_integration(int_id: str, session):
     if user_id:
         try:
             db_delete("integrations", {"id": int_id})
+            log_audit(session.get('active_org_id'), user_id, f"Deleted integration {int_id}", "integration", int_id)
         except Exception:
             pass
     return ""
@@ -598,6 +599,12 @@ def post_billing_checkout(req, session, package: str):
     try:
         memberships = db_select("memberships", {"user_id": user_id, "status": "active"})
         org_id = memberships[0]["org_id"] if memberships else None
+        
+        billing_email = None
+        if org_id:
+            org_rows = db_select("organisations", {"id": org_id})
+            if org_rows:
+                billing_email = org_rows[0].get("billing_email")
     except:
         org_id = None
         
@@ -624,6 +631,7 @@ def post_billing_checkout(req, session, package: str):
                 'org_id': org_id,
                 'credits_to_add': 10000
             },
+            customer_email=billing_email if billing_email else None,
             success_url=f"{domain}/billing?success=true",
             cancel_url=f"{domain}/billing?canceled=true",
         )
@@ -753,6 +761,36 @@ def get_settings(session):
     if not user_id: return RedirectResponse("/login", status_code=303)
     return page_layout("Settings", "/settings", session.get('user'), OrganizationSettings(user_id=user_id, session=session))
 
+import time
+from starlette.datastructures import UploadFile
+
+@rt("/settings/avatar", methods=["POST"])
+async def post_settings_avatar(session, avatar_file: UploadFile):
+    user_id = _get_user_id(session)
+    if not user_id: return "Unauthorized", 401
+    
+    try:
+        memberships = db_select("memberships", {"user_id": user_id, "status": "active"})
+        if not memberships: return "No active organization", 400
+        org_id = memberships[0]["org_id"]
+        
+        file_bytes = await avatar_file.read()
+        if not file_bytes:
+            return RedirectResponse("/settings", status_code=303)
+            
+        filename = f"{org_id}/avatar_{int(time.time())}.png"
+        
+        from app.supabase_db import storage_upload, supabase
+        public_url = storage_upload("org-avatars", filename, file_bytes, avatar_file.content_type)
+        
+        supabase.table("organisations").update({"avatar_url": public_url}).eq("id", org_id).execute()
+        log_audit(org_id, user_id, "Updated organization avatar", "organisation", org_id)
+        
+        # FastHTML standard redirect logic handles standard form posts gracefully
+        return RedirectResponse("/settings", status_code=303)
+    except Exception as e:
+        return Div(f"Failed to upload: {str(e)}", cls="error-text", style="margin-top: 8px;")
+
 @rt("/settings/rename", methods=["POST"])
 def post_settings_rename(session, org_name: str):
     user_id = _get_user_id(session)
@@ -766,10 +804,40 @@ def post_settings_rename(session, org_name: str):
         # Perform DB Patch via Supabase client directly
         from app.supabase_db import supabase
         res = supabase.table('organisations').update({"name": org_name}).eq('id', org_id).execute()
+        log_audit(org_id, user_id, f"Renamed organization to '{org_name}'", "organisation", org_id)
         
         return Div("Organization name updated successfully.", cls="success-text", style="margin-top: 8px;")
     except Exception as e:
         return Div(f"Failed to update name: {e}", cls="error-text", style="margin-top: 8px;")
+
+@rt("/settings/transfer", methods=["POST"])
+def post_settings_transfer(session, target_user_id: str):
+    user_id = _get_user_id(session)
+    if not user_id: return "Unauthorized", 401
+    
+    try:
+        from app.supabase_db import db_select, supabase
+        memberships = db_select("memberships", {"user_id": user_id, "status": "active"})
+        if not memberships: return "No active organization", 400
+        
+        org_id = memberships[0]["org_id"]
+        role = memberships[0].get("role", "member")
+        
+        if role != "owner":
+            return Div("Only the organization owner can execute transfers.", cls="error-text", style="margin-top: 8px;")
+            
+        target = db_select("memberships", {"user_id": target_user_id, "org_id": org_id, "status": "active"})
+        if not target:
+            return Div("Target user is not an active team member.", cls="error-text", style="margin-top: 8px;")
+            
+        # Execute Role Swap 
+        supabase.table("memberships").update({"role": "admin"}).eq("user_id", user_id).eq("org_id", org_id).execute()
+        supabase.table("memberships").update({"role": "owner"}).eq("user_id", target_user_id).eq("org_id", org_id).execute()
+        log_audit(org_id, user_id, f"Transferred ownership to user {target_user_id}", "organisation", org_id)
+        
+        return RedirectResponse("/settings", status_code=303)
+    except Exception as e:
+        return Div(f"Transfer failed: {str(e)}", cls="error-text", style="margin-top: 8px;")
 
 @rt("/settings/delete", methods=["POST"])
 def post_settings_delete(session):
@@ -790,6 +858,49 @@ def post_settings_delete(session):
         return RedirectResponse("/projects", status_code=303)
     except Exception as e:
         return f"Failed to delete organization: {e}", 500
+
+@rt("/settings/billing", methods=["POST"])
+def post_settings_billing(session, billing_email: str):
+    user_id = _get_user_id(session)
+    if not user_id: return "Unauthorized", 401
+    
+    try:
+        from app.supabase_db import db_select, supabase
+        memberships = db_select("memberships", {"user_id": user_id, "status": "active"})
+        if not memberships: return "No active organization", 400
+        org_id = memberships[0]["org_id"]
+        
+        supabase.table('organisations').update({"billing_email": billing_email}).eq('id', org_id).execute()
+        log_audit(org_id, user_id, f"Updated billing email to '{billing_email}'", "organisation", org_id)
+        
+        return Div("Billing email updated successfully.", cls="success-text", style="margin-top: 8px;")
+    except Exception as e:
+        return Div(f"Failed to update billing email: {e}", cls="error-text", style="margin-top: 8px;")
+
+@rt("/settings/sso", methods=["POST"])
+def post_settings_sso(session, domain: str, metadata_url: str, is_active: bool = False):
+    user_id = _get_user_id(session)
+    if not user_id: return "Unauthorized", 401
+    
+    try:
+        from app.supabase_db import db_select, supabase
+        memberships = db_select("memberships", {"user_id": user_id, "status": "active"})
+        if not memberships: return "No active organization", 400
+        org_id = memberships[0]["org_id"]
+        
+        # Upsert SSO Configuration
+        supabase.table("sso_configurations").upsert({
+            "org_id": org_id,
+            "domain": domain,
+            "metadata_url": metadata_url,
+            "is_active": is_active
+        }, on_conflict="org_id").execute()
+        
+        log_audit(org_id, user_id, f"Updated SSO configuration (Active: {is_active})", "sso", org_id)
+        
+        return Div("SSO configuration saved successfully.", cls="success-text", style="margin-top: 8px;")
+    except Exception as e:
+        return Div(f"Failed to save SSO config: {e}", cls="error-text", style="margin-top: 8px;")
 
 @rt("/org/{slug}")
 def get_org(slug: str, session):
@@ -962,6 +1073,7 @@ def post_create_project(name: str, org_id: str, session):
         p_id = new_p[0]["id"]
         db_insert("project_members", {"project_id": p_id, "user_id": user_id, "role": "admin"})
         session['active_project_id'] = p_id
+        log_audit(org_id, user_id, f"Created project '{name}'", "project", p_id)
         return "ok"
     except Exception:
         return "error"

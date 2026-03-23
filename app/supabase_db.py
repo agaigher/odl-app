@@ -103,6 +103,15 @@ def db_patch(table: str, data: dict, filters: dict):
     r = httpx.patch(url, json=data, params=params, headers=h)
     r.raise_for_status()
 
+def storage_upload(bucket: str, path: str, file_bytes: bytes, content_type: str):
+    url = f"{SUPABASE_URL}/storage/v1/object/{bucket}/{path}"
+    h = _headers()
+    h["Content-Type"] = content_type
+    h["x-upsert"] = "true"
+    r = httpx.post(url, content=file_bytes, headers=h)
+    r.raise_for_status()
+    return f"{SUPABASE_URL}/storage/v1/object/public/{bucket}/{path}"
+
 
 def auth_invite(email: str, data: dict = None, redirect_to: str = None):
     """Generate an invite link via Supabase admin generate_link API.
@@ -121,3 +130,15 @@ def auth_invite(email: str, data: dict = None, redirect_to: str = None):
     r = httpx.post(url, json=body, headers=headers)
     r.raise_for_status()
     return r.json()
+
+def log_audit(org_id: str, actor_id: str, action: str, resource_type: str = None, resource_id: str = None):
+    try:
+        db_insert("audit_logs", {
+            "org_id": org_id,
+            "actor_id": actor_id,
+            "action": action,
+            "resource_type": resource_type,
+            "resource_id": resource_id
+        })
+    except Exception as e:
+        print(f"Audit Log Error: {e}")

@@ -76,7 +76,7 @@ def odl_navbar(user=None):
         cls="app-navbar"
     )
 
-def odl_sidebar(current_path="/"):
+def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None):
     
     @dataclass
     class IC:
@@ -164,6 +164,11 @@ def odl_sidebar(current_path="/"):
             }
         """),
         Div(
+            Div(
+                Img(src=avatar_url, style="width: 24px; height: 24px; border-radius: 4px; margin-right: 12px; object-fit: cover;") if avatar_url else None,
+                Span(org_name, style="font-weight: 700; font-size: 15px; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"),
+                style="display: flex; align-items: center; padding: 0 16px; margin-bottom: 28px;"
+            ),
             Div("Home", cls="sidebar-title"),
             nav_item("Dashboard", "/dashboard", IC.grid),
             cls="sidebar-section"
@@ -192,6 +197,19 @@ def page_layout(page_title, current_path, user, *content):
     """Standard layout wrapper for all authenticated pages."""
     from app import get_app_style # inline to avoid circular issues
     
+    org_name = "Workspace"
+    avatar_url = None
+    if user:
+        try:
+            from app.supabase_db import db_select
+            m = db_select("memberships", {"user_id": user["id"], "status": "active"})
+            if m:
+                orgs = db_select("organisations", {"id": m[0]["org_id"]})
+                if orgs:
+                    org_name = orgs[0]["name"]
+                    avatar_url = orgs[0].get("avatar_url")
+        except: pass
+    
     return Html(
         Head(
             Title(f"{page_title} | ODL App"),
@@ -202,7 +220,7 @@ def page_layout(page_title, current_path, user, *content):
         Body(
             odl_navbar(user),
             Div(
-                odl_sidebar(current_path),
+                odl_sidebar(current_path, org_name, avatar_url),
                 Main(
                     *content,
                     cls="main-content"
