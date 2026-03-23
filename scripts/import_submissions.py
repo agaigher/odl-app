@@ -1,235 +1,152 @@
-"""
-Import dataset CSV submissions into the Supabase datasets table.
-
-Usage:
-    python scripts/import_submissions.py
-    python scripts/import_submissions.py "Dataset Research"
-    python scripts/import_submissions.py data-submissions "Dataset Research"
-
-Scans the given folders (default: data-submissions) for CSV files,
-parses each row, and upserts into Supabase on slug conflict.
-Processed files are listed in the summary — move them to an archive
-folder manually once you're happy with the import.
-
-Requires: SUPABASE_URL and SUPABASE_SERVICE_KEY in .env or environment.
-"""
-
 import os
-import sys
 import csv
 import json
 import httpx
+import shutil
 from pathlib import Path
+from dotenv import load_dotenv
 
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass
+# Load environment variables
+load_dotenv()
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
-if not SUPABASE_URL or not SERVICE_KEY:
-    print("ERROR: SUPABASE_URL and SUPABASE_SERVICE_KEY must be set in .env")
-    sys.exit(1)
+DATA_SUBMISSIONS_DIR = Path("data-submissions")
+DATA_SUBMITTED_DIR = Path("data-submitted")
 
-
-# ── Field parsers ─────────────────────────────────────────────────────────────
-
-def parse_tags(value: str) -> list:
-    if not value:
-        return []
-    return [t.strip().lower() for t in value.split(",") if t.strip()]
-
-
-def parse_access_methods(value: str) -> list:
-    v = (value or "").strip().lower()
-    if v == "both":
-        return ["api", "snowflake"]
-    if v == "snowflake":
-        return ["snowflake"]
-    return ["api"]
-
-
-def parse_schema_fields(value: str) -> list:
-    """
-    Expects semicolon-separated entries, each in format:
-    FieldName|type|description
-    Returns a list of dicts: [{name, type, description}, ...]
-    """
-    if not value:
-        return []
-    fields = []
-    for entry in value.split(";"):
-        entry = entry.strip()
-        if not entry:
-            continue
-        parts = entry.split("|", 2)
-        if len(parts) == 3:
-            fields.append({
-                "name": parts[0].strip(),
-                "type": parts[1].strip(),
-                "description": parts[2].strip(),
-            })
-        elif len(parts) == 2:
-            fields.append({"name": parts[0].strip(), "type": parts[1].strip(), "description": ""})
-        elif len(parts) == 1:
-            fields.append({"name": parts[0].strip(), "type": "string", "description": ""})
-    return fields
-
-
-def parse_sample_rows(value: str) -> list:
-    """
-    Expects semicolon-separated rows, each row being a comma-separated string.
-    Returns a list of row strings (kept as-is for display purposes).
-    """
-    if not value:
-        return []
-    return [r.strip() for r in value.split(";") if r.strip()]
-
-
-def row_to_dataset(row: dict) -> dict:
+def _headers():
     return {
-        "slug": (row.get("slug") or "").strip().lower(),
-        "title": (row.get("title") or "").strip(),
-        "description": (row.get("short_description") or "").strip(),
-        "long_description": (row.get("long_description") or "").strip() or None,
-        "category": (row.get("category") or "").strip() or None,
-        "provider": (row.get("provider") or "").strip() or None,
-        "update_frequency": (row.get("update_frequency") or "").strip() or None,
-        "status": "live",
-        "tags": parse_tags(row.get("tags", "")),
-        "access_methods": parse_access_methods(row.get("access_type", "api")),
-        "schema_fields": parse_schema_fields(row.get("schema_fields", "")),
-        "sample_rows": parse_sample_rows(row.get("sample_rows", "")),
-    }
-
-
-# ── Supabase upsert ───────────────────────────────────────────────────────────
-
-def upsert_batch(datasets: list) -> list:
-    """Upsert a single batch into Supabase. Raises on error."""
-    url = f"{SUPABASE_URL}/rest/v1/datasets?on_conflict=slug"
-    headers = {
         "apikey": SERVICE_KEY,
         "Authorization": f"Bearer {SERVICE_KEY}",
         "Content-Type": "application/json",
-        "Prefer": "resolution=merge-duplicates,return=representation",
+        "Prefer": "resolution=merge-duplicates,return=minimal",
     }
-    r = httpx.post(url, json=datasets, headers=headers, timeout=60)
-    if not r.is_success:
-        print(f"    Response body: {r.text[:500]}")
-        r.raise_for_status()
-    return r.json()
 
+def parse_schema_fields(schema_str):
+    """
+    Parses 'name|type|description; name|type|description' format.
+    """
+    if not schema_str or schema_str.upper() == "UNKNOWN":
+        return []
+    
+    fields = []
+    parts = [p.strip() for p in schema_str.split(";") if p.strip()]
+    for p in parts:
+        sub_parts = [sp.strip() for sp in p.split("|")]
+        if len(sub_parts) >= 2:
+            fields.append({
+                "name": sub_parts[0],
+                "type": sub_parts[1],
+                "description": sub_parts[2] if len(sub_parts) > 2 else ""
+            })
+    return fields
 
-def upsert_datasets(datasets: list, batch_size: int = 20) -> int:
-    """Upsert in batches. Returns total count upserted."""
-    total = 0
-    for i in range(0, len(datasets), batch_size):
-        batch = datasets[i:i + batch_size]
-        slugs = [d["slug"] for d in batch]
-        print(f"    Batch {i // batch_size + 1}: {slugs[0]} … {slugs[-1]}")
-        try:
-            result = upsert_batch(batch)
-            total += len(result) if isinstance(result, list) else len(batch)
-        except Exception as e:
-            print(f"    Batch failed, trying rows individually...")
-            for ds in batch:
-                try:
-                    upsert_batch([ds])
-                    total += 1
-                    print(f"      ok: {ds['slug']}")
-                except Exception as e2:
-                    print(f"      SKIP {ds['slug']}: {e2}")
-    return total
+def parse_sample_rows(sample_str, schema_fields):
+    """
+    Parses 'val1|val2|...; val4|val5|...' format using keys from schema_fields.
+    """
+    if not sample_str or sample_str.upper() == "UNKNOWN":
+        return []
+    
+    rows = []
+    keys = [f["name"] for f in schema_fields]
+    line_parts = [lp.strip() for lp in sample_str.split(";") if lp.strip()]
+    
+    for lp in line_parts:
+        vals = [v.strip() for v in lp.split("|")]
+        row_dict = {}
+        for i, k in enumerate(keys):
+            if i < len(vals):
+                row_dict[k] = vals[i]
+        if row_dict:
+            rows.append(row_dict)
+    return rows
 
+def parse_access_methods(access_type):
+    """
+    Maps access_type (api, snowflake, both) to list of methods.
+    """
+    access_type = (access_type or "").lower().strip()
+    if access_type == "api":
+        return ["api"]
+    elif access_type == "snowflake":
+        return ["snowflake"]
+    elif access_type == "both":
+        return ["api", "snowflake"]
+    return ["api"] # Default
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+def process_csv(file_path):
+    print(f"Processing {file_path}...")
+    
+    payload = []
+    with open(file_path, mode='r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            schema_fields = parse_schema_fields(row.get("schema_fields", ""))
+            
+            # Map CSV columns to DB columns
+            record = {
+                "title": row.get("title"),
+                "slug": row.get("slug"),
+                "description": row.get("short_description"),
+                "long_description": row.get("long_description"),
+                "category": row.get("category"),
+                "provider": row.get("provider"),
+                "update_frequency": row.get("update_frequency"),
+                "status": row.get("status", "live"),
+                "tags": [t.strip() for t in row.get("tags", "").split(",") if t.strip()],
+                "access_methods": parse_access_methods(row.get("access_type")),
+                "schema_fields": schema_fields,
+                "sample_rows": parse_sample_rows(row.get("sample_rows", ""), schema_fields)
+            }
+            payload.append(record)
 
-def import_folder(folder: Path) -> tuple[int, int, list]:
-    """Import all CSVs in a folder. Returns (imported, skipped, errors)."""
-    csvs = sorted(folder.glob("*.csv"))
-    if not csvs:
-        print(f"  No CSV files found in {folder}")
-        return 0, 0, []
+    if not payload:
+        print(f"No records found in {file_path}")
+        return False
 
-    all_datasets = []
-    skipped = []
-    errors = []
-
-    for csv_path in csvs:
-        print(f"  Reading {csv_path.name}...")
-        try:
-            with open(csv_path, newline="", encoding="utf-8-sig") as f:
-                reader = csv.DictReader(f)
-                rows = list(reader)
-
-            for i, row in enumerate(rows, 1):
-                slug = (row.get("slug") or "").strip().lower()
-                if not slug:
-                    skipped.append(f"{csv_path.name} row {i}: missing slug")
-                    continue
-                title = (row.get("title") or "").strip()
-                if not title:
-                    skipped.append(f"{csv_path.name} row {i} ({slug}): missing title")
-                    continue
-                all_datasets.append(row_to_dataset(row))
-                print(f"    + {slug}")
-
-        except Exception as e:
-            errors.append(f"{csv_path.name}: {e}")
-            print(f"  ERROR reading {csv_path.name}: {e}")
-
-    if not all_datasets:
-        return 0, len(skipped), errors
-
-    print(f"\n  Upserting {len(all_datasets)} datasets to Supabase...")
+    # Upsert into Supabase
+    url = f"{SUPABASE_URL}/rest/v1/datasets?on_conflict=slug"
     try:
-        count = upsert_datasets(all_datasets)
-        print(f"  Done — {count} rows upserted.")
-        return count, len(skipped), errors
+        r = httpx.post(url, json=payload, headers=_headers())
+        r.raise_for_status()
+        print(f"Successfully upserted {len(payload)} records from {file_path}")
+        return True
     except Exception as e:
-        errors.append(f"Upsert failed: {e}")
-        print(f"  ERROR during upsert: {e}")
-        return 0, len(skipped), errors
-
+        print(f"Error upserting data from {file_path}: {e}")
+        if hasattr(e, 'response') and e.response:
+            print(f"Response: {e.response.text}")
+        return False
 
 def main():
-    base = Path(__file__).parent.parent
+    if not DATA_SUBMISSIONS_DIR.exists():
+        print(f"Directory {DATA_SUBMISSIONS_DIR} does not exist.")
+        return
 
-    # Folders to scan — defaults, overridden by CLI args
-    if len(sys.argv) > 1:
-        folders = [base / arg for arg in sys.argv[1:]]
-    else:
-        folders = [base / "data-submissions"]
+    if not DATA_SUBMITTED_DIR.exists():
+        DATA_SUBMITTED_DIR.mkdir(parents=True, exist_ok=True)
 
-    total_imported = 0
-    total_skipped = 0
-    all_errors = []
+    csv_files = list(DATA_SUBMISSIONS_DIR.glob("*.csv"))
+    if not csv_files:
+        print("No CSV files found in data-submissions.")
+        return
 
-    for folder in folders:
-        if not folder.exists():
-            print(f"Folder not found: {folder}")
+    for csv_file in csv_files:
+        # Skip template or zero-byte files if needed
+        if csv_file.name == "template.csv":
+            print(f"Skipping template file: {csv_file.name}")
             continue
-        print(f"\nScanning: {folder}")
-        imported, skipped, errors = import_folder(folder)
-        total_imported += imported
-        total_skipped += skipped
-        all_errors.extend(errors)
-
-    print(f"\n{'='*50}")
-    print(f"Total imported : {total_imported}")
-    print(f"Total skipped  : {total_skipped}")
-    print(f"Errors         : {len(all_errors)}")
-    if all_errors:
-        print("\nErrors:")
-        for e in all_errors:
-            print(f"  - {e}")
-    if total_skipped:
-        print(f"\nSkipped rows were missing slug or title — check the CSV.")
-
+            
+        success = process_csv(csv_file)
+        if success:
+            # Move file to data-submitted
+            dest = DATA_SUBMITTED_DIR / csv_file.name
+            try:
+                shutil.move(str(csv_file), str(dest))
+                print(f"Moved {csv_file.name} to {DATA_SUBMITTED_DIR}")
+            except Exception as e:
+                print(f"Error moving {csv_file.name}: {e}")
 
 if __name__ == "__main__":
     main()

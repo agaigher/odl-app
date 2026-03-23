@@ -106,7 +106,7 @@ app, rt = fast_app(before=bware, secret_key=os.environ.get("SESSION_SECRET", "de
 
 @rt("/login", methods=["GET"])
 def get_login(session):
-    if session.get('user'): return RedirectResponse('/', status_code=303)
+    if session.get('user'): return RedirectResponse('/projects', status_code=303)
     return AuthPage(mode="login")
     
 @rt("/login", methods=["POST"])
@@ -116,13 +116,13 @@ def post_login(email: str, password: str, session):
         res = supabase.auth.sign_in_with_password({"email": email, "password": password})
         session['user'] = email
         session['access_token'] = res.session.access_token
-        return Script("window.location.href = '/';")
+        return Script("window.location.href = '/projects';")
     except Exception as e:
         return Div(f"Login failed: {str(e)}", cls="error-text")
 
 @rt("/register", methods=["GET"])
 def get_register(session):
-    if session.get('user'): return RedirectResponse('/', status_code=303)
+    if session.get('user'): return RedirectResponse('/projects', status_code=303)
     return AuthPage(mode="register")
 
 @rt("/register", methods=["POST"])
@@ -133,7 +133,7 @@ def post_register(email: str, password: str, session):
         session['user'] = email
         if res.session:
             session['access_token'] = res.session.access_token
-        return Script("window.location.href = '/';")
+        return Script("window.location.href = '/projects';")
     except Exception as e:
         if "User already registered" in str(e):
             return Div("Account already exists. Try logging in.", cls="error-text")
@@ -216,7 +216,7 @@ def get_auth_snowflake_callback(req, session, code: str = None, state: str = Non
         session['user'] = f"{username}@snowflake"
         session['access_token'] = access_token
         session['auth_provider'] = 'snowflake'
-        return RedirectResponse('/', status_code=303)
+        return RedirectResponse('/projects', status_code=303)
     except Exception:
         return RedirectResponse('/login?error=snowflake_failed', status_code=303)
 
@@ -229,7 +229,7 @@ def get_auth_callback(req, session, code: str = None):
         result = supabase.auth.exchange_code_for_session({"auth_code": code})
         session['user'] = result.user.email
         session['access_token'] = result.session.access_token
-        return RedirectResponse('/', status_code=303)
+        return RedirectResponse('/projects', status_code=303)
     except Exception as e:
         return RedirectResponse(f'/login?error=oauth_failed', status_code=303)
 
@@ -315,7 +315,8 @@ def _get_user_id(session):
 
 @rt("/")
 def get(session):
-    return RedirectResponse('/dashboard', status_code=303)
+    """App home: project list for the workspace (not Project Overview)."""
+    return RedirectResponse('/projects', status_code=303)
 
 @rt("/dashboard")
 def get_dashboard(session):

@@ -215,7 +215,10 @@ def odl_navbar(user=None, active_org=None, all_orgs=None, active_project=None, a
                 top: 0;
                 z-index: 1000;
             }
-            .nav-brand-wrap { display: flex; align-items: center; }
+            .nav-brand-wrap {
+                display: flex; align-items: center; flex-wrap: wrap;
+                gap: 8px 10px; flex: 1; min-width: 0;
+            }
             .app-logo { color: #F8FAFC; display: flex; align-items: center; text-decoration: none; }
             .brand-separator { color: rgba(148, 163, 184, 0.35); margin: 0 12px; font-weight: 300; font-size: 18px; }
             
@@ -290,7 +293,7 @@ def odl_navbar(user=None, active_org=None, all_orgs=None, active_project=None, a
             .logout-btn:hover { background: rgba(255,255,255,0.08); color: #ffffff; }
         """),
         Div(
-            A("OpenData.London", href="/", cls="app-logo", 
+            A("OpenData.London", href="/projects", cls="app-logo", 
               style="font-family: 'Space Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 15px; color: #F8FAFC; text-decoration: none; letter-spacing: -0.04em;"),
             Span("/", cls="brand-separator"),
             OrgSwitcher(active_org, all_orgs),
@@ -307,7 +310,7 @@ def odl_navbar(user=None, active_org=None, all_orgs=None, active_project=None, a
 def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None):
     
     def nav_item(label, path, icon_path):
-        exact_match_only = ("/", "/dashboard", "/favourites")
+        exact_match_only = ("/", "/dashboard", "/projects", "/favourites")
         is_active = current_path == path or (path not in exact_match_only and current_path.startswith(path))
         active_cls = "active" if is_active else ""
         return A(
@@ -431,7 +434,13 @@ def page_layout(page_title, current_path, user, *content, session=None, full_wid
                 if use_cache:
                     all_orgs = cache.get('all_orgs', [])
                     active_id = session.get('active_org_id')
-                    active_org = next((o for o in all_orgs if str(o["id"]) == str(active_id)), None) if active_id else (all_orgs[0] if all_orgs else None)
+                    active_org = (
+                        next((o for o in all_orgs if str(o["id"]) == str(active_id)), None)
+                        if active_id else None
+                    )
+                    if not active_org and all_orgs:
+                        active_org = all_orgs[0]
+                        session['active_org_id'] = active_org['id']
                     
                     if active_org:
                         org_name = active_org["name"]
@@ -439,7 +448,13 @@ def page_layout(page_title, current_path, user, *content, session=None, full_wid
                         # We also cache projects per org in a nested dict or just cache all for active
                         all_projects = cache.get('projects_map', {}).get(str(active_org['id']), [])
                         active_p_id = session.get('active_project_id')
-                        active_project = next((p for p in all_projects if str(p["id"]) == str(active_p_id)), None) if active_p_id else (all_projects[0] if all_projects else None)
+                        active_project = (
+                            next((p for p in all_projects if str(p["id"]) == str(active_p_id)), None)
+                            if active_p_id else None
+                        )
+                        if not active_project and all_projects:
+                            active_project = all_projects[0]
+                            session['active_project_id'] = active_project['id']
                 else:
                     # Fresh fetch
                     memberships = db_select("memberships", {"user_id": u_id, "status": "active"})

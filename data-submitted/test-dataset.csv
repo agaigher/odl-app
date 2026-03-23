@@ -1,0 +1,2 @@
+title,slug,short_description,long_description,category,provider,source_url,licence,update_frequency,format,record_count,date_coverage,geographic_coverage,access_method,schema_fields,sample_rows,tags,access_type,priority,notes
+Test Dataset,test-dataset,This is a test.,This is a longer test description for the test dataset.,Test Category,Test Provider,https://example.com,MIT,Daily,CSV,100,2026,Global,API,"field1|string|Description 1; field2|number|Description 2","val1|123; val2|456","test,demo",api,High,Test notes
