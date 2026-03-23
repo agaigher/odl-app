@@ -779,7 +779,7 @@ async def post_settings_avatar(session, avatar_file: UploadFile):
             
         filename = f"{org_id}/avatar_{int(time.time())}.png"
         
-        from app.supabase_db import storage_upload, supabase
+        from app.supabase_db import storage_upload
         public_url = storage_upload("org-avatars", filename, file_bytes, avatar_file.content_type)
         
         supabase.table("organisations").update({"avatar_url": public_url}).eq("id", org_id).execute()
@@ -801,7 +801,7 @@ def post_settings_rename(session, org_name: str):
         org_id = memberships[0]["org_id"]
         
         # Perform DB Patch via Supabase client directly
-        from app.supabase_db import supabase
+        # Perform DB Patch via Supabase client directly (already defined globally as 'supabase')
         res = supabase.table('organisations').update({"name": org_name}).eq('id', org_id).execute()
         log_audit(org_id, user_id, f"Renamed organization to '{org_name}'", "organisation", org_id)
         
@@ -815,7 +815,7 @@ def post_settings_transfer(session, target_user_id: str):
     if not user_id: return "Unauthorized", 401
     
     try:
-        from app.supabase_db import db_select, supabase
+        from app.supabase_db import db_select
         memberships = db_select("memberships", {"user_id": user_id, "status": "active"})
         if not memberships: return "No active organization", 400
         
@@ -848,9 +848,7 @@ def post_settings_delete(session):
         if not memberships: return "No active organization", 400
         org_id = memberships[0]["org_id"]
         
-        from app.supabase_db import supabase
-        # Supabase foreign keys should cascade deletes for projects, keys, etc. 
-        # But we must manually delete the organisation row explicitly.
+        # Supabase client is already defined globally as 'supabase'
         res = supabase.table('organisations').delete().eq('id', org_id).execute()
         
         # Because cascading deleted the membership too, we bounce them to /projects landing
@@ -976,9 +974,21 @@ def get_organisations(session):
     
     orgs = []
     if org_ids:
-        from app.supabase_db import supabase
-        res = supabase.table("organisations").select("*").in_("id", org_ids).execute()
-        orgs = res.data
+        try:
+            # We use db_select but we need to fetch multiple by multiple IDs.
+            # Since db_select only does 'eq' currently, I'll update it or do a manual fetch.
+            # Actually, I'll just use a loop or better, update db_select to support 'in'.
+            # For now, I'll use a manual httpx call as in supabase_db.py but here.
+            from app.supabase_db import SUPABASE_URL, _headers
+            import httpx
+            ids_str = ",".join([str(i) for i in org_ids])
+            url = f"{SUPABASE_URL}/rest/v1/organisations"
+            r = httpx.get(url, params={"id": f"in.({ids_str})"}, headers=_headers())
+            r.raise_for_status()
+            orgs = r.json()
+        except Exception as e:
+            print(f"Error fetching orgs: {e}")
+            orgs = []
         
     return page_layout("Organizations", "/organisations", user, OrganisationsPage(orgs), session=session)
 
