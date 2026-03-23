@@ -21,19 +21,29 @@ def db_insert(table: str, data: dict):
     return r.json()
 
 
-def db_select(table: str, filters: dict = None, limit: int = 100000, order: str = None):
+def db_select(table: str, filters: dict = None, limit: int = 1000, order: str = None):
     url = f"{SUPABASE_URL}/rest/v1/{table}"
     params = {}
     for k, v in (filters or {}).items():
         if isinstance(v, (list, tuple)):
+            if not v: # Avoid empty in clauses
+                return []
             vals = ",".join([str(x) for x in v])
             params[k] = f"in.({vals})"
         else:
             params[k] = f"eq.{v}"
     if order:
         params["order"] = order
-    h = _headers()
     
+    h = _headers()
+    # If limit is small, just do one request
+    if limit <= 1000:
+        h["Range-Unit"] = "items"
+        h["Range"] = f"0-{limit-1}"
+        r = httpx.get(url, params=params, headers=h)
+        r.raise_for_status()
+        return r.json()
+
     all_results = []
     chunk_size = 1000
     for offset in range(0, limit, chunk_size):
@@ -140,16 +150,19 @@ def auth_invite(email: str, data: dict = None, redirect_to: str = None):
     return r.json()
 
 def log_audit(org_id: str, actor_id: str, action: str, resource_type: str = None, resource_id: str = None):
-    try:
-        db_insert("audit_logs", {
-            "org_id": org_id,
-            "actor_id": actor_id,
-            "action": action,
-            "resource_type": resource_type,
-            "resource_id": resource_id
-        })
-    except Exception as e:
-        print(f"Audit Log Error: {e}")
+    import threading
+    def _run():
+        try:
+            db_insert("audit_logs", {
+                "org_id": org_id,
+                "actor_id": actor_id,
+                "action": action,
+                "resource_id": resource_id,
+                "resource_type": resource_type
+            })
+        except Exception as e:
+            print(f"Audit Log Error: {e}")
+    threading.Thread(target=_run).start()
 
 def get_user_id_from_session(session):
     """Retrieves user ID from Supabase auth using the access_token in session."""

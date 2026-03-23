@@ -1,4 +1,5 @@
 from fasthtml.common import *
+import time
 from app.db import *
 
 # Define IC (Icons) outside of functions so it can be reused
@@ -408,44 +409,68 @@ def page_layout(page_title, current_path, user, *content, session=None):
     if user:
         try:
             from app.supabase_db import db_select, get_user_id_from_session
-            # Priority: dict with id > session access token
             u_id = user.get('id') if isinstance(user, dict) else None
             if not u_id and session:
                 u_id = get_user_id_from_session(session)
             
             if u_id:
-                # Fetch all memberships to get ALL organisations for the switcher
-                memberships = db_select("memberships", {"user_id": u_id, "status": "active"})
-                if memberships:
-                    org_ids = [m["org_id"] for m in memberships]
-                    # Fetch details for all orgs
-                    all_orgs = db_select("organisations", {"id": org_ids})
-                    
-                    # Determine active org from session or default to first
-                    active_id = session.get('active_org_id') if session else None
-                    if active_id:
-                        active_org = next((o for o in all_orgs if str(o["id"]) == str(active_id)), None)
-                    
-                    if not active_org and all_orgs:
-                        active_org = all_orgs[0]
-                        if session: session['active_org_id'] = active_org['id']
+                now = time.time()
+                cache = session.get('header_cache', {})
+                use_cache = cache.get('expiry', 0) > now and not session.get('force_header_refresh')
+                
+                if use_cache:
+                    all_orgs = cache.get('all_orgs', [])
+                    active_id = session.get('active_org_id')
+                    active_org = next((o for o in all_orgs if str(o["id"]) == str(active_id)), None) if active_id else (all_orgs[0] if all_orgs else None)
                     
                     if active_org:
                         org_name = active_org["name"]
                         avatar_url = active_org.get("avatar_url")
+                        # We also cache projects per org in a nested dict or just cache all for active
+                        all_projects = cache.get('projects_map', {}).get(str(active_org['id']), [])
+                        active_p_id = session.get('active_project_id')
+                        active_project = next((p for p in all_projects if str(p["id"]) == str(active_p_id)), None) if active_p_id else (all_projects[0] if all_projects else None)
+                else:
+                    # Fresh fetch
+                    memberships = db_select("memberships", {"user_id": u_id, "status": "active"})
+                    if memberships:
+                        org_ids = [m["org_id"] for m in memberships]
+                        all_orgs = db_select("organisations", {"id": org_ids})
                         
-                        # Fetch projects for active org
-                        all_projects = db_select("projects", {"org_id": active_org["id"]})
+                        active_id = session.get('active_org_id')
+                        if active_id:
+                            active_org = next((o for o in all_orgs if str(o["id"]) == str(active_id)), None)
                         
-                        active_p_id = session.get('active_project_id') if session else None
-                        if active_p_id:
-                            active_project = next((p for p in all_projects if str(p["id"]) == str(active_p_id)), None)
+                        if not active_org and all_orgs:
+                            active_org = all_orgs[0]
+                            session['active_org_id'] = active_org['id']
                         
-                        if not active_project and all_projects:
-                            active_project = all_projects[0]
-                            if session: session['active_project_id'] = active_project['id']
+                        if active_org:
+                            org_name = active_org["name"]
+                            avatar_url = active_org.get("avatar_url")
+                            all_projects = db_select("projects", {"org_id": active_org["id"]})
+                            
+                            active_p_id = session.get('active_project_id')
+                            if active_p_id:
+                                active_project = next((p for p in all_projects if str(p["id"]) == str(active_p_id)), None)
+                            
+                            if not active_project and all_projects:
+                                active_project = all_projects[0]
+                                session['active_project_id'] = active_project['id']
+                        
+                        # Update Cache
+                        projects_map = cache.get('projects_map', {})
+                        if active_org:
+                            projects_map[str(active_org['id'])] = all_projects
+                            
+                        session['header_cache'] = {
+                            'all_orgs': all_orgs,
+                            'projects_map': projects_map,
+                            'expiry': now + 300 # 5 minutes
+                        }
+                        session.pop('force_header_refresh', None)
         except Exception as e:
-            print(f"Error in page_layout org fetch: {e}")
+            print(f"Error in page_layout caching: {e}")
     
     return Html(
         Head(

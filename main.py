@@ -260,6 +260,7 @@ def post_create_org(org_name: str, slug: str, session):
         
         # Set as active org
         session['active_org_id'] = org_id
+        session['force_header_refresh'] = True
         log_audit(org_id, user_id, "Organization created", "organisation", org_id)
         
         return Script("window.location.href = '/projects';")
@@ -809,7 +810,7 @@ def post_settings_rename(session, org_name: str):
         # Perform DB Patch via Supabase client directly (already defined globally as 'supabase')
         res = supabase.table('organisations').update({"name": org_name}).eq('id', org_id).execute()
         log_audit(org_id, user_id, f"Renamed organization to '{org_name}'", "organisation", org_id)
-        
+        session['force_header_refresh'] = True
         return Div("Organization name updated successfully.", cls="success-text", style="margin-top: 8px;")
     except Exception as e:
         return Div(f"Failed to update name: {e}", cls="error-text", style="margin-top: 8px;")
@@ -963,8 +964,8 @@ def post_org_switch(session, org_id: str):
         if not m: return "Unauthorized", 403
         
         session['active_org_id'] = org_id
-        # When switching org, clear active project and redirect to projects list
         session.pop('active_project_id', None)
+        session['force_header_refresh'] = True
         return Script("window.location.href = '/projects';")
     except Exception: return "Error", 500
 
@@ -1177,6 +1178,7 @@ def post_create_project(name: str, org_id: str, session):
         db_insert("project_members", {"project_id": p_id, "user_id": user_id, "role": "admin"})
         session['active_project_id'] = p_id
         log_audit(org_id, user_id, f"Created project '{name}'", "project", p_id)
+        session['force_header_refresh'] = True
         return "ok"
     except Exception:
         return "error"
