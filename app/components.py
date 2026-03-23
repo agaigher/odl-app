@@ -201,11 +201,13 @@ def odl_navbar(user=None, active_org=None, all_orgs=None, active_project=None, a
     
     return Header(
         Style("""
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
             .app-navbar {
-                background-color: #1E293B;
-                border-bottom: 2px solid #0284C7;
+                background: linear-gradient(180deg, #0c0e14 0%, #080a0f 100%);
+                border-bottom: 1px solid rgba(255,255,255,0.06);
+                box-shadow: 0 1px 0 rgba(56, 189, 248, 0.1);
                 padding: 0 28px;
-                height: 60px;
+                height: 56px;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
@@ -214,8 +216,8 @@ def odl_navbar(user=None, active_org=None, all_orgs=None, active_project=None, a
                 z-index: 1000;
             }
             .nav-brand-wrap { display: flex; align-items: center; }
-            .app-logo { color: #10B981; display: flex; align-items: center; text-decoration: none; }
-            .brand-separator { color: #334155; margin: 0 12px; font-weight: 300; font-size: 20px; }
+            .app-logo { color: #F8FAFC; display: flex; align-items: center; text-decoration: none; }
+            .brand-separator { color: rgba(148, 163, 184, 0.35); margin: 0 12px; font-weight: 300; font-size: 18px; }
             
             .org-switcher-container { position: relative; display: inline-block; }
             .org-switcher-trigger {
@@ -237,10 +239,10 @@ def odl_navbar(user=None, active_org=None, all_orgs=None, active_project=None, a
                 top: calc(100% + 8px);
                 left: 0;
                 width: 280px;
-                background: #1E293B;
-                border: 1px solid #334155;
-                border-radius: 8px;
-                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+                background: #0f1219;
+                border: 1px solid rgba(255,255,255,0.08);
+                border-radius: 10px;
+                box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255,255,255,0.04);
                 z-index: 1001;
                 overflow: hidden;
             }
@@ -289,7 +291,7 @@ def odl_navbar(user=None, active_org=None, all_orgs=None, active_project=None, a
         """),
         Div(
             A("OpenData.London", href="/", cls="app-logo", 
-              style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 16px; color: #F8FAFC; text-decoration: none; letter-spacing: -0.02em;"),
+              style="font-family: 'Space Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 15px; color: #F8FAFC; text-decoration: none; letter-spacing: -0.04em;"),
             Span("/", cls="brand-separator"),
             OrgSwitcher(active_org, all_orgs),
             Span("/", cls="brand-separator") if active_org else None,
@@ -319,13 +321,15 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None):
         Style("""
             .app-sidebar {
                 width: 240px;
-                background: #111827;
-                border-right: 1px solid rgba(255,255,255,0.06);
+                background: #0a0c10;
+                border-right: 1px solid rgba(255,255,255,0.05);
                 padding: 20px 0;
                 display: flex;
                 flex-direction: column;
                 flex-shrink: 0;
-                height: calc(100vh - 56px);
+                position: sticky;
+                top: 60px;
+                height: calc(100vh - 60px);
                 overflow-y: auto;
             }
             .sidebar-section {
@@ -359,14 +363,14 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None):
                 color: #F9FAFB;
             }
             .sidebar-item.active {
-                background: rgba(255,255,255,0.08);
+                background: rgba(255,255,255,0.06);
                 color: #FFFFFF;
                 font-weight: 600;
-                box-shadow: inset 3px 0 0 -1px #0284C7;
+                box-shadow: inset 2px 0 0 0 rgba(56, 189, 248, 0.65);
             }
             .sidebar-item.active span {
                 opacity: 1;
-                color: #0284C7;
+                color: #38bdf8;
             }
         """),
         Div(
