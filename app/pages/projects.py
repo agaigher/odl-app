@@ -4,158 +4,277 @@ from app.components import icon_svg, IC
 
 
 def _projects_style():
-    """Match organisations.py — same layout tokens and card system."""
+    """Projects dashboard — dark shell, toolbar, grid cards (reference UI)."""
     return Style("""
-        .projects-container { width: 100%; }
-        .projects-header {
-            display: flex; justify-content: space-between; align-items: flex-start;
-            flex-wrap: wrap; gap: 20px; margin-bottom: 32px;
+        .pd-page { width: 100%; max-width: 1280px; margin: 0 auto; }
+        .pd-title {
+            font-size: 32px; font-weight: 600; letter-spacing: -0.03em;
+            color: #fafafa; margin: 0 0 6px 0;
+            font-family: 'Space Grotesk', system-ui, sans-serif;
         }
-        .projects-header-text h1 {
-            font-size: 24px; font-weight: 700; color: #F8FAFC; margin: 0;
-        }
-        .projects-header-text p {
-            color: #94A3B8; font-size: 14px; margin-top: 4px; max-width: 520px;
-        }
-        .projects-new-form {
-            display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
-        }
-        .projects-new-form input[type="text"] {
-            min-width: 220px; background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.1); color: #F8FAFC;
-            padding: 10px 14px; border-radius: 8px; font-size: 14px;
-            font-family: 'Inter', sans-serif; outline: none;
-        }
-        .projects-new-form input[type="text"]:focus {
-            border-color: rgba(56,189,248,0.35); box-shadow: 0 0 0 1px rgba(2,132,199,0.12);
-        }
-        .projects-new-form input::placeholder { color: #64748B; }
-        .projects-create-btn {
-            background: #0284C7; color: #ffffff; border: none;
-            padding: 10px 18px; border-radius: 8px; font-weight: 600; font-size: 14px;
-            cursor: pointer; font-family: 'Inter', sans-serif;
-            display: inline-flex; align-items: center; gap: 8px;
-            transition: background 0.2s;
-        }
-        .projects-create-btn:hover { background: #0369A1; }
+        .pd-sub { font-size: 14px; color: #737373; margin: 0 0 28px 0; }
 
-        .projects-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 24px;
-        }
-
-        .proj-card {
-            background: #1E293B; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px;
-            padding: 24px; transition: all 0.2s; text-decoration: none;
-            display: flex; flex-direction: column; cursor: pointer;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        .proj-card:hover {
-            border-color: #0284C7; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2);
-            transform: translateY(-2px);
-        }
-        .proj-logo-large {
-            width: 48px; height: 48px; border-radius: 8px;
-            background: #0F172A; border: 1px solid rgba(255,255,255,0.05);
-            display: flex; align-items: center; justify-content: center;
-            margin-bottom: 16px; font-weight: 700; color: #94A3B8; font-size: 20px;
-        }
-        .proj-name {
-            font-size: 18px; font-weight: 700; color: #F8FAFC; margin-bottom: 4px;
-        }
-        .proj-meta {
-            font-size: 13px; color: #94A3B8; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-        }
-        .proj-id-badge {
-            font-size: 10px; font-weight: 700; background: #0F172A;
-            color: #94A3B8; padding: 2px 6px; border-radius: 4px;
-            text-transform: uppercase; letter-spacing: 0.04em;
-        }
-        .proj-action-bar {
-            margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.05);
-            display: flex; justify-content: flex-end;
-        }
-        .proj-open-btn { font-size: 13px; font-weight: 600; color: #0284C7; display: flex; align-items: center; gap: 4px; }
-
-        .projects-empty {
-            grid-column: 1 / -1; text-align: center; padding: 80px 20px;
-            border: 2px dashed rgba(255,255,255,0.05); border-radius: 12px; background: #1E293B;
-        }
-        .projects-empty h3 { font-size: 16px; font-weight: 600; color: #F8FAFC; margin: 0; }
-        .projects-empty p { color: #94A3B8; font-size: 14px; margin-top: 8px; }
-
-        .projects-error {
-            padding: 24px; border-radius: 12px; background: #1E293B;
-            border: 1px solid rgba(255,255,255,0.06); color: #94A3B8; font-size: 14px;
-        }
-
-        /* Org summary — same family as dashboard stat cards */
-        .proj-org-strip {
+        .pd-toolbar {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px;
             margin-bottom: 28px;
-            padding: 20px 22px;
-            background: rgba(255,255,255,0.035);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 12px;
-            box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset;
         }
-        .proj-org-strip-inner {
-            display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 20px;
+        .pd-search-wrap {
+            flex: 1 1 220px; min-width: 200px; max-width: 420px;
+            display: flex; align-items: center; gap: 10px;
+            background: #171717; border: 1px solid #262626; border-radius: 8px;
+            padding: 0 12px 0 14px; height: 40px; box-sizing: border-box;
         }
-        .proj-org-kicker {
-            font-size: 10px; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.1em;
-            display: block; margin-bottom: 6px;
+        .pd-search-wrap svg { flex-shrink: 0; color: #525252; }
+        .pd-search-wrap input {
+            flex: 1; min-width: 0; background: transparent; border: none; outline: none;
+            color: #fafafa; font-size: 14px; font-family: 'Inter', sans-serif;
         }
-        .proj-org-title { font-size: 18px; font-weight: 600; color: #F8FAFC; margin: 0; letter-spacing: -0.02em; }
-        .proj-org-stats {
-            display: flex; flex-wrap: wrap; gap: 12px;
+        .pd-search-wrap input::placeholder { color: #525252; }
+
+        .pd-toolbar-mid {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
         }
-        .proj-mini-stat {
-            background: rgba(0,0,0,0.2);
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 10px;
-            padding: 12px 18px;
-            min-width: 100px;
+        .pd-select {
+            appearance: none; background: #171717; border: 1px solid #262626;
+            color: #e5e5e5; font-size: 13px; padding: 8px 32px 8px 12px; border-radius: 8px;
+            font-family: 'Inter', sans-serif; cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 10px center;
         }
-        .proj-mini-stat-label {
-            font-size: 10px; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.08em;
-            margin: 0 0 8px 0;
+        .pd-sort-btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: #171717; border: 1px solid #262626; color: #e5e5e5;
+            font-size: 13px; padding: 8px 14px; border-radius: 8px; cursor: pointer;
+            font-family: 'Inter', sans-serif;
         }
-        .proj-mini-stat-value {
-            font-size: 22px; font-weight: 600; color: #F1F5F9;
-            margin: 0;
-            font-family: 'JetBrains Mono', ui-monospace, monospace;
-            letter-spacing: -0.02em;
+        .pd-sort-btn:hover { border-color: #404040; }
+
+        .pd-toolbar-right {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+            margin-left: auto;
+        }
+        .pd-view-toggle {
+            display: flex; border: 1px solid #262626; border-radius: 8px; overflow: hidden;
+            background: #171717;
+        }
+        .pd-view-btn {
+            width: 40px; height: 38px; display: flex; align-items: center; justify-content: center;
+            background: transparent; border: none; color: #737373; cursor: pointer;
+            padding: 0;
+        }
+        .pd-view-btn:hover { color: #a3a3a3; }
+        .pd-view-btn.is-active {
+            background: #262626; color: #fafafa;
+            box-shadow: inset 0 0 0 1px #404040;
+        }
+        .pd-view-btn + .pd-view-btn { border-left: 1px solid #262626; }
+
+        .pd-new-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .pd-new-name {
+            width: 140px; background: #171717; border: 1px solid #262626; color: #fafafa;
+            padding: 8px 12px; border-radius: 8px; font-size: 13px; font-family: 'Inter', sans-serif;
+            outline: none;
+        }
+        .pd-new-name:focus { border-color: #404040; }
+        .pd-new-name::placeholder { color: #525252; }
+        .pd-btn-new {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: #00875a; color: #fff; border: none; font-weight: 600;
+            font-size: 14px; padding: 10px 16px; border-radius: 8px; cursor: pointer;
+            font-family: 'Inter', sans-serif; white-space: nowrap;
+        }
+        .pd-btn-new:hover { background: #006b47; }
+
+        .pd-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .pd-grid.pd-grid--list {
+            grid-template-columns: 1fr;
+        }
+        .pd-grid.pd-grid--list .pd-card { flex-direction: row; align-items: stretch; }
+        .pd-grid.pd-grid--list .pd-card-main { flex: 1; }
+
+        .pd-card {
+            background: #1a1a1a; border: 1px solid #262626; border-radius: 12px;
+            padding: 20px; display: flex; flex-direction: column; min-height: 160px;
+            transition: border-color 0.15s ease;
+        }
+        .pd-card:hover { border-color: #404040; }
+
+        .pd-card-head {
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+            margin-bottom: 8px;
+        }
+        .pd-card-title {
+            font-size: 16px; font-weight: 600; color: #fafafa; text-decoration: none;
+            font-family: 'Inter', sans-serif; letter-spacing: -0.02em; line-height: 1.3;
+        }
+        .pd-card-title:hover { color: #fff; }
+        .pd-card-kebab {
+            flex-shrink: 0; width: 32px; height: 32px; border: none; border-radius: 6px;
+            background: transparent; color: #737373; cursor: pointer; font-size: 18px;
+            line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center;
+        }
+        .pd-card-kebab:hover { background: #262626; color: #a3a3a3; }
+
+        .pd-card-meta {
+            font-size: 13px; color: #737373; margin-bottom: 16px;
+            font-family: 'Inter', sans-serif;
+        }
+        .pd-card-badges { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: auto; }
+        .pd-badge {
+            font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+            padding: 4px 10px; border-radius: 999px; font-family: 'Inter', sans-serif;
+        }
+        .pd-badge--active { background: rgba(0, 135, 90, 0.2); color: #34d399; border: 1px solid rgba(0, 135, 90, 0.35); }
+        .pd-badge--muted { background: #262626; color: #a3a3a3; border: 1px solid #404040; }
+        .pd-badge--nano { background: #262626; color: #737373; border: 1px solid #404040; }
+
+        .pd-card-alert {
+            margin-top: 16px; padding: 12px 14px; border-radius: 8px;
+            background: #171717; border: 1px solid #262626;
+            display: flex; align-items: center; gap: 10px; font-size: 13px; color: #a3a3a3;
+        }
+        .pd-card-alert svg { flex-shrink: 0; color: #737373; }
+
+        .pd-empty {
+            grid-column: 1 / -1; text-align: center; padding: 64px 24px;
+            border: 1px dashed #333; border-radius: 12px; background: #141414; color: #737373;
+            font-size: 14px;
+        }
+        .pd-empty h3 { color: #e5e5e5; font-size: 16px; margin: 0 0 8px 0; }
+
+        .pd-error {
+            padding: 20px; border-radius: 12px; background: #1a1a1a; border: 1px solid #333;
+            color: #a3a3a3; font-size: 14px;
         }
     """)
 
 
-def _project_card(p, is_active):
-    name = p.get("name") or "Untitled"
+def _projects_script():
+    return Script("""
+(function () {
+  function init() {
+    var grid = document.getElementById('pd-project-grid');
+    if (!grid) return;
+    var search = document.getElementById('pd-search');
+    var status = document.getElementById('pd-status-filter');
+    var sortBtn = document.getElementById('pd-sort-btn');
+    var btnGrid = document.getElementById('pd-view-grid');
+    var btnList = document.getElementById('pd-view-list');
+    var sortAsc = true;
+
+    function visibleCards() {
+      return Array.prototype.slice.call(grid.querySelectorAll('.pd-card'));
+    }
+
+    function apply() {
+      var q = (search && search.value ? search.value : '').toLowerCase().trim();
+      var st = status ? status.value : 'all';
+      var cards = visibleCards();
+      cards.forEach(function (c) {
+        var name = (c.getAttribute('data-name') || '').toLowerCase();
+        var ps = c.getAttribute('data-status') || '';
+        var okName = !q || name.indexOf(q) !== -1;
+        var okSt = st === 'all' || ps === st;
+        c.style.display = (okName && okSt) ? '' : 'none';
+      });
+      var shown = cards.filter(function (c) { return c.style.display !== 'none'; });
+      shown.sort(function (a, b) {
+        var na = a.getAttribute('data-name') || '';
+        var nb = b.getAttribute('data-name') || '';
+        return sortAsc ? na.localeCompare(nb) : nb.localeCompare(na);
+      });
+      shown.forEach(function (c) { grid.appendChild(c); });
+    }
+
+    if (search) search.addEventListener('input', apply);
+    if (status) status.addEventListener('change', apply);
+    if (sortBtn) {
+      sortBtn.addEventListener('click', function () {
+        sortAsc = !sortAsc;
+        apply();
+      });
+    }
+    if (btnGrid && btnList) {
+      btnGrid.addEventListener('click', function () {
+        grid.classList.remove('pd-grid--list');
+        btnGrid.classList.add('is-active');
+        btnList.classList.remove('is-active');
+      });
+      btnList.addEventListener('click', function () {
+        grid.classList.add('pd-grid--list');
+        btnList.classList.add('is-active');
+        btnGrid.classList.remove('is-active');
+      });
+    }
+  }
+  if (document.readyState === 'loading')
+    document.addEventListener('DOMContentLoaded', init);
+  else
+    init();
+})();
+""")
+
+
+# Pause icon (rectangle with two bars) for "project paused" strip
+_PD_PAUSE_SVG = (
+    "M8 5v14M16 5v14M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"
+)
+
+
+def _project_card(p, org_label: str, is_active_project: bool):
+    """Card layout aligned with reference: meta line, badges, optional paused footer."""
+    name = (p.get("name") or "Untitled").strip()
     pid = p.get("id", "")
-    pid_short = f"{str(pid)[:8]}…" if pid else "—"
-    meta_bits = [
-        Span("Project", cls="proj-id-badge"),
-        Span("•"),
-        Span(
-            f"ID {pid_short}",
-            style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px;",
+    href = f"/projects/{pid}/select"
+
+    # Display line similar to "AWS | eu-west-1" — we use org + a fixed region label until infra metadata exists.
+    meta_line = f"{org_label} | EU West (London)"
+
+    badges = []
+    if is_active_project:
+        badges.append(Span("Active", cls="pd-badge pd-badge--active"))
+        badges.append(Span("Default", cls="pd-badge pd-badge--nano"))
+    else:
+        badges.append(Span("Paused", cls="pd-badge pd-badge--muted"))
+
+    paused_footer = None
+    if not is_active_project:
+        paused_footer = Div(
+            icon_svg(_PD_PAUSE_SVG, width="16", height="16"),
+            Span("Project is paused"),
+            icon_svg(IC.info, width="16", height="16"),
+            cls="pd-card-alert",
+        )
+
+    slug = name.lower()
+
+    return Div(
+        Div(
+            A(name, href=href, cls="pd-card-title"),
+            Button("⋮", type="button", cls="pd-card-kebab", aria_label="Project actions"),
+            cls="pd-card-head",
         ),
-    ]
-    if is_active:
-        meta_bits.extend([Span("•"), Span("Active", style="color: #10B981;")])
-    return A(
-        Div(name[0].upper(), cls="proj-logo-large"),
-        Div(name, cls="proj-name"),
-        Div(*meta_bits, cls="proj-meta"),
-        Div(Span("Open project overview", cls="proj-open-btn"), cls="proj-action-bar"),
-        href=f"/projects/{p['id']}/select",
-        cls="proj-card",
+        A(
+            Div(meta_line, cls="pd-card-meta"),
+            Div(*badges, cls="pd-card-badges"),
+            href=href,
+            cls="pd-card-main",
+            style="text-decoration: none; color: inherit; display: block;",
+        ),
+        paused_footer,
+        cls="pd-card",
+        data_name=slug,
+        data_status="active" if is_active_project else "paused",
     )
 
 
 def ProjectsDashboard(user_id="", session=None):
     style = _projects_style()
+    script = _projects_script()
 
     active_org_id = session.get("active_org_id") if session else None
 
@@ -172,19 +291,11 @@ def ProjectsDashboard(user_id="", session=None):
     if not active_org_id:
         return Div(
             style,
-            Div(
-                Div(
-                    H1("Projects"),
-                    P("Projects belong to an organization. Join or create one to continue."),
-                    cls="projects-header-text",
-                ),
-                cls="projects-header",
-            ),
-            Div(
-                "You must be part of an organization to create projects.",
-                cls="projects-error",
-            ),
-            cls="projects-container",
+            script,
+            H1("Projects", cls="pd-title"),
+            P("Join or create an organization to manage projects.", cls="pd-sub"),
+            Div("You must be part of an organization to create projects.", cls="pd-error"),
+            cls="pd-page",
         )
 
     try:
@@ -193,92 +304,117 @@ def ProjectsDashboard(user_id="", session=None):
         projects = []
 
     org_row = None
-    member_count = 0
     try:
         org_rows = db_select("organisations", {"id": active_org_id})
         if org_rows:
             org_row = org_rows[0]
-        members = db_select("memberships", {"org_id": active_org_id, "status": "active"})
-        member_count = len(members or [])
     except Exception:
         pass
 
-    project_count = len(projects or [])
+    org_label = (org_row.get("name") or "Workspace").strip()
     active_project_id = session.get("active_project_id") if session else None
 
-    org_strip = None
-    if org_row:
-        org_strip = Div(
-            Div(
-                Div(
-                    Span("Active organization", cls="proj-org-kicker"),
-                    H2(org_row.get("name") or "Organization", cls="proj-org-title"),
-                ),
-                Div(
-                    Div(
-                        P("Projects", cls="proj-mini-stat-label"),
-                        P(str(project_count), cls="proj-mini-stat-value"),
-                        cls="proj-mini-stat",
-                    ),
-                    Div(
-                        P("Members", cls="proj-mini-stat-label"),
-                        P(str(member_count), cls="proj-mini-stat-value"),
-                        cls="proj-mini-stat",
-                    ),
-                    cls="proj-org-stats",
-                ),
-                cls="proj-org-strip-inner",
-            ),
-            cls="proj-org-strip",
-        )
-
-    new_proj_form = Form(
+    new_form = Form(
         Input(
             type="text",
             name="name",
-            placeholder="New project name…",
+            placeholder="Name",
             required=True,
+            cls="pd-new-name",
+            aria_label="New project name",
         ),
         Input(type="hidden", name="org_id", value=active_org_id),
         Button(
-            icon_svg(IC.plus_circle, style="width: 16px; height: 16px;"),
-            "New project",
+            Span("+", style="font-size: 18px; line-height: 1;"),
+            " New project",
             type="submit",
-            cls="projects-create-btn",
+            cls="pd-btn-new",
         ),
         hx_post="/projects/create",
         hx_on__after_request="if(event.detail.successful) window.location.reload()",
-        cls="projects-new-form",
+        cls="pd-new-form",
     )
 
-    cards = [_project_card(p, str(p["id"]) == str(active_project_id)) for p in projects]
-
-    empty = Div(
-        Div(icon_svg(IC.box, style="width: 48px; height: 48px; color: #64748B; margin: 0 auto 16px;")),
-        H3("No projects yet"),
-        P("Create a project to organize integrations, API keys, and data access for this organization."),
-        cls="projects-empty",
-    )
-
-    grid_content = Div(*cards, cls="projects-grid") if projects else Div(empty, cls="projects-grid")
-
-    body_children = [
+    toolbar = Div(
+        Div(
+            icon_svg(IC.search, width="18", height="18"),
+            Input(
+                type="search",
+                id="pd-search",
+                placeholder="Search for a project",
+                cls="pd-search-input",
+                style="border:none;outline:none;background:transparent;flex:1;color:#fafafa;font-size:14px;",
+            ),
+            cls="pd-search-wrap",
+        ),
+        Div(
+            Select(
+                Option("All statuses", value="all"),
+                Option("Active", value="active"),
+                Option("Paused", value="paused"),
+                id="pd-status-filter",
+                cls="pd-select",
+            ),
+            Button(
+                icon_svg("M4 6h16M8 12h12M11 18h8", width="16", height="16"),
+                " Sorted by name",
+                id="pd-sort-btn",
+                type="button",
+                cls="pd-sort-btn",
+            ),
+            cls="pd-toolbar-mid",
+        ),
         Div(
             Div(
-                H1("Projects"),
-                P("Manage multiple environments and API access within this organization."),
-                cls="projects-header-text",
+                Button(
+                    icon_svg(IC.grid, width="18", height="18"),
+                    type="button",
+                    cls="pd-view-btn is-active",
+                    id="pd-view-grid",
+                    aria_label="Grid view",
+                ),
+                Button(
+                    icon_svg("M8 6h13M8 12h13M8 18h13M4 6h.01M4 12h.01M4 18h.01", width="18", height="18"),
+                    type="button",
+                    cls="pd-view-btn",
+                    id="pd-view-list",
+                    aria_label="List view",
+                ),
+                cls="pd-view-toggle",
             ),
-            new_proj_form,
-            cls="projects-header",
+            new_form,
+            cls="pd-toolbar-right",
         ),
+        cls="pd-toolbar",
+    )
+
+    cards = [
+        _project_card(
+            p,
+            org_label,
+            str(p.get("id")) == str(active_project_id),
+        )
+        for p in (projects or [])
     ]
-    if org_strip:
-        body_children.append(org_strip)
-    body_children.append(grid_content)
+
+    empty = Div(
+        H3("No projects yet"),
+        P("Create a project to organize API keys, shares, and access for ", org_label, "."),
+        cls="pd-empty",
+    )
+
+    grid_el = (
+        Div(*cards, id="pd-project-grid", cls="pd-grid")
+        if projects
+        else Div(empty, id="pd-project-grid", cls="pd-grid")
+    )
 
     return Div(
         style,
-        *body_children,
-        cls="projects-container",
+        script,
+        H1("Projects", cls="pd-title"),
+        P(f"Organization · {org_label}", cls="pd-sub"),
+        toolbar,
+        grid_el,
+        cls="pd-page",
     )

@@ -91,7 +91,7 @@ def before(req, session):
     session['user'] = 'test@example.com'
     session['access_token'] = 'mock-token'
 
-    open_routes = ['/login', '/register', '/forgot-password', '/reset-password',
+    open_routes = ['/login', '/register', '/signup', '/forgot-password', '/reset-password',
                    '/auth/google', '/auth/github', '/auth/callback',
                    '/auth/snowflake', '/auth/snowflake/callback',
                    '/invite/accept', '/invite/confirm', '/robots.txt',
@@ -123,6 +123,12 @@ def post_login(email: str, password: str, session):
         return Script("window.location.href = '/projects';")
     except Exception as e:
         return Div(f"Login failed: {str(e)}", cls="error-text")
+
+@rt("/signup", methods=["GET"])
+def get_signup_redirect():
+    """Marketing sites may link to /signup; app registration lives at /register."""
+    return RedirectResponse("/register", status_code=302)
+
 
 @rt("/register", methods=["GET"])
 def get_register(session):
