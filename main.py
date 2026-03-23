@@ -30,6 +30,32 @@ supabase_key = os.environ.get("SUPABASE_KEY")
 class MinimalSupabase:
     def __init__(self, url, key):
         self.auth = SyncGoTrueClient(url=f"{url}/auth/v1", headers={"apikey": key, "Authorization": f"Bearer {key}"})
+    
+    def table(self, table_name):
+        from app.supabase_db import db_patch, db_delete, db_insert
+        class TableHelper:
+            def __init__(self, t):
+                self.t = t
+                self.filters = {}
+            def update(self, data):
+                self.data = data
+                return self
+            def eq(self, col, val):
+                self.filters[col] = val
+                return self
+            def delete(self):
+                self.action = "delete"
+                return self
+            def upsert(self, data):
+                db_insert(self.t, data)
+                return self
+            def execute(self):
+                if hasattr(self, 'data'):
+                    db_patch(self.t, self.data, self.filters)
+                elif hasattr(self, 'action') and self.action == "delete":
+                    db_delete(self.t, self.filters)
+                return self
+        return TableHelper(table_name)
 
 if supabase_url and supabase_key:
     supabase = MinimalSupabase(supabase_url, supabase_key)
