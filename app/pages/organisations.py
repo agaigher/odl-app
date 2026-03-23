@@ -1,9 +1,9 @@
 from fasthtml.common import *
 from app.components import icon_svg, IC
 
+
 def OrganisationsPage(orgs):
     return Div(
-        # Header
         Div(
             Div(
                 H1("Organizations", style="font-size: 24px; font-weight: 700; color: #F8FAFC;"),
@@ -17,13 +17,12 @@ def OrganisationsPage(orgs):
             , cls="new-org-btn"),
             style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px;"
         ),
-        
-        # Grid
+
         Div(
             *[OrgCard(o) for o in orgs] if orgs else EmptyState(),
             style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px;"
         ),
-        
+
         Style("""
             .new-org-btn:hover { background: #0369A1 !important; }
             .org-card {
@@ -40,48 +39,54 @@ def OrganisationsPage(orgs):
                 margin-bottom: 16px; font-weight: 700; color: #94A3B8; font-size: 20px;
                 object-fit: cover;
             }
-            .org-name { font-size: 18px; font-weight: 700; color: #F8FAFC; margin-bottom: 4px; }
-            .org-meta { font-size: 13px; color: #94A3B8; display: flex; align-items: center; gap: 8px; }
-            .tier-badge {
-                font-size: 10px; font-weight: 700; background: #0F172A;
-                color: #94A3B8; padding: 2px 6px; border-radius: 4px;
-                text-transform: uppercase;
+            .org-name { font-size: 18px; font-weight: 700; color: #F8FAFC; margin-bottom: 8px; }
+            .org-stats-row {
+                display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+                margin-top: 4px;
             }
-            .org-action-bar {
-                margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.05);
-                display: flex; justify-content: flex-end;
+            .org-stat-pill {
+                display: inline-flex; align-items: baseline; gap: 6px;
+                font-size: 13px; color: #94A3B8;
             }
-            .view-dashboard-btn { font-size: 13px; font-weight: 600; color: #0284C7; display: flex; align-items: center; gap: 4px; }
+            .org-stat-num {
+                font-family: 'JetBrains Mono', ui-monospace, monospace;
+                font-size: 15px; font-weight: 600; color: #F1F5F9;
+            }
+            .org-card-hint {
+                margin-top: 14px; font-size: 12px; color: #64748B;
+            }
         """),
         cls="organisations-container"
     )
 
+
 def OrgCard(org):
+    n_proj = org.get("project_count", 0)
+    n_mem = org.get("member_count", 0)
     return A(
-        # Identity
-        Img(src=org.get("avatar_url"), cls="org-logo-large") if org.get("avatar_url") else 
+        Img(src=org.get("avatar_url"), cls="org-logo-large") if org.get("avatar_url") else
         Div(org["name"][0].upper(), cls="org-logo-large"),
-        
+
         Div(org["name"], cls="org-name"),
         Div(
-            Span("FREE", cls="tier-badge"),
-            Span("•"),
-            Span("Active", style="color: #10B981;"),
-            cls="org-meta"
+            Div(
+                Span(str(n_proj), cls="org-stat-num"),
+                Span("projects"),
+                cls="org-stat-pill",
+            ),
+            Div(
+                Span(str(n_mem), cls="org-stat-num"),
+                Span("members"),
+                cls="org-stat-pill",
+            ),
+            cls="org-stats-row",
         ),
-        
-        Div(
-            Span("View Dashboard", cls="view-dashboard-btn"),
-            cls="org-action-bar"
-        ),
-        
-        href=f"/org/{org['slug']}",
-        # We also need a way to trigger session switch when clicking the card.
-        # For simplicity, we can make the link a form or use HTMX hx-post.
-        # But if they click the card, they probably want to switch anyway.
-        # I'll use a script to auto-switch if they come from this page, or handle it in the /org/{slug} route.
-        cls="org-card"
+        P("Opens this org in the app → Projects", cls="org-card-hint"),
+
+        href=f"/org/open/{org['slug']}",
+        cls="org-card",
     )
+
 
 def EmptyState():
     return Div(

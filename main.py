@@ -1053,8 +1053,41 @@ def get_organisations(session):
         except Exception as e:
             print(f"Error fetching orgs: {e}")
             orgs = []
-        
+
+        for org in orgs:
+            oid = org.get("id")
+            if not oid:
+                org["member_count"] = org["project_count"] = 0
+                continue
+            try:
+                members = db_select("memberships", {"org_id": oid, "status": "active"})
+                projs = db_select("projects", {"org_id": oid})
+                org["member_count"] = len(members or [])
+                org["project_count"] = len(projs or [])
+            except Exception:
+                org["member_count"] = org["project_count"] = 0
+
     return page_layout("Organizations", "/organisations", user, OrganisationsPage(orgs), session=session)
+
+
+@rt("/org/open/{slug}")
+def get_org_open_and_projects(slug: str, session):
+    """Set active org (same as header switch) and go to Projects — used by All Organizations cards."""
+    user_id = _get_user_id(session)
+    if not user_id:
+        return RedirectResponse("/login", status_code=303)
+    orgs = db_select("organisations", {"slug": slug})
+    if not orgs:
+        return RedirectResponse("/organisations", status_code=303)
+    org = orgs[0]
+    m = db_select("memberships", {"user_id": user_id, "org_id": org["id"], "status": "active"})
+    if not m:
+        return RedirectResponse("/organisations", status_code=303)
+    session["active_org_id"] = org["id"]
+    session.pop("active_project_id", None)
+    session["force_header_refresh"] = True
+    return RedirectResponse("/projects", status_code=303)
+
 
 @rt("/org/{slug}")
 def get_org(slug: str, session):

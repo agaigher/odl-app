@@ -245,7 +245,7 @@ def Dashboard(user_id: str, user_email: str):
                     cls="org-card-left"
                 ),
                 Span("→", cls="org-card-arrow"),
-                href=f"/org/{o['slug']}",
+                href=f"/org/open/{o['slug']}",
                 cls="org-card"
             )
             for o in orgs
