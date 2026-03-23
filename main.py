@@ -971,12 +971,16 @@ def post_billing_emails(session, billing_email: str, additional_emails: str = ""
             "billing_email": billing_email,
             "additional_billing_emails": additional_emails
         }).eq("id", org_id).execute()
-        log_audit(org_id, user_id, "Updated billing email recipients", "billing", org_id)
-        return Div("Billing emails saved.", cls="success-text", style="margin-top: 8px;")
-    except Exception: return "Error", 500
+        log_audit(org_id, user_id, f"Updated billing recipients", "billing", org_id)
+        return Div("Billing emails updated.", cls="success-text", style="margin-top: 8px;")
+    except Exception as e: return f"Error: {e}", 500
 
 @rt("/billing/address", methods=["POST"])
-def post_billing_address(session, address: str, tax_id: str = ""):
+def post_billing_address(session, billing_name: str, billing_address_line1: str, 
+                         billing_address_line2: str = "", billing_country: str = "", 
+                         billing_postal_code: str = "", billing_city: str = "", 
+                         billing_state: str = "", billing_tax_id_type: str = "",
+                         tax_id: str = ""):
     user_id = _get_user_id(session)
     if not user_id: return "Unauthorized", 401
     try:
@@ -985,12 +989,20 @@ def post_billing_address(session, address: str, tax_id: str = ""):
         if not memberships: return "No active organization", 400
         org_id = memberships[0]["org_id"]
         supabase.table("organisations").update({
-            "billing_address": address,
+            "billing_name": billing_name,
+            "billing_address_line1": billing_address_line1,
+            "billing_address_line2": billing_address_line2,
+            "billing_country": billing_country,
+            "billing_postal_code": billing_postal_code,
+            "billing_city": billing_city,
+            "billing_state": billing_state,
+            "billing_tax_id_type": billing_tax_id_type,
             "tax_id": tax_id
         }).eq("id", org_id).execute()
-        log_audit(org_id, user_id, "Updated billing address and Tax ID", "billing", org_id)
-        return Div("Billing address saved.", cls="success-text", style="margin-top: 8px;")
-    except Exception: return "Error", 500
+        log_audit(org_id, user_id, "Updated billing address and tax info", "billing", org_id)
+        return Div("Billing address updated.", cls="success-text", style="margin-top: 8px;")
+    except Exception as e: return f"Error: {e}", 500
+
 
 @rt("/org/switch", methods=["POST"])
 def post_org_switch(session, org_id: str):
