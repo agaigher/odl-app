@@ -37,68 +37,74 @@ def OrganizationSettings(user_id: str, session: dict, tab: str = 'general'):
         Style("""
             .settings-container {
                 display: flex;
-                gap: 48px;
-                padding: 40px;
-                max-width: 1200px;
+                padding: 40px 60px;
+                max-width: 1400px;
                 margin: 0 auto;
+                min-height: calc(100vh - 60px);
+                background: #0F172A; /* Match the content background */
             }
             .settings-nav {
-                width: 200px;
+                width: 240px;
                 flex-shrink: 0;
+                padding-right: 48px;
+                border-right: 1px solid rgba(255,255,255,0.05);
             }
             .settings-content {
                 flex: 1;
-                max-width: 800px;
+                padding-left: 64px;
+                max-width: 900px;
             }
             .nav-group {
                 margin-bottom: 32px;
             }
             .nav-group-title {
+                font-family: 'Inter', sans-serif;
                 font-size: 11px;
                 font-weight: 700;
-                color: #94A3B8;
+                color: #475569;
                 text-transform: uppercase;
-                letter-spacing: 0.05em;
+                letter-spacing: 0.1em;
                 margin-bottom: 12px;
-                padding-left: 12px;
+                padding-left: 4px;
             }
             .nav-tab {
                 display: block;
                 padding: 8px 12px;
                 font-size: 14px;
-                color: #64748B;
+                color: #94A3B8;
                 text-decoration: none;
                 border-radius: 6px;
-                transition: all 0.2s;
+                transition: all 0.15s;
                 margin-bottom: 2px;
                 cursor: pointer;
             }
             .nav-tab:hover {
-                background: #F8FAFC;
-                color: #0F172A;
+                background: rgba(255,255,255,0.03);
+                color: #F8FAFC;
             }
             .nav-tab.active {
-                background: #F1F5F9;
-                color: #0F172A;
-                font-weight: 600;
+                background: rgba(255,255,255,0.06);
+                color: #FFFFFF;
+                font-weight: 500;
             }
             
-            /* Shared Card Styles */
+            /* Shared Card Styles (Dark) */
             .settings-card {
-                background: #FFFFFF;
-                border: 1px solid #E2E8F0;
+                background: #1E293B;
+                border: 1px solid rgba(255,255,255,0.05);
                 border-radius: 12px;
                 padding: 32px;
                 margin-bottom: 32px;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             }
-            .card-title { font-size: 18px; font-weight: 600; color: #1E293B; margin-bottom: 8px; }
-            .card-desc { font-size: 14px; color: #64748B; margin-bottom: 24px; }
-            .danger-border { border-color: #FCA5A5 !important; }
-            .danger-text { color: #DC2626 !important; }
+            .card-title { font-size: 18px; font-weight: 600; color: #F8FAFC; margin-bottom: 8px; }
+            .card-desc { font-size: 14px; color: #94A3B8; margin-bottom: 24px; }
+            .danger-border { border-color: rgba(239, 68, 68, 0.3) !important; }
+            .danger-text { color: #F87171 !important; }
             
             .fieldset-row { display: flex; align-items: flex-end; gap: 16px; margin-bottom: 16px; }
             .fieldset-row .input-grp { flex: 1; }
-            .input-grp label { display: block; font-size: 14px; font-weight: 500; color: #334155; margin-bottom: 8px; }
+            .input-grp label { display: block; font-size: 14px; font-weight: 500; color: #CBD5E1; margin-bottom: 8px; }
         """),
         
         Div(
@@ -139,8 +145,8 @@ def OrganizationSettings(user_id: str, session: dict, tab: str = 'general'):
 
 def GeneralPane(org):
     return Div(
-        H2("General Settings", style="font-size: 24px; font-weight: 700; margin-bottom: 8px;"),
-        P("Manage your organization's public profile and identity.", style="color: #64748B; margin-bottom: 32px;"),
+        H2("General Settings", style="font-size: 24px; font-weight: 700; margin-bottom: 8px; color: #F8FAFC;"),
+        P("Manage your organization's public profile and identity.", style="color: #94A3B8; margin-bottom: 32px;"),
         
         # Logo Card
         Div(
@@ -181,8 +187,8 @@ def SecurityPane(org, user_id, current_role):
     other_members = [m for m in all_members if m["user_id"] != user_id]
     
     return Div(
-        H2("Security & Access", style="font-size: 24px; font-weight: 700; margin-bottom: 8px;"),
-        P("Manage organization ownership and protection.", style="color: #64748B; margin-bottom: 32px;"),
+        H2("Security & Access", style="font-size: 24px; font-weight: 700; margin-bottom: 8px; color: #F8FAFC;"),
+        P("Manage organization ownership and protection.", style="color: #94A3B8; margin-bottom: 32px;"),
         
         # Transfer Ownership
         Div(
@@ -222,20 +228,20 @@ def SSOPane(org):
     sso = sso_configs[0] if sso_configs else {}
     
     return Div(
-        H2("Single Sign-On (SSO)", style="font-size: 24px; font-weight: 700; margin-bottom: 8px;"),
-        P("Configure domain-wide authentication enforcement.", style="color: #64748B; margin-bottom: 32px;"),
+        H2("Single Sign-On (SSO)", style="font-size: 24px; font-weight: 700; margin-bottom: 8px; color: #F8FAFC;"),
+        P("Configure domain-wide authentication enforcement.", style="color: #94A3B8; margin-bottom: 32px;"),
         
         Div(
             Div("SAML Configuration", cls="card-title"),
             Div("Connect your enterprise identity provider.", cls="card-desc"),
             Form(
                 Div(
-                    Label("Managed Domain", style="font-size: 13px; font-weight: 600; color: #334155; display: block; margin-bottom: 6px;"),
+                    Label("Managed Domain", style="font-size: 13px; font-weight: 600; color: #CBD5E1; display: block; margin-bottom: 6px;"),
                     Input(type="text", name="domain", value=sso.get("domain", ""), placeholder="company.com", cls="odl-input"),
                     style="margin-bottom: 20px;"
                 ),
                 Div(
-                    Label("Metadata URL", style="font-size: 13px; font-weight: 600; color: #334155; display: block; margin-bottom: 6px;"),
+                    Label("Metadata URL", style="font-size: 13px; font-weight: 600; color: #CBD5E1; display: block; margin-bottom: 6px;"),
                     Input(type="url", name="metadata_url", value=sso.get("metadata_url", ""), placeholder="https://idp.com/metadata", cls="odl-input"),
                     style="margin-bottom: 20px;"
                 ),
@@ -261,8 +267,8 @@ def AuditPane(org):
     logs = db_select("audit_logs", {"org_id": org["id"]}, order="created_at.desc", limit=50)
     
     return Div(
-        H2("Audit Logs", style="font-size: 24px; font-weight: 700; margin-bottom: 8px;"),
-        P("Review recent administrative activity.", style="color: #64748B; margin-bottom: 32px;"),
+        H2("Audit Logs", style="font-size: 24px; font-weight: 700; margin-bottom: 8px; color: #F8FAFC;"),
+        P("Review recent administrative activity.", style="color: #94A3B8; margin-bottom: 32px;"),
         
         Div(
             Table(
@@ -288,12 +294,12 @@ def AuditPane(org):
 
 def PlaceholderPane(title):
     return Div(
-        H2(f"{title} (Coming Soon)", style="font-size: 24px; font-weight: 700; margin-bottom: 8px;"),
-        P(f"Configure {title} for your enterprise organization.", style="color: #64748B; margin-bottom: 32px;"),
+        H2(f"{title} (Coming Soon)", style="font-size: 24px; font-weight: 700; margin-bottom: 8px; color: #F8FAFC;"),
+        P(f"Configure {title} for your enterprise organization.", style="color: #94A3B8; margin-bottom: 32px;"),
         Div(
-            Div(icon_svg(IC.bolt), style="width: 48px; height: 48px; color: #CBD5E1; margin: 0 auto 16px;"),
+            Div(icon_svg(IC.cog), style="width: 48px; height: 48px; color: #475569; margin: 0 auto 16px;"),
             P("This feature is currently under final review and will be available shortly.", style="color: #94A3B8; font-size: 14px;"),
-            style="text-align: center; padding: 80px 20px; border: 2px dashed #E2E8F0; border-radius: 12px; background: #F8FAFC;"
+            style="text-align: center; padding: 80px 20px; border: 2px dashed rgba(255,255,255,0.05); border-radius: 12px; background: #1E293B;"
         ),
         id=f"{title.lower().replace(' ', '-')}-pane"
     )

@@ -6,8 +6,8 @@ def OrganisationsPage(orgs):
         # Header
         Div(
             Div(
-                H1("Organizations", style="font-size: 24px; font-weight: 700; color: #0F172A;"),
-                P("Manage your workspaces and billing across different organizations.", style="color: #64748B; font-size: 14px; margin-top: 4px;"),
+                H1("Organizations", style="font-size: 24px; font-weight: 700; color: #F8FAFC;"),
+                P("Manage your workspaces and billing across different organizations.", style="color: #94A3B8; font-size: 14px; margin-top: 4px;"),
             ),
             A(
                 icon_svg(IC.plus_circle, style="margin-right: 8px; width: 16px; height: 16px;"),
@@ -27,27 +27,28 @@ def OrganisationsPage(orgs):
         Style("""
             .new-org-btn:hover { background: #0369A1 !important; }
             .org-card {
-                background: white; border: 1px solid #E2E8F0; border-radius: 12px;
+                background: #1E293B; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px;
                 padding: 24px; transition: all 0.2s; text-decoration: none;
                 display: flex; flex-direction: column; cursor: pointer;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             }
-            .org-card:hover { border-color: #0284C7; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); transform: translateY(-2px); }
+            .org-card:hover { border-color: #0284C7; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); transform: translateY(-2px); }
             .org-logo-large {
                 width: 48px; height: 48px; border-radius: 8px;
-                background: #F8FAFC; border: 1px solid #E2E8F0;
+                background: #0F172A; border: 1px solid rgba(255,255,255,0.05);
                 display: flex; align-items: center; justify-content: center;
-                margin-bottom: 16px; font-weight: 700; color: #64748B; font-size: 20px;
+                margin-bottom: 16px; font-weight: 700; color: #94A3B8; font-size: 20px;
                 object-fit: cover;
             }
-            .org-name { font-size: 18px; font-weight: 700; color: #1E293B; margin-bottom: 4px; }
+            .org-name { font-size: 18px; font-weight: 700; color: #F8FAFC; margin-bottom: 4px; }
             .org-meta { font-size: 13px; color: #94A3B8; display: flex; align-items: center; gap: 8px; }
             .tier-badge {
-                font-size: 10px; font-weight: 700; background: #F1F5F9;
-                color: #64748B; padding: 2px 6px; border-radius: 4px;
+                font-size: 10px; font-weight: 700; background: #0F172A;
+                color: #94A3B8; padding: 2px 6px; border-radius: 4px;
                 text-transform: uppercase;
             }
             .org-action-bar {
-                margin-top: 24px; padding-top: 16px; border-top: 1px solid #F1F5F9;
+                margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.05);
                 display: flex; justify-content: flex-end;
             }
             .view-dashboard-btn { font-size: 13px; font-weight: 600; color: #0284C7; display: flex; align-items: center; gap: 4px; }
@@ -85,8 +86,8 @@ def OrgCard(org):
 def EmptyState():
     return Div(
         Div(icon_svg(IC.plus_circle), style="width: 48px; height: 48px; color: #CBD5E1; margin: 0 auto 16px;"),
-        H3("No organizations found", style="font-size: 16px; font-weight: 600; color: #475569;"),
+        H3("No organizations found", style="font-size: 16px; font-weight: 600; color: #F8FAFC;"),
         P("You aren't part of any organizations yet. Create one to get started.", style="color: #94A3B8; font-size: 14px; margin-top: 8px;"),
         A("Create Organization", href="/create-org", style="display: inline-block; margin-top: 20px; color: white; background: #0284C7; padding: 8px 20px; border-radius: 6px; text-decoration: none;"),
-        style="grid-column: 1 / -1; text-align: center; padding: 80px 20px; border: 2px dashed #E2E8F0; border-radius: 12px; background: #F8FAFC;"
+        style="grid-column: 1 / -1; text-align: center; padding: 80px 20px; border: 2px dashed rgba(255,255,255,0.05); border-radius: 12px; background: #1E293B;"
     )

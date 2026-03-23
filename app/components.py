@@ -209,7 +209,8 @@ def odl_navbar(user=None, active_org=None, all_orgs=None):
             .logout-btn:hover { background: rgba(255,255,255,0.08); color: #ffffff; }
         """),
         Div(
-            A(icon_svg(IC.bolt), href="/", cls="app-logo"),
+            A("OpenData.London", href="/", cls="app-logo", 
+              style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 16px; color: #F8FAFC; text-decoration: none; letter-spacing: -0.02em;"),
             Span("/", cls="brand-separator"),
             OrgSwitcher(active_org, all_orgs),
             # Add Plan pill if in an org

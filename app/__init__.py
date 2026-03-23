@@ -5,16 +5,16 @@ def get_app_style():
     # Base application styling
     return Style("""
         :root {
-            --bg-page: #F1F5F9;
-            --bg-surface: #FFFFFF;
-            --bg-card: #FFFFFF;
-            --text-main: #1E293B;
-            --text-muted: #64748B;
-            --text-faint: #94A3B8;
+            --bg-page: #0F172A;
+            --bg-surface: #1E293B;
+            --bg-card: #1E293B;
+            --text-main: #F8FAFC;
+            --text-muted: #94A3B8;
+            --text-faint: #475569;
             --accent: #0284C7;
-            --accent-light: #E0F2FE;
-            --border: #E2E8F0;
-            --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+            --accent-light: rgba(2, 132, 199, 0.15);
+            --border: rgba(255, 255, 255, 0.05);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
         }
 
         *, *::before, *::after { box-sizing: border-box; }
