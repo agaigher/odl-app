@@ -635,6 +635,13 @@ def get_billing(session):
     if not user_id: return RedirectResponse("/login", status_code=303)
     return page_layout("Billing", "/billing", session.get('user'), BillingDashboard(user_id=user_id, session=session))
 
+@rt("/usage")
+def get_usage(session):
+    from app.pages.usage import UsageDashboard
+    user_id = _get_user_id(session)
+    if not user_id: return RedirectResponse("/login", status_code=303)
+    return page_layout("Usage", "/usage", session.get('user'), UsageDashboard(user_id=user_id, session=session))
+
 import stripe
 
 stripe.api_key = os.getenv("STRIPE_API_KEY", "sk_test_dummy")
@@ -1129,7 +1136,7 @@ def get_invite_accept(req, session, org: str = ""):
             Link(rel="stylesheet", href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"),
             Style("""
                 * { box-sizing: border-box; margin: 0; padding: 0; }
-                body { background: #0B1120; font-family: 'Inter', sans-serif; min-height: 100vh;
+                body { background: #080a0f; font-family: 'Inter', sans-serif; min-height: 100vh;
                        display: flex; align-items: center; justify-content: center; color: #F8FAFC; }
                 .card { text-align: center; max-width: 400px; padding: 40px 20px; }
                 .card h1 { font-size: 22px; font-weight: 700; margin-bottom: 10px; }

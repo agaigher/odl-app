@@ -9,7 +9,7 @@ def CreateOrgPage():
             Script(src="https://unpkg.com/htmx.org@1.9.10"),
             Style("""
                 * { box-sizing: border-box; margin: 0; padding: 0; }
-                body { background: #0B1120; font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+                body { background: #080a0f; font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
                 .auth-topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 40px; border-bottom: 1px solid rgba(255,255,255,0.06); }
                 .auth-brand { font-size: 17px; font-weight: 700; color: #fff; text-decoration: none; }
                 .auth-brand span { color: #0284C7; }

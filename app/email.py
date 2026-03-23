@@ -40,7 +40,7 @@ def send_org_invite(*, invited_email: str, org_name: str, role: str, invite_link
     invited_by_line = f"<p style='color:#64748B;font-size:13px;margin:0 0 16px;'>Invited by {invited_by}</p>" if invited_by else ""
 
     html = f"""
-    <div style='font-family:Inter,sans-serif;background:#0B1120;padding:40px 0;'>
+    <div style='font-family:Inter,sans-serif;background:#080a0f;padding:40px 0;'>
       <div style='max-width:480px;margin:0 auto;background:#0F1929;border:1px solid rgba(148,163,184,0.12);border-radius:12px;padding:40px;'>
         <p style='font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#0284C7;margin:0 0 20px;'>OpenData.London</p>
         <h1 style='font-size:22px;font-weight:700;color:#F8FAFC;margin:0 0 10px;letter-spacing:-0.3px;'>You've been invited</h1>

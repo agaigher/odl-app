@@ -20,7 +20,7 @@ def OrgDashboard(org):
             Tr(
                 Td(email, style="padding: 12px 16px; color: #E2E8F0; font-size: 14px;"),
                 Td(
-                    Span(role.capitalize(), style=f"background: rgba(41,181,232,0.1); color: {role_badge_color}; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;"),
+                    Span(role.capitalize(), style=f"background: rgba(2,132,199,0.12); color: {role_badge_color}; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;"),
                     style="padding: 12px 16px;"
                 ),
                 Td(
@@ -37,7 +37,7 @@ def OrgDashboard(org):
             .org-slug { font-size: 13px; color: #475569; margin-top: 4px; }
             .section-card { background: #0F1929; border: 1px solid rgba(148,163,184,0.1); border-radius: 10px; padding: 24px; margin-bottom: 24px; }
             .section-title { font-size: 15px; font-weight: 600; color: #F8FAFC; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
-            .invite-btn { background: #0284C7; color: #020617; font-size: 13px; font-weight: 600; padding: 7px 14px; border: none; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif; text-decoration: none; }
+            .invite-btn { background: #0284C7; color: #ffffff; font-size: 13px; font-weight: 600; padding: 7px 14px; border: none; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif; text-decoration: none; }
             .invite-btn:hover { opacity: 0.88; }
             table { width: 100%; border-collapse: collapse; }
             th { text-align: left; padding: 8px 16px; font-size: 12px; font-weight: 500; color: #64748B; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid rgba(148,163,184,0.1); }

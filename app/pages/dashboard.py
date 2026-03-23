@@ -3,89 +3,104 @@ from app.supabase_db import db_select
 from datetime import datetime
 
 DASHBOARD_STYLE = Style("""
+    /* Dark surfaces — same family as app shell (no harsh white cards on #080a0f) */
     .dash-wrap { max-width: 1100px; }
     .dash-greeting { margin-bottom: 28px; }
-    /* Headings sit on dark main canvas — use light text; cards below stay light-surface */
-    .dash-greeting h1 { font-size: 22px; font-weight: 700; color: #F8FAFC; letter-spacing: -0.3px; }
+    .dash-greeting h1 { font-size: 22px; font-weight: 600; color: #F8FAFC; letter-spacing: -0.03em; }
     .dash-greeting p { font-size: 14px; color: #94A3B8; margin-top: 4px; }
 
-    .dash-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 36px; }
+    .dash-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 36px; }
     .stat-card {
-        background: #FFFFFF; border: 1px solid #E2E8F0;
-        border-radius: 10px; padding: 20px 24px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px; padding: 18px 20px;
+        box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset;
     }
-    .stat-label { font-size: 11px; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
-    .stat-value { font-size: 28px; font-weight: 700; color: #1E293B; font-family: 'Roboto Mono', monospace; }
+    .stat-label { font-size: 10px; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
+    .stat-value { font-size: 26px; font-weight: 600; color: #F1F5F9; font-family: 'JetBrains Mono', 'Roboto Mono', ui-monospace, monospace; letter-spacing: -0.02em; }
 
     .dash-section { margin-bottom: 36px; }
     .dash-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-    .dash-section-title { font-size: 15px; font-weight: 600; color: #E2E8F0; }
-    .dash-section-link { font-size: 13px; color: #0284C7; text-decoration: none; }
-    .dash-section-link:hover { text-decoration: underline; }
+    .dash-section-title { font-size: 14px; font-weight: 600; color: #CBD5E1; letter-spacing: -0.01em; }
+    .dash-section-link { font-size: 13px; color: #38bdf8; text-decoration: none; font-weight: 500; }
+    .dash-section-link:hover { color: #7dd3fc; text-decoration: underline; }
 
-    .access-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    .access-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
     .access-card {
-        background: #FFFFFF; border: 1px solid #E2E8F0;
-        border-radius: 10px; padding: 18px 20px; text-decoration: none;
+        background: rgba(255,255,255,0.035);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px; padding: 18px 20px; text-decoration: none;
         display: flex; flex-direction: column; gap: 10px;
-        transition: border-color 0.15s, box-shadow 0.15s;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+        box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset;
     }
-    .access-card:hover { border-color: #BAE6FD; box-shadow: 0 4px 12px rgba(2,132,199,0.1); }
+    .access-card:hover {
+        background: rgba(255,255,255,0.06);
+        border-color: rgba(56, 189, 248, 0.25);
+        box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.08);
+    }
     .access-card-top { display: flex; align-items: center; justify-content: space-between; }
-    .access-card-title { font-size: 14px; font-weight: 600; color: #1E293B; line-height: 1.4; }
-    .access-card-desc { font-size: 13px; color: #64748B; line-height: 1.5; }
+    .access-card-title { font-size: 14px; font-weight: 600; color: #F1F5F9; line-height: 1.4; }
+    .access-card-desc { font-size: 13px; color: #94A3B8; line-height: 1.5; }
     .access-card-footer { display: flex; gap: 6px; align-items: center; }
-    .badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-    .badge-api     { background: #E0F2FE; color: #0284C7; }
-    .badge-sf      { background: #EFF6FF; color: #3B82F6; }
-    .badge-active  { background: #DCFCE7; color: #16A34A; }
-    .badge-pending { background: #FEF9C3; color: #CA8A04; }
+    .badge { padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+    .badge-api     { background: rgba(2, 132, 199, 0.2); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.2); }
+    .badge-sf      { background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.2); }
+    .badge-active  { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.2); }
+    .badge-pending { background: rgba(234, 179, 8, 0.12); color: #fcd34d; border: 1px solid rgba(234, 179, 8, 0.2); }
 
     .share-table { width: 100%; border-collapse: collapse; }
-    .share-table th { font-size: 11px; font-weight: 700; color: #94A3B8; text-transform: uppercase;
-                      letter-spacing: 0.06em; padding: 8px 16px; text-align: left;
-                      border-bottom: 1px solid #F1F5F9; background: #FAFAFA; }
-    .share-table td { font-size: 13px; color: #374151; padding: 12px 16px;
-                      border-bottom: 1px solid #F8FAFC; }
+    .share-table th { font-size: 10px; font-weight: 600; color: #64748B; text-transform: uppercase;
+                      letter-spacing: 0.08em; padding: 10px 16px; text-align: left;
+                      border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(0,0,0,0.2); }
+    .share-table td { font-size: 13px; color: #E2E8F0; padding: 12px 16px;
+                      border-bottom: 1px solid rgba(255,255,255,0.05); }
     .share-table tr:last-child td { border-bottom: none; }
-    .share-table-wrap { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; overflow: hidden;
-                        box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .share-table-wrap {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px; overflow: hidden;
+        box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset;
+    }
 
     .org-card {
-        background: #FFFFFF; border: 1px solid #E2E8F0;
-        border-radius: 10px; padding: 18px 22px;
+        background: rgba(255,255,255,0.035);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px; padding: 18px 22px;
         display: flex; align-items: center; justify-content: space-between;
-        text-decoration: none; transition: border-color 0.15s, box-shadow 0.15s;
-        max-width: 480px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        text-decoration: none; transition: border-color 0.2s, background 0.2s;
+        max-width: 480px;
     }
-    .org-card:hover { border-color: #BAE6FD; box-shadow: 0 4px 12px rgba(2,132,199,0.1); }
-    .org-card-left h3 { font-size: 15px; font-weight: 600; color: #1E293B; margin-bottom: 4px; }
-    .org-card-left p { font-size: 13px; color: #64748B; }
-    .org-card-arrow { color: #CBD5E1; font-size: 18px; }
+    .org-card:hover {
+        background: rgba(255,255,255,0.06);
+        border-color: rgba(56, 189, 248, 0.22);
+    }
+    .org-card-left h3 { font-size: 15px; font-weight: 600; color: #F1F5F9; margin-bottom: 4px; }
+    .org-card-left p { font-size: 13px; color: #94A3B8; }
+    .org-card-arrow { color: #64748B; font-size: 18px; }
 
     .empty-state {
-        background: #FFFFFF; border: 1px solid #E2E8F0;
-        border-radius: 12px; padding: 48px 32px; text-align: center;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 14px; padding: 48px 32px; text-align: center;
     }
-    .empty-state h2 { font-size: 17px; font-weight: 600; color: #1E293B; margin-bottom: 8px; }
-    .empty-state p { font-size: 14px; color: #64748B; line-height: 1.6; margin-bottom: 24px; max-width: 440px; margin-left: auto; margin-right: auto; }
+    .empty-state h2 { font-size: 17px; font-weight: 600; color: #F1F5F9; margin-bottom: 8px; }
+    .empty-state p { font-size: 14px; color: #94A3B8; line-height: 1.6; margin-bottom: 24px; max-width: 440px; margin-left: auto; margin-right: auto; white-space: pre-line; }
     .btn-primary {
         display: inline-block; background: #0284C7; color: #ffffff;
-        font-weight: 600; font-size: 14px; padding: 10px 22px;
-        border-radius: 6px; text-decoration: none; transition: background 0.15s;
+        font-weight: 500; font-size: 14px; padding: 10px 22px;
+        border-radius: 8px; text-decoration: none; transition: background 0.2s;
+        border: 1px solid rgba(255,255,255,0.08);
     }
     .btn-primary:hover { background: #0369A1; }
     .btn-secondary {
-        display: inline-block; background: #FFFFFF;
-        border: 1px solid #E2E8F0; color: #475569;
+        display: inline-block; background: transparent;
+        border: 1px solid rgba(255,255,255,0.14); color: #CBD5E1;
         font-weight: 500; font-size: 14px; padding: 10px 22px;
-        border-radius: 6px; text-decoration: none; transition: border-color 0.15s;
+        border-radius: 8px; text-decoration: none; transition: border-color 0.2s, color 0.2s, background 0.2s;
         margin-left: 10px;
     }
-    .btn-secondary:hover { border-color: #CBD5E1; color: #1E293B; }
+    .btn-secondary:hover { border-color: rgba(255,255,255,0.28); color: #F8FAFC; background: rgba(255,255,255,0.05); }
 """)
 
 
@@ -124,7 +139,7 @@ def _share_row(req):
     status_badge = Span("Pending", cls="badge badge-pending") if status == "pending" else Span("Fulfilled", cls="badge badge-active")
     return Tr(
         Td(req.get("dataset_slug", "").replace("-", " ").title()),
-        Td(req.get("snowflake_account", ""), style="font-family: 'Roboto Mono', monospace; font-size: 12px;"),
+        Td(req.get("snowflake_account", ""), style="font-family: 'JetBrains Mono', 'Roboto Mono', monospace; font-size: 12px; color: #CBD5E1;"),
         Td(status_badge),
         Td(days_ago, style="color: #94A3B8;"),
     )
@@ -226,9 +241,9 @@ def Dashboard(user_id: str, user_email: str):
     ) if orgs else Div(
         Div(Span("Organisation", cls="dash-section-title"), cls="dash-section-header"),
         Div(
-            P("You are not part of any organisation.", style="color: #64748B; font-size: 14px; margin-bottom: 14px;"),
+            P("You are not part of any organisation.", style="color: #94A3B8; font-size: 14px; margin-bottom: 14px;"),
             A("Create an organisation", href="/create-org", cls="btn-secondary", style="margin-left: 0;"),
-            style="padding: 24px; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px;"
+            style="padding: 24px; background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;"
         ),
         cls="dash-section"
     )

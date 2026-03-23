@@ -7,7 +7,8 @@ def AuthPage(mode="login"):
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body.auth-page {
-            background: radial-gradient(ellipse 120% 80% at 50% -20%, rgba(56, 189, 248, 0.08) 0%, transparent 50%), #080a0f;
+            /* Same canvas as logged-in app — no blue wash */
+            background: #080a0f;
             font-family: 'Inter', system-ui, sans-serif;
             min-height: 100vh;
             display: flex;
@@ -29,16 +30,14 @@ def AuthPage(mode="login"):
             text-decoration: none;
             letter-spacing: -0.3px;
         }
-        .auth-brand span {
-            color: #0284C7;
-        }
+        .auth-brand span { color: #94a3b8; font-weight: 500; }
         .auth-topbar-link {
             font-size: 13px;
             color: #94A3B8;
             text-decoration: none;
         }
         .auth-topbar-link a {
-            color: #0284C7;
+            color: #7dd3fc;
             font-weight: 500;
             text-decoration: none;
         }
@@ -105,12 +104,12 @@ def AuthPage(mode="login"):
         }
         .oauth-btn svg { flex-shrink: 0; }
         .oauth-btn.snowflake-btn {
-            border-color: rgba(41,181,232,0.3);
-            color: #0284C7;
+            border-color: rgba(2,132,199,0.35);
+            color: #7dd3fc;
         }
         .oauth-btn.snowflake-btn:hover {
-            background: rgba(41,181,232,0.08);
-            border-color: rgba(41,181,232,0.5);
+            background: rgba(2,132,199,0.1);
+            border-color: rgba(2,132,199,0.45);
         }
 
         /* ── Divider ── */
@@ -141,8 +140,8 @@ def AuthPage(mode="login"):
         }
         .form-input {
             width: 100%;
-            background: #020617;
-            border: 1px solid rgba(148,163,184,0.18);
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(148,163,184,0.15);
             color: #F8FAFC;
             padding: 11px 14px;
             border-radius: 7px;
@@ -158,7 +157,7 @@ def AuthPage(mode="login"):
 
         .forgot-link {
             font-size: 12px;
-            color: #0284C7;
+            color: #7dd3fc;
             text-decoration: none;
             text-align: right;
             margin-top: -8px;
@@ -168,8 +167,8 @@ def AuthPage(mode="login"):
         .auth-submit-btn {
             width: 100%;
             background: #0284C7;
-            color: #020617;
-            font-weight: 700;
+            color: #ffffff;
+            font-weight: 600;
             font-size: 14px;
             padding: 12px;
             border: none;
@@ -199,7 +198,7 @@ def AuthPage(mode="login"):
             margin-top: 24px;
         }
         .auth-card-footer a {
-            color: #0284C7;
+            color: #7dd3fc;
             font-weight: 500;
             text-decoration: none;
         }
@@ -215,7 +214,7 @@ def AuthPage(mode="login"):
             border-top: 1px solid rgba(148,163,184,0.1);
         }
         .org-link-row a {
-            color: #0284C7;
+            color: #7dd3fc;
             font-weight: 500;
             text-decoration: none;
         }
