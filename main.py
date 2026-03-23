@@ -1290,10 +1290,6 @@ def get_projects(session):
 def get_team(session):
     return page_layout("Team", "/team", session.get('user'), Div(H1("Team Management (Coming Soon)", cls="fav-page-title"), P("Invite your organisation members here.", style="color:#64748B; margin-top: 10px;"), style="padding: 40px; text-align: center;"), session=session)
 
-@rt("/usage")
-def get_usage(session):
-    return page_layout("Usage", "/usage", session.get('user'), Div(H1("Usage Data (Coming Soon)", cls="fav-page-title"), P("Monitor query execution stats and limits.", style="color:#64748B; margin-top: 10px;"), style="padding: 40px; text-align: center;"), session=session)
-
 # Billing handled above
 
 if __name__ == '__main__':
