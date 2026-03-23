@@ -40,6 +40,10 @@ class MinimalSupabase:
             def update(self, data):
                 self.data = data
                 return self
+            def insert(self, data):
+                self.data = data
+                self.action = "insert"
+                return self
             def eq(self, col, val):
                 self.filters[col] = val
                 return self
@@ -50,11 +54,20 @@ class MinimalSupabase:
                 db_insert(self.t, data)
                 return self
             def execute(self):
-                if hasattr(self, 'data'):
+                from app.supabase_db import db_patch, db_delete, db_insert
+                class Res:
+                    def __init__(self, data=None): self.data = data
+                
+                if hasattr(self, 'action') and self.action == "insert":
+                    d = db_insert(self.t, self.data)
+                    return Res(d)
+                elif hasattr(self, 'data'):
                     db_patch(self.t, self.data, self.filters)
+                    return Res(self.data)
                 elif hasattr(self, 'action') and self.action == "delete":
                     db_delete(self.t, self.filters)
-                return self
+                    return Res([])
+                return Res([])
         return TableHelper(table_name)
 
 if supabase_url and supabase_key:

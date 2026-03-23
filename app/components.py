@@ -416,7 +416,7 @@ def page_layout(page_title, current_path, user, *content, session=None):
             if u_id:
                 now = time.time()
                 cache = session.get('header_cache', {})
-                use_cache = cache.get('expiry', 0) > now and not session.get('force_header_refresh')
+                use_cache = cache.get('expiry', 0) > now and session.get('force_header_refresh') is not True
                 
                 if use_cache:
                     all_orgs = cache.get('all_orgs', [])
