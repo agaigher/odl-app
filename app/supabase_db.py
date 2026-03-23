@@ -21,9 +21,11 @@ def db_insert(table: str, data: dict):
     return r.json()
 
 
-def db_select(table: str, filters: dict = None, limit: int = 100000):
+def db_select(table: str, filters: dict = None, limit: int = 100000, order: str = None):
     url = f"{SUPABASE_URL}/rest/v1/{table}"
     params = {k: f"eq.{v}" for k, v in (filters or {}).items()}
+    if order:
+        params["order"] = order
     h = _headers()
     
     all_results = []
