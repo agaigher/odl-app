@@ -342,8 +342,6 @@ def ProjectsDashboard(user_id="", session=None):
                 type="search",
                 id="pd-search",
                 placeholder="Search for a project",
-                cls="pd-search-input",
-                style="border:none;outline:none;background:transparent;flex:1;color:#fafafa;font-size:14px;",
             ),
             cls="pd-search-wrap",
         ),
