@@ -93,7 +93,7 @@ def odl_sidebar(current_path="/"):
 
     def icon_svg(d_path):
         return Svg(
-            Path(d=d_path),
+            NotStr(f'<path d="{d_path}"></path>'),
             xmlns="http://www.w3.org/2000/svg",
             width="18", height="18", viewBox="0 0 24 24",
             fill="none", stroke="currentColor",
