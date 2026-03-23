@@ -2,16 +2,9 @@ from fasthtml.common import *
 from app.supabase_db import db_select
 
 
-def OrgDashboard(slug: str, session):
+def OrgDashboard(org):
     try:
-        orgs = db_select("organisations", {"slug": slug})
-        if not orgs:
-            return Div(
-                H1("Organisation not found", style="color: #F8FAFC; margin-bottom: 12px;"),
-                P("This organisation doesn't exist or you don't have access.", style="color: #64748B;"),
-                A("← Back to dashboard", href="/", style="color: #29b5e8;")
-            )
-        org = orgs[0]
+        from app.supabase_db import db_select
         members = db_select("memberships", {"org_id": org["id"]})
     except Exception as e:
         return Div(f"Error loading organisation: {str(e)}", style="color: #EF4444;")
@@ -52,13 +45,13 @@ def OrgDashboard(slug: str, session):
         """),
         Div(
             H1(org["name"], cls="org-title"),
-            P(f"app.opendata.london/org/{slug}", cls="org-slug"),
+            P(f"app.opendata.london/org/{org['slug']}", cls="org-slug"),
             cls="org-header"
         ),
         Div(
             Div(
                 Span("Members", style="font-size: 15px; font-weight: 600; color: #F8FAFC;"),
-                A("+ Invite member", href=f"/org/{slug}/invite", cls="invite-btn"),
+                A("+ Invite member", href=f"/org/{org['slug']}/invite", cls="invite-btn"),
                 cls="section-title"
             ),
             Table(
