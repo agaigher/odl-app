@@ -63,19 +63,32 @@ DASHBOARD_STYLE = Style("""
         box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset;
     }
 
+    .org-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+    @media (max-width: 960px) {
+        .org-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 560px) {
+        .org-grid { grid-template-columns: 1fr; }
+    }
+
     .org-card {
         background: rgba(255,255,255,0.035);
         border: 1px solid rgba(255,255,255,0.08);
         border-radius: 12px; padding: 18px 22px;
         display: flex; align-items: center; justify-content: space-between;
         text-decoration: none; transition: border-color 0.2s, background 0.2s;
-        max-width: 480px;
+        min-width: 0;
     }
     .org-card:hover {
         background: rgba(255,255,255,0.06);
         border-color: rgba(56, 189, 248, 0.22);
     }
-    .org-card-left h3 { font-size: 15px; font-weight: 600; color: #F1F5F9; margin-bottom: 4px; }
+    .org-card-left { min-width: 0; }
+    .org-card-left h3 { font-size: 15px; font-weight: 600; color: #F1F5F9; margin-bottom: 4px; overflow-wrap: break-word; }
     .org-card-left p { font-size: 13px; color: #94A3B8; }
     .org-card-arrow { color: #64748B; font-size: 18px; }
 
@@ -236,7 +249,7 @@ def Dashboard(user_id: str, user_email: str):
                 cls="org-card"
             )
             for o in orgs
-        ], style="display: flex; flex-direction: column; gap: 12px;"),
+        ], cls="org-grid"),
         cls="dash-section"
     ) if orgs else Div(
         Div(Span("Organisation", cls="dash-section-title"), cls="dash-section-header"),
