@@ -503,47 +503,47 @@ def page_layout(page_title, current_path, user, *content, session=None, full_wid
             Div(id="modal-root"),
             Style("""
                 .modal-backdrop {
-                    position: fixed; inset: 0; background: rgba(15,23,42,0.5);
+                    position: fixed; inset: 0; background: rgba(2,6,15,0.72);
                     display: flex; align-items: center; justify-content: center;
                     z-index: 9999;
                 }
                 .modal-box {
-                    position: relative; background: #FFFFFF;
-                    border: 1px solid #E2E8F0; border-radius: 12px;
+                    position: relative; background: rgba(15,23,42,0.98);
+                    border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
                     padding: 28px; width: 400px; max-width: 92vw; z-index: 1;
-                    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+                    box-shadow: 0 24px 64px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04) inset;
                 }
-                .modal-title { font-size: 16px; font-weight: 700; color: #1E293B;
+                .modal-title { font-size: 16px; font-weight: 600; color: #F1F5F9;
                     margin-bottom: 4px; }
                 .modal-sub { font-size: 13px; color: #94A3B8; margin-bottom: 20px;
                     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-                .modal-divider { border: none; border-top: 1px solid #F1F5F9;
+                .modal-divider { border: none; border-top: 1px solid rgba(255,255,255,0.08);
                     margin: 16px 0; }
                 .list-check-row { display: flex; align-items: center; gap: 10px;
-                    padding: 8px 0; border-bottom: 1px solid #F8FAFC; }
+                    padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
                 .list-check-row:last-child { border-bottom: none; }
                 .list-check-row input[type=checkbox] { width: 16px; height: 16px;
                     accent-color: #0284C7; cursor: pointer; flex-shrink: 0; }
-                .list-check-name { font-size: 14px; color: #374151; flex: 1; }
+                .list-check-name { font-size: 14px; color: #E2E8F0; flex: 1; }
                 .modal-new-list { display: flex; gap: 8px; margin-top: 4px; }
                 .modal-new-input {
-                    flex: 1; background: #F8FAFC; border: 1px solid #E2E8F0;
-                    color: #1E293B; padding: 8px 12px; border-radius: 6px;
+                    flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+                    color: #F1F5F9; padding: 8px 12px; border-radius: 6px;
                     font-family: 'Inter', sans-serif; font-size: 13px; outline: none;
                     transition: border-color 0.2s;
                 }
-                .modal-new-input:focus { border-color: #0284C7; box-shadow: 0 0 0 3px rgba(2,132,199,0.1); }
-                .modal-new-input::placeholder { color: #CBD5E1; }
+                .modal-new-input:focus { border-color: rgba(56,189,248,0.35); box-shadow: 0 0 0 1px rgba(2,132,199,0.12); }
+                .modal-new-input::placeholder { color: #64748B; }
                 .modal-create-btn {
-                    background: #E0F2FE; color: #0284C7; border: 1px solid #BAE6FD;
+                    background: rgba(2,132,199,0.15); color: #7dd3fc; border: 1px solid rgba(56,189,248,0.25);
                     padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600;
                     cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap;
                     transition: background 0.15s;
                 }
-                .modal-create-btn:hover { background: #BAE6FD; }
+                .modal-create-btn:hover { background: rgba(2,132,199,0.22); }
                 .modal-done-btn {
                     background: #0284C7; color: #ffffff; border: none;
-                    padding: 9px 22px; border-radius: 6px; font-size: 13px; font-weight: 700;
+                    padding: 9px 22px; border-radius: 6px; font-size: 13px; font-weight: 600;
                     cursor: pointer; font-family: 'Inter', sans-serif; float: right;
                     transition: background 0.15s;
                 }
