@@ -419,9 +419,7 @@ def page_layout(page_title, current_path, user, *content, session=None):
                 if memberships:
                     org_ids = [m["org_id"] for m in memberships]
                     # Fetch details for all orgs
-                    from app.supabase_db import supabase
-                    res = supabase.table("organisations").select("*").in_("id", org_ids).execute()
-                    all_orgs = res.data
+                    all_orgs = db_select("organisations", {"id": org_ids})
                     
                     # Determine active org from session or default to first
                     active_id = session.get('active_org_id') if session else None
@@ -437,8 +435,7 @@ def page_layout(page_title, current_path, user, *content, session=None):
                         avatar_url = active_org.get("avatar_url")
                         
                         # Fetch projects for active org
-                        p_res = supabase.table("projects").select("*").eq("org_id", active_org["id"]).execute()
-                        all_projects = p_res.data
+                        all_projects = db_select("projects", {"org_id": active_org["id"]})
                         
                         active_p_id = session.get('active_project_id') if session else None
                         if active_p_id:

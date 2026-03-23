@@ -26,9 +26,7 @@ def ProjectsDashboard(user_id="", session=None):
     
     # 2. Fetch Projects for active org
     try:
-        from app.supabase_db import supabase
-        res = supabase.table("projects").select("*").eq("org_id", active_org_id).execute()
-        projects = res.data
+        projects = db_select("projects", {"org_id": active_org_id})
     except Exception:
         projects = []
         
