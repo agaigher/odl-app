@@ -394,7 +394,7 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None):
         cls="app-sidebar"
     )
 
-def page_layout(page_title, current_path, user, *content, session=None):
+def page_layout(page_title, current_path, user, *content, session=None, full_width=False):
     """Standard layout wrapper for all authenticated pages."""
     from app import get_app_style # inline to avoid circular issues
     
@@ -485,7 +485,7 @@ def page_layout(page_title, current_path, user, *content, session=None):
                 odl_sidebar(current_path, org_name, avatar_url),
                 Main(
                     *content,
-                    cls="main-content"
+                    cls=f"main-content {'full-width' if full_width else ''}"
                 ),
                 cls="app-container"
             ),

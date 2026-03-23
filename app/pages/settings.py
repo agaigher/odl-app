@@ -37,22 +37,21 @@ def OrganizationSettings(user_id: str, session: dict, tab: str = 'general'):
         Style("""
             .settings-container {
                 display: flex;
-                padding: 40px 60px;
-                max-width: 1400px;
-                margin: 0 auto;
+                padding: 0;
+                width: 100%;
                 min-height: calc(100vh - 60px);
-                background: #0F172A; /* Match the content background */
+                background: #0F172A;
             }
             .settings-nav {
                 width: 240px;
                 flex-shrink: 0;
-                padding-right: 48px;
+                padding: 40px 32px;
                 border-right: 1px solid rgba(255,255,255,0.05);
             }
             .settings-content {
                 flex: 1;
-                padding-left: 64px;
-                max-width: 900px;
+                padding: 40px 64px;
+                max-width: 1000px;
             }
             .nav-group {
                 margin-bottom: 32px;

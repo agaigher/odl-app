@@ -43,6 +43,10 @@ def get_app_style():
             overflow-y: auto;
             background: var(--bg-page);
         }
+        
+        .main-content.full-width {
+            padding: 0;
+        }
 
         /* Forms & Inputs */
         input.odl-input, select.odl-input {

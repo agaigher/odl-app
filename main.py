@@ -626,7 +626,7 @@ def get_settings(req, session, tab: str = 'general'):
     
     content = OrganizationSettings(user_id, session, tab)
     if "HX-Request" in req.headers: return content
-    return page_layout("Organization Settings", "/settings", session.get('user'), content, session=session)
+    return page_layout("Organization Settings", "/settings", session.get('user'), content, session=session, full_width=True)
 
 @rt("/billing")
 def get_billing(session):
