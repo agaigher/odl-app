@@ -16,6 +16,7 @@ from app.pages.auth import AuthPage
 from app.pages.forgot_password import ForgotPasswordPage, ResetPasswordPage
 from app.pages.create_org import CreateOrgPage
 from app.pages.invite import InvitePage
+from app.pages.organisations import OrganisationsPage
 from app.supabase_db import db_insert, db_select, db_patch, db_delete, auth_invite, log_audit
 from app.email import send_org_invite
 
@@ -950,10 +951,46 @@ def post_billing_address(session, address: str, tax_id: str = ""):
         return Div("Billing address saved.", cls="success-text", style="margin-top: 8px;")
     except Exception: return "Error", 500
 
+@rt("/org/switch", methods=["POST"])
+def post_org_switch(session, org_id: str):
+    user_id = _get_user_id(session)
+    if not user_id: return "Unauthorized", 401
+    try:
+        from app.supabase_db import db_select
+        # Verify user belongs to this org
+        m = db_select("memberships", {"user_id": user_id, "org_id": org_id, "status": "active"})
+        if not m: return "Unauthorized", 403
+        
+        session['active_org_id'] = org_id
+        orgs = db_select("organisations", {"id": org_id})
+        slug = orgs[0]["slug"] if orgs else "dashboard"
+        return Script(f"window.location.href = '/org/{slug}';")
+    except Exception: return "Error", 500
+
+from app.pages.organisations import OrganisationsPage
+@rt("/organisations")
+def get_organisations(session):
+    user_id = _get_user_id(session)
+    user = _get_user(session)
+    m = db_select("memberships", {"user_id": user_id, "status": "active"})
+    org_ids = [row["org_id"] for row in m]
+    from app.supabase_db import supabase
+    res = supabase.table("organisations").select("*").in_("id", org_ids).execute()
+    orgs = res.data
+    return page_layout("Organizations", "/organisations", user, OrganisationsPage(orgs), session=session)
+
 @rt("/org/{slug}")
 def get_org(slug: str, session):
     from app.pages.org_dashboard import OrgDashboard
-    return page_layout(f"Organisation", f"/org/{slug}", session.get('user'), OrgDashboard(slug, session))
+    user = _get_user(session)
+    orgs = db_select("organisations", {"slug": slug})
+    if not orgs: return "Organization not found", 404
+    org = orgs[0]
+    
+    # Auto-set active org in session if they navigate here
+    session['active_org_id'] = org['id']
+    
+    return page_layout(f"{org['name']} Dashboard", f"/org/{slug}", user, OrgDashboard(org), session=session)
 
 @rt("/org/{slug}/invite", methods=["GET"])
 def get_invite(slug: str, session):

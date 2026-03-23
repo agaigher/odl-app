@@ -1,7 +1,119 @@
 from fasthtml.common import *
 from app.db import *
 
-def odl_navbar(user=None):
+# Define IC (Icons) outside of functions so it can be reused
+@dataclass
+class IC:
+    grid = "M3 3h7v7H3z M14 3h7v7h-7z M14 14h7v7h-7z M3 14h7v7H3z"
+    book = "M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"
+    star = "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+    code = "m18 16 4-4-4-4 M6 8 2 12l4 4 M14.5 4l-5 16"
+    box = "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z M3.27 6.96L12 12.01l8.73-5.05 M12 22.08V12"
+    users = "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75"
+    link = "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+    chart = "M18 20V10 M12 20V4 M6 20v-6"
+    wallet = "M21 12V7H5a2 2 0 0 1 0-4h14v2 M3 5v14a2 2 0 0 0 2 2h16v-5H5"
+    cog = "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
+    plus_circle = "M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
+    bolt = "M13 2L3 14h9l-1 8 10-12h-9l1-8z"
+    chevron_up_down = "m7 15 5 5 5-5 M7 9l5-5 5 5"
+    search = "M21 21l-4.35-4.35M19 11a8 8 0 11-16 0 8 8 0 0116 0z"
+    check = "M20 6L9 17l-5-5"
+
+def icon_svg(d_path):
+    return Svg(
+        NotStr(f'<path d="{d_path}"></path>'),
+        xmlns="http://www.w3.org/2000/svg",
+        width="18", height="18", viewBox="0 0 24 24",
+        fill="none", stroke="currentColor",
+        stroke_width="2", stroke_linecap="round", stroke_linejoin="round",
+        style="display: block;"
+    )
+
+def OrgSwitcher(active_org, all_orgs):
+    # Fallback for empty state
+    active_name = active_org.get("name", "Select Organization") if active_org else "Workspace"
+    active_id = active_org.get("id") if active_org else None
+    
+    return Div(
+        # Trigger
+        Button(
+            Div(
+                Img(src=active_org.get("avatar_url"), style="width: 20px; height: 20px; border-radius: 4px; margin-right: 10px; object-fit: cover;") if active_org and active_org.get("avatar_url") else 
+                Div(style="width: 20px; height: 20px; border-radius: 4px; border: 1.5px solid #475569; margin-right: 10px;") if active_org else None,
+                Span(active_name, style="font-weight: 500; font-size: 14px; color: #F8FAFC;"),
+                style="display: flex; align-items: center;"
+            ),
+            icon_svg(IC.chevron_up_down),
+            onclick="document.getElementById('org-dropdown').classList.toggle('hidden')",
+            cls="org-switcher-trigger"
+        ),
+        
+        # Dropdown
+        Div(
+            # Search
+            Div(
+                icon_svg(IC.search),
+                Input(placeholder="Find organization...", oninput="filterOrgs(this.value)", cls="org-search-input"),
+                style="display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #334155; gap: 10px; color: #94A3B8;"
+            ),
+            
+            # List
+            Div(
+                *[Div(
+                    Button(
+                        Div(
+                            Img(src=o.get("avatar_url"), style="width: 18px; height: 18px; border-radius: 3px; margin-right: 10px; object-fit: cover;") if o.get("avatar_url") else 
+                            Div(style="width: 18px; height: 18px; border-radius: 3px; border: 1.5px solid #64748B; margin-right: 10px;"),
+                            Span(o["name"]),
+                            style="display: flex; align-items: center;"
+                        ),
+                        icon_svg(IC.check) if str(o["id"]) == str(active_id) else None,
+                        hx_post=f"/org/switch?org_id={o['id']}",
+                        cls="org-item"
+                    ),
+                    cls="org-list-item",
+                    data_name=o["name"].lower()
+                ) for o in all_orgs] if all_orgs else [],
+                
+                # Actions
+                A(
+                    Div("All Organizations", style="font-size: 13px;"),
+                    href="/organisations", cls="org-item", style="margin-top: 4px; border-top: 1px solid #334155; padding-top: 12px;"
+                ),
+                A(
+                    Div(
+                        icon_svg(IC.plus_circle),
+                        Span("New organization"),
+                        style="display: flex; align-items: center; gap: 8px; font-size: 13px;"
+                    ),
+                    href="/create-org", cls="org-item"
+                ),
+                style="padding: 4px 0;"
+            ),
+            id="org-dropdown",
+            cls="hidden org-dropdown-panel"
+        ),
+        
+        Script("""
+            function filterOrgs(val) {
+                const term = val.toLowerCase();
+                document.querySelectorAll('.org-list-item').forEach(el => {
+                    el.style.display = el.getAttribute('data-name').includes(term) ? 'block' : 'none';
+                });
+            }
+            // Close dropdown when clicking outside
+            window.addEventListener('click', function(e) {
+                if (!e.target.closest('.org-switcher-container')) {
+                    const panel = document.getElementById('org-dropdown');
+                    if (panel) panel.classList.add('hidden');
+                }
+            });
+        """),
+        cls="org-switcher-container"
+    )
+
+def odl_navbar(user=None, active_org=None, all_orgs=None):
     # Simplifed version of odl-web navbar for the App interface
     user_display = Div(user, cls="nav-user") if user else Div()
     logout_btn = A("Sign Out", href="/logout", cls="logout-btn") if user else Div()
@@ -21,56 +133,87 @@ def odl_navbar(user=None):
                 top: 0;
                 z-index: 1000;
             }
-            .app-brand {
-                font-weight: 700;
-                font-size: 18px;
-                color: #ffffff;
-                text-decoration: none;
-                font-family: "GDS Transport", arial, sans-serif;
+            .nav-brand-wrap { display: flex; align-items: center; }
+            .app-logo { color: #10B981; display: flex; align-items: center; text-decoration: none; }
+            .brand-separator { color: #334155; margin: 0 12px; font-weight: 300; font-size: 20px; }
+            
+            .org-switcher-container { position: relative; display: inline-block; }
+            .org-switcher-trigger {
+                background: rgba(255,255,255,0.05);
+                border: 1px solid rgba(255,255,255,0.1);
+                color: #F8FAFC;
+                padding: 6px 12px;
+                border-radius: 6px;
                 display: flex;
                 align-items: center;
-                gap: 10px;
+                gap: 8px;
+                cursor: pointer;
+                transition: all 0.2s;
             }
-            .app-badge {
-                background: rgba(2,132,199,0.2);
-                color: #7DD3FC;
-                padding: 3px 7px;
-                border-radius: 4px;
-                font-size: 10px;
-                font-weight: 700;
-                font-family: 'Roboto Mono', monospace;
-                letter-spacing: 0.5px;
+            .org-switcher-trigger:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+            
+            .org-dropdown-panel {
+                position: absolute;
+                top: calc(100% + 8px);
+                left: 0;
+                width: 280px;
+                background: #1E293B;
+                border: 1px solid #334155;
+                border-radius: 8px;
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+                z-index: 1001;
+                overflow: hidden;
             }
-            .nav-actions {
-                display: flex;
-                align-items: center;
-                gap: 16px;
-            }
-            .nav-user {
-                color: #94A3B8;
-                font-size: 13px;
-            }
-            .logout-btn {
+            .hidden { display: none !important; }
+            
+            .org-search-input {
                 background: transparent;
-                border: 1px solid rgba(148,163,184,0.3);
-                color: #CBD5E1;
-                padding: 5px 12px;
-                border-radius: 5px;
+                border: none;
+                color: #F8FAFC;
+                font-size: 13px;
+                width: 100%;
+                outline: none;
+            }
+            .org-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 10px 16px;
+                color: #94A3B8;
+                text-decoration: none;
                 font-size: 13px;
                 cursor: pointer;
-                transition: all 0.15s;
-                text-decoration: none;
+                transition: 0.15s;
+                background: transparent;
+                border: none;
+                width: 100%;
+                text-align: left;
             }
-            .logout-btn:hover {
-                background: rgba(255,255,255,0.08);
-                color: #ffffff;
+            .org-item:hover { background: #334155; color: #F8FAFC; }
+            
+            .plan-pill {
+                font-size: 10px;
+                font-weight: 700;
+                background: #334155;
+                color: #94A3B8;
+                padding: 2px 6px;
+                border-radius: 4px;
+                margin-left: 8px;
+                border: 1px solid #475569;
             }
+            
+            .nav-actions { display: flex; align-items: center; gap: 16px; }
+            .nav-user { color: #94A3B8; font-size: 13px; }
+            .logout-btn { background: transparent; border: 1px solid rgba(148,163,184,0.3); color: #CBD5E1; padding: 5px 12px; border-radius: 5px; font-size: 13px; cursor: pointer; transition: all 0.15s; text-decoration: none; }
+            .logout-btn:hover { background: rgba(255,255,255,0.08); color: #ffffff; }
         """),
-        A(
-            "OpenData.London", 
-            Div("APP", cls="app-badge"),
-            href="/", 
-            cls="app-brand"
+        Div(
+            A(icon_svg(IC.bolt), href="/", cls="app-logo"),
+            Span("/", cls="brand-separator"),
+            OrgSwitcher(active_org, all_orgs),
+            # Add Plan pill if in an org
+            Span("FREE", cls="plan-pill") if active_org else None,
+            cls="nav-brand-wrap"
         ),
         actions,
         cls="app-navbar"
@@ -78,29 +221,6 @@ def odl_navbar(user=None):
 
 def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None):
     
-    @dataclass
-    class IC:
-        grid = "M3 3h7v7H3z M14 3h7v7h-7z M14 14h7v7h-7z M3 14h7v7H3z"
-        book = "M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"
-        star = "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-        code = "m18 16 4-4-4-4 M6 8 2 12l4 4 M14.5 4l-5 16"
-        box = "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z M3.27 6.96L12 12.01l8.73-5.05 M12 22.08V12"
-        users = "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75"
-        link = "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
-        chart = "M18 20V10 M12 20V4 M6 20v-6"
-        wallet = "M21 12V7H5a2 2 0 0 1 0-4h14v2 M3 5v14a2 2 0 0 0 2 2h16v-5H5"
-        cog = "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
-
-    def icon_svg(d_path):
-        return Svg(
-            NotStr(f'<path d="{d_path}"></path>'),
-            xmlns="http://www.w3.org/2000/svg",
-            width="18", height="18", viewBox="0 0 24 24",
-            fill="none", stroke="currentColor",
-            stroke_width="2", stroke_linecap="round", stroke_linejoin="round",
-            style="display: block;"
-        )
-
     def nav_item(label, path, icon_path):
         exact_match_only = ("/", "/dashboard", "/favourites")
         is_active = current_path == path or (path not in exact_match_only and current_path.startswith(path))
@@ -189,7 +309,7 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None):
             nav_item("Billing", "/billing", IC.wallet),
             nav_item("Organization Settings", "/settings", IC.cog),
             
-            hr(style="margin: 12px 16px; border: 0; border-top: 1px solid #F1F5F9;") if org_name == "Workspace" else None,
+            Hr(style="margin: 12px 16px; border: 0; border-top: 1px solid #F1F5F9;") if org_name == "Workspace" else None,
             nav_item("Create Organisation", "/create-org", IC.plus_circle) if org_name == "Workspace" else None,
             
             cls="sidebar-section"
@@ -197,22 +317,40 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None):
         cls="app-sidebar"
     )
 
-def page_layout(page_title, current_path, user, *content):
+def page_layout(page_title, current_path, user, *content, session=None):
     """Standard layout wrapper for all authenticated pages."""
     from app import get_app_style # inline to avoid circular issues
     
     org_name = "Workspace"
     avatar_url = None
+    active_org = None
+    all_orgs = []
+    
     if user:
         try:
             from app.supabase_db import db_select
-            m = db_select("memberships", {"user_id": user["id"], "status": "active"})
-            if m:
-                orgs = db_select("organisations", {"id": m[0]["org_id"]})
-                if orgs:
-                    org_name = orgs[0]["name"]
-                    avatar_url = orgs[0].get("avatar_url")
-        except: pass
+            # Fetch all memberships to get ALL organisations for the switcher
+            memberships = db_select("memberships", {"user_id": user["id"], "status": "active"})
+            if memberships:
+                org_ids = [m["org_id"] for m in memberships]
+                # Fetch details for all orgs
+                from app.supabase_db import supabase
+                res = supabase.table("organisations").select("*").in_("id", org_ids).execute()
+                all_orgs = res.data
+                
+                # Determine active org from session or default to first
+                active_id = session.get('active_org_id') if session else None
+                if active_id:
+                    active_org = next((o for o in all_orgs if str(o["id"]) == str(active_id)), None)
+                
+                if not active_org and all_orgs:
+                    active_org = all_orgs[0]
+                
+                if active_org:
+                    org_name = active_org["name"]
+                    avatar_url = active_org.get("avatar_url")
+        except Exception as e:
+            print(f"Error in page_layout org fetch: {e}")
     
     return Html(
         Head(
@@ -222,7 +360,7 @@ def page_layout(page_title, current_path, user, *content):
             get_app_style()
         ),
         Body(
-            odl_navbar(user),
+            odl_navbar(user, active_org, all_orgs),
             Div(
                 odl_sidebar(current_path, org_name, avatar_url),
                 Main(
