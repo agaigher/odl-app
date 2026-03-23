@@ -33,7 +33,7 @@ def icon_svg(d_path, **kwargs):
 
 def OrgSwitcher(active_org, all_orgs):
     # Fallback for empty state
-    active_name = active_org.get("name", "Select Organization") if active_org else "Workspace"
+    active_name = active_org.get("name") if active_org else "Organization"
     active_id = active_org.get("id") if active_org else None
     
     return Div(
@@ -42,7 +42,7 @@ def OrgSwitcher(active_org, all_orgs):
             Div(
                 Img(src=active_org.get("avatar_url"), style="width: 20px; height: 20px; border-radius: 4px; margin-right: 10px; object-fit: cover;") if active_org and active_org.get("avatar_url") else 
                 Div(style="width: 20px; height: 20px; border-radius: 4px; border: 1.5px solid #475569; margin-right: 10px;") if active_org else None,
-                Span(active_name, style="font-weight: 500; font-size: 14px; color: #F8FAFC;"),
+                Span(f"Organization: {active_name}" if active_org else "Select Organization", style="font-weight: 500; font-size: 14px; color: #F8FAFC;"),
                 style="display: flex; align-items: center;"
             ),
             icon_svg(IC.chevron_up_down),
@@ -114,7 +114,79 @@ def OrgSwitcher(active_org, all_orgs):
         cls="org-switcher-container"
     )
 
-def odl_navbar(user=None, active_org=None, all_orgs=None):
+def ProjectSwitcher(active_project, all_projects):
+    active_name = active_project.get("name") if active_project else "Select Project"
+    active_id = active_project.get("id") if active_project else None
+    
+    return Div(
+        Button(
+            Div(
+                icon_svg(IC.box, style="margin-right: 8px; opacity: 0.7;"),
+                Span(f"Project: {active_name}", style="font-weight: 500; font-size: 14px; color: #F8FAFC;"),
+                style="display: flex; align-items: center;"
+            ),
+            icon_svg(IC.chevron_up_down),
+            onclick="document.getElementById('project-dropdown').classList.toggle('hidden')",
+            cls="org-switcher-trigger"
+        ),
+        
+        Div(
+            Div(
+                icon_svg(IC.search),
+                Input(placeholder="Find project...", oninput="filterProjects(this.value)", cls="org-search-input"),
+                style="display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #334155; gap: 10px; color: #94A3B8;"
+            ),
+            
+            Div(
+                *[Div(
+                    Button(
+                        Div(
+                            icon_svg(IC.box, style="margin-right: 10px; opacity: 0.5;"),
+                            Span(p["name"]),
+                            style="display: flex; align-items: center;"
+                        ),
+                        icon_svg(IC.check) if str(p["id"]) == str(active_id) else None,
+                        hx_get=f"/projects/{p['id']}/select",
+                        cls="org-item"
+                    ),
+                    cls="project-list-item",
+                    data_name=p["name"].lower()
+                ) for p in all_projects] if all_projects else [
+                    Div("No projects found", style="padding: 12px; color: #64748B; font-size: 13px;")
+                ],
+                
+                A(
+                    Div(
+                        icon_svg(IC.plus_circle),
+                        Span("New project"),
+                        style="display: flex; align-items: center; gap: 8px; font-size: 13px;"
+                    ),
+                    href="/projects", cls="org-item", style="margin-top: 4px; border-top: 1px solid #334155; padding-top: 10px;"
+                ),
+                style="padding: 4px 0;"
+            ),
+            id="project-dropdown",
+            cls="hidden org-dropdown-panel"
+        ),
+        
+        Script("""
+            function filterProjects(val) {
+                const term = val.toLowerCase();
+                document.querySelectorAll('.project-list-item').forEach(el => {
+                    el.style.display = el.getAttribute('data-name').includes(term) ? 'block' : 'none';
+                });
+            }
+            window.addEventListener('click', function(e) {
+                if (!e.target.closest('.project-switcher-container')) {
+                    const panel = document.getElementById('project-dropdown');
+                    if (panel) panel.classList.add('hidden');
+                }
+            });
+        """),
+        cls="org-switcher-container project-switcher-container"
+    )
+
+def odl_navbar(user=None, active_org=None, all_orgs=None, active_project=None, all_projects=None):
     # Simplifed version of odl-web navbar for the App interface
     user_display = Div(user, cls="nav-user") if user else Div()
     logout_btn = A("Sign Out", href="/logout", cls="logout-btn") if user else Div()
@@ -213,6 +285,8 @@ def odl_navbar(user=None, active_org=None, all_orgs=None):
               style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 16px; color: #F8FAFC; text-decoration: none; letter-spacing: -0.02em;"),
             Span("/", cls="brand-separator"),
             OrgSwitcher(active_org, all_orgs),
+            Span("/", cls="brand-separator") if active_org else None,
+            ProjectSwitcher(active_project, all_projects) if active_org else None,
             # Add Plan pill if in an org
             Span("FREE", cls="plan-pill") if active_org else None,
             cls="nav-brand-wrap"
@@ -323,10 +397,13 @@ def page_layout(page_title, current_path, user, *content, session=None):
     """Standard layout wrapper for all authenticated pages."""
     from app import get_app_style # inline to avoid circular issues
     
-    org_name = "Workspace"
+    org_name = "Organization"
     avatar_url = None
     active_org = None
     all_orgs = []
+    
+    active_project = None
+    all_projects = []
     
     if user:
         try:
@@ -339,24 +416,37 @@ def page_layout(page_title, current_path, user, *content, session=None):
             if u_id:
                 # Fetch all memberships to get ALL organisations for the switcher
                 memberships = db_select("memberships", {"user_id": u_id, "status": "active"})
-            if memberships:
-                org_ids = [m["org_id"] for m in memberships]
-                # Fetch details for all orgs
-                from app.supabase_db import supabase
-                res = supabase.table("organisations").select("*").in_("id", org_ids).execute()
-                all_orgs = res.data
-                
-                # Determine active org from session or default to first
-                active_id = session.get('active_org_id') if session else None
-                if active_id:
-                    active_org = next((o for o in all_orgs if str(o["id"]) == str(active_id)), None)
-                
-                if not active_org and all_orgs:
-                    active_org = all_orgs[0]
-                
-                if active_org:
-                    org_name = active_org["name"]
-                    avatar_url = active_org.get("avatar_url")
+                if memberships:
+                    org_ids = [m["org_id"] for m in memberships]
+                    # Fetch details for all orgs
+                    from app.supabase_db import supabase
+                    res = supabase.table("organisations").select("*").in_("id", org_ids).execute()
+                    all_orgs = res.data
+                    
+                    # Determine active org from session or default to first
+                    active_id = session.get('active_org_id') if session else None
+                    if active_id:
+                        active_org = next((o for o in all_orgs if str(o["id"]) == str(active_id)), None)
+                    
+                    if not active_org and all_orgs:
+                        active_org = all_orgs[0]
+                        if session: session['active_org_id'] = active_org['id']
+                    
+                    if active_org:
+                        org_name = active_org["name"]
+                        avatar_url = active_org.get("avatar_url")
+                        
+                        # Fetch projects for active org
+                        p_res = supabase.table("projects").select("*").eq("org_id", active_org["id"]).execute()
+                        all_projects = p_res.data
+                        
+                        active_p_id = session.get('active_project_id') if session else None
+                        if active_p_id:
+                            active_project = next((p for p in all_projects if str(p["id"]) == str(active_p_id)), None)
+                        
+                        if not active_project and all_projects:
+                            active_project = all_projects[0]
+                            if session: session['active_project_id'] = active_project['id']
         except Exception as e:
             print(f"Error in page_layout org fetch: {e}")
     
@@ -368,7 +458,7 @@ def page_layout(page_title, current_path, user, *content, session=None):
             get_app_style()
         ),
         Body(
-            odl_navbar(user, active_org, all_orgs),
+            odl_navbar(user, active_org, all_orgs, active_project, all_projects),
             Div(
                 odl_sidebar(current_path, org_name, avatar_url),
                 Main(

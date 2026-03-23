@@ -233,22 +233,23 @@ def get_create_org(session):
 
 @rt("/create-org", methods=["POST"])
 def post_create_org(org_name: str, slug: str, session):
-    if not session.get('user'):
+    user_id = _get_user_id(session)
+    if not user_id:
         return Div("Not authenticated.", cls="error-text")
     if not org_name or not slug:
         return Div("Organisation name and slug are required.", cls="error-text")
+    
     slug = slug.lower().strip().replace(" ", "-")
     try:
-        # Get user ID from access token
-        user = supabase.auth.get_user(session.get('access_token'))
-        user_id = str(user.user.id)
         # Create org
         orgs = db_insert("organisations", {
             "name": org_name,
             "slug": slug,
             "created_by": user_id,
         })
+        if not orgs: raise Exception("Failed to create organisation record.")
         org_id = orgs[0]["id"]
+        
         # Add creator as owner member
         db_insert("memberships", {
             "org_id": org_id,
@@ -256,8 +257,12 @@ def post_create_org(org_name: str, slug: str, session):
             "role": "owner",
             "status": "active",
         })
+        
+        # Set as active org
+        session['active_org_id'] = org_id
         log_audit(org_id, user_id, "Organization created", "organisation", org_id)
-        return Script(f"window.location.href = '/org/{slug}';")
+        
+        return Script("window.location.href = '/projects';")
     except Exception as e:
         err = str(e)
         if "duplicate key" in err or "unique" in err.lower():
@@ -958,9 +963,9 @@ def post_org_switch(session, org_id: str):
         if not m: return "Unauthorized", 403
         
         session['active_org_id'] = org_id
-        orgs = db_select("organisations", {"id": org_id})
-        slug = orgs[0]["slug"] if orgs else "dashboard"
-        return Script(f"window.location.href = '/org/{slug}';")
+        # When switching org, clear active project and redirect to projects list
+        session.pop('active_project_id', None)
+        return Script("window.location.href = '/projects';")
     except Exception: return "Error", 500
 
 @rt("/organisations")
