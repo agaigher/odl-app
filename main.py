@@ -1148,7 +1148,8 @@ def get_usage(session):
 
 @rt("/billing")
 def get_billing(session):
-    return page_layout("Billing", "/billing", session.get('user'), Div(H1("Billing (Coming Soon)", cls="fav-page-title"), P("Manage your subscription plan.", style="color:#64748B; margin-top: 10px;"), style="padding: 40px; text-align: center;"))
+    from app.pages.billing import BillingDashboard
+    return page_layout("Billing", "/billing", session.get('user'), BillingDashboard(user_id=_get_user_id(session), session=session))
 
 if __name__ == '__main__':
     # Ensure port is open, using 5002 since odl-web is likely 5001
