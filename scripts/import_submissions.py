@@ -79,16 +79,20 @@ def parse_access_methods(access_type):
 def process_csv(file_path):
     print(f"Processing {file_path}...")
     
-    payload = []
+    payload_dict = {}
     with open(file_path, mode='r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
+            slug = row.get("slug")
+            if not slug:
+                continue
+            
             schema_fields = parse_schema_fields(row.get("schema_fields", ""))
             
             # Map CSV columns to DB columns
             record = {
                 "title": row.get("title"),
-                "slug": row.get("slug"),
+                "slug": slug,
                 "description": row.get("short_description"),
                 "long_description": row.get("long_description"),
                 "category": row.get("category"),
@@ -100,7 +104,10 @@ def process_csv(file_path):
                 "schema_fields": schema_fields,
                 "sample_rows": parse_sample_rows(row.get("sample_rows", ""), schema_fields)
             }
-            payload.append(record)
+            # Use dictionary to keep only the last occurrence of a slug
+            payload_dict[slug] = record
+
+    payload = list(payload_dict.values())
 
     if not payload:
         print(f"No records found in {file_path}")
