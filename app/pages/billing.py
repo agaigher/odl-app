@@ -15,7 +15,11 @@ def BillingDashboard(user_id="", session=None):
         return Div(
             CATALOG_STYLE,
             Div(H1("Billing", cls="fav-page-title"), cls="fav-header"),
-            Div("You must be part of an Organisation to view billing details.", cls="error-text", style="padding:24px;")
+            Div(
+                P("You are not currently part of an Organisation.", style="font-size: 15px; color: #64748B; margin-bottom: 24px;"),
+                A("Create an Organisation →", href="/create-org", cls="fav-create-btn", style="text-decoration:none; display:inline-block;"),
+                style="padding: 40px; text-align: center; background: white; border-radius: 12px; border: 1px solid #E2E8F0; margin-top: 24px;"
+            )
         )
         
     # Get org details and billing ledger

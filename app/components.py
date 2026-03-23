@@ -188,6 +188,10 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None):
             nav_item("Usage", "/usage", IC.chart),
             nav_item("Billing", "/billing", IC.wallet),
             nav_item("Organization Settings", "/settings", IC.cog),
+            
+            hr(style="margin: 12px 16px; border: 0; border-top: 1px solid #F1F5F9;") if org_name == "Workspace" else None,
+            nav_item("Create Organisation", "/create-org", IC.plus_circle) if org_name == "Workspace" else None,
+            
             cls="sidebar-section"
         ),
         cls="app-sidebar"
