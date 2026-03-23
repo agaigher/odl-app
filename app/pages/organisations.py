@@ -10,7 +10,7 @@ def OrganisationsPage(orgs):
                 P("Manage your workspaces and billing across different organizations.", style="color: #64748B; font-size: 14px; margin-top: 4px;"),
             ),
             A(
-                Plus(style="margin-right: 8px; width: 16px; height: 16px;"),
+                icon_svg(IC.plus_circle, style="margin-right: 8px; width: 16px; height: 16px;"),
                 "New Organization",
                 href="/create-org",
                 style="background: #0284C7; color: white; padding: 10px 18px; border-radius: 8px; font-weight: 600; text-decoration: none; display: flex; align-items: center; transition: background 0.2s;"

@@ -192,19 +192,19 @@ def odl_navbar(user=None, active_org=None, all_orgs=None):
             .org-item:hover { background: #334155; color: #F8FAFC; }
             
             .plan-pill {
+                background: #1F2937;
+                color: #94A3B8;
                 font-size: 10px;
                 font-weight: 700;
-                background: #334155;
-                color: #94A3B8;
                 padding: 2px 6px;
                 border-radius: 4px;
                 margin-left: 8px;
-                border: 1px solid #475569;
+                border: 1px solid rgba(255,255,255,0.1);
             }
             
             .nav-actions { display: flex; align-items: center; gap: 16px; }
             .nav-user { color: #94A3B8; font-size: 13px; }
-            .logout-btn { background: transparent; border: 1px solid rgba(148,163,184,0.3); color: #CBD5E1; padding: 5px 12px; border-radius: 5px; font-size: 13px; cursor: pointer; transition: all 0.15s; text-decoration: none; }
+            .logout-btn { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #CBD5E1; padding: 5px 12px; border-radius: 5px; font-size: 13px; cursor: pointer; transition: all 0.15s; text-decoration: none; }
             .logout-btn:hover { background: rgba(255,255,255,0.08); color: #ffffff; }
         """),
         Div(
@@ -236,58 +236,62 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None):
         Style("""
             .app-sidebar {
                 width: 240px;
-                background: #FFFFFF;
-                border-right: 1px solid #E2E8F0;
+                background: #111827;
+                border-right: 1px solid rgba(255,255,255,0.06);
                 padding: 20px 0;
                 display: flex;
                 flex-direction: column;
                 flex-shrink: 0;
+                height: calc(100vh - 56px);
                 overflow-y: auto;
             }
             .sidebar-section {
-                padding: 0 16px;
-                margin-bottom: 28px;
+                padding: 0 12px;
+                margin-bottom: 24px;
             }
             .sidebar-title {
                 font-family: 'Inter', sans-serif;
                 font-size: 10px;
                 font-weight: 700;
-                color: #94A3B8;
+                color: #4B5563;
                 text-transform: uppercase;
-                letter-spacing: 1.2px;
-                margin-bottom: 8px;
-                padding: 0 8px;
+                letter-spacing: 1px;
+                margin-bottom: 6px;
+                padding: 0 12px;
             }
             .sidebar-item {
                 display: flex;
                 align-items: center;
-                padding: 9px 12px;
-                color: #475569;
+                padding: 8px 12px;
+                color: #9CA3AF;
                 text-decoration: none;
-                font-size: 14px;
+                font-size: 13px;
                 font-weight: 500;
                 border-radius: 6px;
-                margin-bottom: 4px;
+                margin-bottom: 2px;
                 transition: all 0.15s;
             }
             .sidebar-item:hover {
-                background: #F1F5F9;
-                color: #1E293B;
+                background: rgba(255,255,255,0.05);
+                color: #F9FAFB;
             }
             .sidebar-item.active {
-                background: #E0F2FE;
-                color: #0284C7;
+                background: rgba(255,255,255,0.08);
+                color: #FFFFFF;
                 font-weight: 600;
+                box-shadow: inset 3px 0 0 -1px #0284C7;
             }
             .sidebar-item.active span {
                 opacity: 1;
+                color: #0284C7;
             }
         """),
         Div(
             Div(
-                Img(src=avatar_url, style="width: 24px; height: 24px; border-radius: 4px; margin-right: 12px; object-fit: cover;") if avatar_url else None,
-                Span(org_name, style="font-weight: 700; font-size: 15px; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"),
-                style="display: flex; align-items: center; padding: 0 16px; margin-bottom: 28px;"
+                Img(src=avatar_url, style="width: 24px; height: 24px; border-radius: 4px; margin-right: 10px; object-fit: cover;") if avatar_url else 
+                Div(org_name[0].upper(), style="width: 24px; height: 24px; border-radius: 4px; background: #374151; color: #fff; font-size: 11px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-weight: 700;"),
+                Span(org_name, style="font-weight: 600; font-size: 14px; color: #F3F4F6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"),
+                style="display: flex; align-items: center; padding: 0 12px; margin-bottom: 20px;"
             ),
             Div("Home", cls="sidebar-title"),
             nav_item("Dashboard", "/dashboard", IC.grid),
@@ -308,10 +312,6 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None):
             nav_item("Usage", "/usage", IC.chart),
             nav_item("Billing", "/billing", IC.wallet),
             nav_item("Organization Settings", "/settings", IC.cog),
-            
-            Hr(style="margin: 12px 16px; border: 0; border-top: 1px solid #F1F5F9;") if org_name == "Workspace" else None,
-            nav_item("Create Organisation", "/create-org", IC.plus_circle) if org_name == "Workspace" else None,
-            
             cls="sidebar-section"
         ),
         cls="app-sidebar"

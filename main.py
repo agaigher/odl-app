@@ -579,8 +579,14 @@ def get_queries(session):
     return page_layout("SQL Queries", "/queries", session.get('user'), Div(H1("Coming Soon", style="color: white;")), session=session)
     
 @rt("/settings")
-def get_settings(session):
-    return page_layout("Settings", "/settings", session.get('user'), Div(H1("Account Settings", style="color: white;")), session=session)
+def get_settings(req, session, tab: str = 'general'):
+    from app.pages.settings import OrganizationSettings
+    user_id = _get_user_id(session)
+    if not user_id: return RedirectResponse("/login", status_code=303)
+    
+    content = OrganizationSettings(user_id, session, tab)
+    if "HX-Request" in req.headers: return content
+    return page_layout("Organization Settings", "/settings", session.get('user'), content, session=session)
 
 @rt("/billing")
 def get_billing(session):
@@ -757,12 +763,7 @@ async def api_v1_query(req):
         from starlette.responses import Response
         return Response('{"error": "Internal Server Error"}', status_code=500, media_type="application/json")
 
-@rt("/settings")
-def get_settings(session):
-    from app.pages.settings import OrganizationSettings
-    user_id = _get_user_id(session)
-    if not user_id: return RedirectResponse("/login", status_code=303)
-    return page_layout("Settings", "/settings", session.get('user'), OrganizationSettings(user_id=user_id, session=session), session=session)
+# Settings and Billing moved to bottom or consolidated below
 
 import time
 from starlette.datastructures import UploadFile
@@ -972,7 +973,7 @@ def post_org_switch(session, org_id: str):
 @rt("/organisations")
 def get_organisations(session):
     user_id = _get_user_id(session)
-    user = _get_user(session)
+    user = session.get('user')
     if not user_id: return RedirectResponse("/login", status_code=303)
     
     m = db_select("memberships", {"user_id": user_id, "status": "active"})
@@ -989,7 +990,7 @@ def get_organisations(session):
 @rt("/org/{slug}")
 def get_org(slug: str, session):
     from app.pages.org_dashboard import OrgDashboard
-    user = _get_user(session)
+    user = session.get('user')
     orgs = db_select("organisations", {"slug": slug})
     if not orgs: return "Organization not found", 404
     org = orgs[0]
@@ -1190,10 +1191,7 @@ def get_team(session):
 def get_usage(session):
     return page_layout("Usage", "/usage", session.get('user'), Div(H1("Usage Data (Coming Soon)", cls="fav-page-title"), P("Monitor query execution stats and limits.", style="color:#64748B; margin-top: 10px;"), style="padding: 40px; text-align: center;"), session=session)
 
-@rt("/billing")
-def get_billing(session):
-    from app.pages.billing import BillingDashboard
-    return page_layout("Billing", "/billing", session.get('user'), BillingDashboard(user_id=_get_user_id(session), session=session))
+# Billing handled above
 
 if __name__ == '__main__':
     # Ensure port is open, using 5002 since odl-web is likely 5001
