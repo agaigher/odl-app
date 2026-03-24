@@ -79,11 +79,11 @@ def _projects_style():
         .pd-new-name::placeholder { color: #525252; }
         .pd-btn-new {
             display: inline-flex; align-items: center; gap: 6px;
-            background: #00875a; color: #fff; border: none; font-weight: 600;
+            background: #0284c7; color: #fff; border: none; font-weight: 600;
             font-size: 14px; padding: 10px 16px; border-radius: 8px; cursor: pointer;
             font-family: 'Inter', sans-serif; white-space: nowrap;
         }
-        .pd-btn-new:hover { background: #006b47; }
+        .pd-btn-new:hover { background: #0369a1; }
 
         .pd-grid {
             display: grid;
@@ -128,7 +128,7 @@ def _projects_style():
             font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
             padding: 4px 10px; border-radius: 999px; font-family: 'Inter', sans-serif;
         }
-        .pd-badge--active { background: rgba(0, 135, 90, 0.2); color: #34d399; border: 1px solid rgba(0, 135, 90, 0.35); }
+        .pd-badge--active { background: rgba(2, 132, 199, 0.2); color: #7dd3fc; border: 1px solid rgba(2, 132, 199, 0.35); }
         .pd-badge--muted { background: #262626; color: #a3a3a3; border: 1px solid #404040; }
         .pd-badge--nano { background: #262626; color: #737373; border: 1px solid #404040; }
 
