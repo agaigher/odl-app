@@ -1035,7 +1035,7 @@ def post_org_switch(session, org_id: str):
         session.pop('active_project_id', None)
         session['force_header_refresh'] = True
         return Script("window.location.href = '/projects';")
-    except Exception: return "Error", 500
+    except Exception as e: return f"Error switching organization: {e}", 500
 
 @rt("/organisations")
 def get_organisations(session):
