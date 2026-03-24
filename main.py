@@ -87,10 +87,6 @@ def _sf_base_url():
     return f"https://{SNOWFLAKE_ACCOUNT}.snowflakecomputing.com"
 
 def before(req, session):
-    # Mock for testing
-    session['user'] = 'test@example.com'
-    session['access_token'] = 'mock-token'
-
     open_routes = ['/login', '/register', '/signup', '/forgot-password', '/reset-password',
                    '/auth/google', '/auth/github', '/auth/callback',
                    '/auth/snowflake', '/auth/snowflake/callback',
