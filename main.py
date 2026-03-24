@@ -330,11 +330,8 @@ def get(session):
 @rt("/dashboard")
 def get_dashboard(session):
     user_email = session.get('user', '')
-    try:
-        user_id = _get_user_id(session)
-        return page_layout("Project Overview", "/dashboard", user_email, Dashboard(user_id=str(user_id or ""), user_email=user_email), session=session)
-    except Exception as e:
-        return f"Error on dashboard: {e}", 500
+    user_id = _get_user_id(session)
+    return page_layout("Project Overview", "/dashboard", user_email, Dashboard(user_id=str(user_id or ""), user_email=user_email), session=session)
 
 @rt("/catalog")
 def get_catalog(session, q: str = "", category: str = "", access: str = "", freq: str = "", page: int = 1, per_page: int = 25):
@@ -1034,7 +1031,7 @@ def post_org_switch(session, org_id: str):
         session.pop('active_project_id', None)
         session['force_header_refresh'] = True
         return Script("window.location.href = '/projects';")
-    except Exception as e: return f"Error switching organization: {e}", 500
+    except Exception: return "Error", 500
 
 @rt("/organisations")
 def get_organisations(session):
@@ -1292,13 +1289,10 @@ def get_select_project(p_id: str, session):
 
 @rt("/projects")
 def get_projects(session):
-    try:
-        from app.pages.projects import ProjectsDashboard
-        user_id = _get_user_id(session)
-        if not user_id: return RedirectResponse("/login", status_code=303)
-        return page_layout("Projects", "/projects", session.get('user'), ProjectsDashboard(user_id=user_id, session=session), session=session)
-    except Exception as e:
-        return f"Error on projects page: {e}", 500
+    from app.pages.projects import ProjectsDashboard
+    user_id = _get_user_id(session)
+    if not user_id: return RedirectResponse("/login", status_code=303)
+    return page_layout("Projects", "/projects", session.get('user'), ProjectsDashboard(user_id=user_id, session=session), session=session)
 
 @rt("/team")
 def get_team(session):
