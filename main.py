@@ -106,7 +106,7 @@ app, rt = fast_app(before=bware, secret_key=os.environ.get("SESSION_SECRET", "de
 
 @rt("/login", methods=["GET"])
 def get_login(session):
-    if session.get('user'): return RedirectResponse('/projects', status_code=303)
+    if _get_user_id(session): return RedirectResponse('/projects', status_code=303)
     return AuthPage(mode="login")
     
 @rt("/login", methods=["POST"])
@@ -128,7 +128,7 @@ def get_signup_redirect():
 
 @rt("/register", methods=["GET"])
 def get_register(session):
-    if session.get('user'): return RedirectResponse('/projects', status_code=303)
+    if _get_user_id(session): return RedirectResponse('/projects', status_code=303)
     return AuthPage(mode="register")
 
 @rt("/register", methods=["POST"])
