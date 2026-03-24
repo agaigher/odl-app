@@ -311,7 +311,7 @@ def ProjectsDashboard(user_id="", session=None):
     except Exception:
         pass
 
-    org_label = (org_row.get("name") or "Workspace").strip()
+    org_label = ((org_row.get("name") if org_row else None) or "Workspace").strip()
     active_project_id = session.get("active_project_id") if session else None
 
     new_form = Form(
