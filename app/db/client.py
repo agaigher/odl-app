@@ -2,6 +2,7 @@
 Core Supabase PostgREST operations: insert, select, patch, delete.
 """
 import httpx
+import re
 
 from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
 
@@ -70,8 +71,77 @@ def _in_values(values):
     return "in.(" + ",".join(escaped) + ")"
 
 
+def _extract_row_estimate(dataset):
+    for key in ("row_count", "rows", "record_count", "dataset_size"):
+        v = dataset.get(key)
+        if isinstance(v, (int, float)) and v >= 0:
+            return int(v)
+
+    text = f'{dataset.get("description") or ""} {dataset.get("long_description") or ""}'.lower()
+    pattern = re.compile(
+        r'(\d[\d,]*(?:\.\d+)?)\s*(\+)?\s*(billion|million|thousand|bn|m|k)?\s*'
+        r'(records?|rows?|entries?|transactions?|observations?|titles?|companies?)?'
+    )
+    best = None
+    for num, plus, unit, noun in pattern.findall(text):
+        if not noun and not unit:
+            continue
+        base = float(num.replace(",", ""))
+        mult = 1
+        u = (unit or "").lower()
+        if u in ("k", "thousand"):
+            mult = 1_000
+        elif u in ("m", "million"):
+            mult = 1_000_000
+        elif u in ("bn", "billion"):
+            mult = 1_000_000_000
+        val = int(base * mult)
+        if plus:
+            val += 1
+        if best is None or val > best:
+            best = val
+    return best
+
+
+def _matches_size_bucket(dataset, size_bucket):
+    est = _extract_row_estimate(dataset)
+    if est is None:
+        return False
+    if size_bucket == "le_1k":
+        return est <= 1_000
+    if size_bucket == "le_10k":
+        return est <= 10_000
+    if size_bucket == "le_100k":
+        return est <= 100_000
+    if size_bucket == "le_1m":
+        return est <= 1_000_000
+    if size_bucket == "le_10m":
+        return est <= 10_000_000
+    if size_bucket == "le_100m":
+        return est <= 100_000_000
+    if size_bucket == "gt_100m":
+        return est > 100_000_000
+    return True
+
+
+def _fetch_all(url, params, limit=10000):
+    h = _headers()
+    all_rows = []
+    chunk_size = 1000
+    for offset in range(0, limit, chunk_size):
+        h["Range-Unit"] = "items"
+        h["Range"] = f"{offset}-{offset + chunk_size - 1}"
+        r = httpx.get(url, params=params, headers=h)
+        r.raise_for_status()
+        chunk = r.json()
+        all_rows.extend(chunk)
+        if len(chunk) < chunk_size:
+            break
+    return all_rows
+
+
 def get_datasets_paginated(category="", q="", access="", freq="", page=1, per_page=25,
-                           provider="", status="", tags=""):
+                           provider="", status="", tags="", updated_after="", size=""):
     url = f"{SUPABASE_URL}/rest/v1/datasets"
     params = {}
 
@@ -93,8 +163,11 @@ def get_datasets_paginated(category="", q="", access="", freq="", page=1, per_pa
             "Real-time": ["Real-time", "Streaming"],
             "Hourly": ["Hourly"],
             "Daily": ["Daily"],
+            "Weekly": ["Weekly"],
             "Monthly": ["Monthly"],
-            "Annual": ["Annual"],
+            "Quarterly": ["Quarterly"],
+            "Yearly": ["Annual"],
+            "Less than once a year": ["Irregular", "One-off"],
         }
         expanded = []
         for f in freqs:
@@ -128,9 +201,18 @@ def get_datasets_paginated(category="", q="", access="", freq="", page=1, per_pa
             params["tags"] = f"cs.{{{tags_list[0]}}}"
         else:
             params["tags"] = "ov.{" + ",".join(tags_list) + "}"
+    if updated_after:
+        params["created_at"] = f"gte.{updated_after}"
 
     if q:
         params["or"] = f"(title.ilike.*{q}*,description.ilike.*{q}*,provider.ilike.*{q}*,category.ilike.*{q}*)"
+
+    if size:
+        rows = _fetch_all(url, params=params, limit=12000)
+        filtered = [d for d in rows if _matches_size_bucket(d, size)]
+        total = len(filtered)
+        offset = (page - 1) * per_page
+        return filtered[offset: offset + per_page], total
 
     offset = (page - 1) * per_page
     h = _headers()

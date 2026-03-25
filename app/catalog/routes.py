@@ -12,26 +12,24 @@ from app.pages.dataset import DatasetDetail
 def register(rt):
 
     @rt("/catalog")
-    def get_catalog(session, q: str = "", category: str = "", access: str = "", freq: str = "",
-                    provider: str = "", status: str = "", tags: str = "",
+    def get_catalog(session, q: str = "", category: str = "", freq: str = "",
+                    updated_after: str = "", size: str = "",
                     page: int = 1, per_page: int = 25):
         user_id = get_user_id(session)
         return module_page_layout("London Database", "/catalog", session.get('user'),
                            DataCatalog(category=category, q=q, user_id=user_id,
-                                      access_filter=access, freq_filter=freq,
-                                      provider_filter=provider, status_filter=status, tags_filter=tags,
+                                      freq_filter=freq, updated_after_filter=updated_after, size_filter=size,
                                        page=page, per_page=per_page),
                            session=session, active_module="catalog", show_sidebar=False, full_width=True)
 
     @rt("/catalog/search")
-    def get_catalog_search(session, q: str = "", category: str = "", access: str = "", freq: str = "",
-                           provider: str = "", status: str = "", tags: str = "",
+    def get_catalog_search(session, q: str = "", category: str = "", freq: str = "",
+                           updated_after: str = "", size: str = "",
                            page: int = 1, per_page: int = 25):
         from app.pages.catalog import SearchCatalogResults
         user_id = get_user_id(session)
         return SearchCatalogResults(q=q, category=category, user_id=user_id,
-                                    access_filter=access, freq_filter=freq,
-                                    provider_filter=provider, status_filter=status, tags_filter=tags,
+                                    freq_filter=freq, updated_after_filter=updated_after, size_filter=size,
                                     page=page, per_page=per_page)
 
     @rt("/catalog/ai-search", methods=["POST"])

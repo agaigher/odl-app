@@ -1,4 +1,3 @@
-import json
 from fasthtml.common import *
 from app.supabase_db import db_select
 
@@ -26,9 +25,25 @@ CAT_COLORS = {
     "Education":            "#06B6D4",
     "Electoral":            "#A855F7",
 }
-ACCESS_FILTERS = [("All", ""), ("API", "api"), ("Snowflake", "snowflake")]
-FREQ_FILTERS   = [("All", ""), ("Real-time", "Real-time"), ("Daily", "Daily"),
-                  ("Monthly", "Monthly"), ("Annual", "Annual")]
+FREQ_FILTERS = [
+    ("Real-time", "Real-time"),
+    ("Hourly", "Hourly"),
+    ("Daily", "Daily"),
+    ("Weekly", "Weekly"),
+    ("Monthly", "Monthly"),
+    ("Quarterly", "Quarterly"),
+    ("Yearly", "Yearly"),
+    ("Less than once a year", "Less than once a year"),
+]
+SIZE_FILTERS = [
+    ("Up to 1k rows", "le_1k"),
+    ("Up to 10k rows", "le_10k"),
+    ("Up to 100k rows", "le_100k"),
+    ("Up to 1m rows", "le_1m"),
+    ("Up to 10m rows", "le_10m"),
+    ("Up to 100m rows", "le_100m"),
+    ("100m+ rows", "gt_100m"),
+]
 
 CATALOG_STYLE = Style("""
     /* Dark surfaces — aligned with dashboard (no stark white on #080a0f) */
@@ -172,6 +187,23 @@ CATALOG_STYLE = Style("""
     }
     .clear-filters-btn:hover {
         color: #E2E8F0; border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.07);
+    }
+    .simple-filter-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    .simple-filter-row:last-child { margin-bottom: 0; }
+    .filter-date-input, .filter-select {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.04);
+        color: #E2E8F0;
+        font-size: 13px;
+        font-family: 'Inter', sans-serif;
+        outline: none;
+    }
+    .filter-date-input:focus, .filter-select:focus {
+        border-color: rgba(56,189,248,0.35);
+        box-shadow: 0 0 0 1px rgba(2,132,199,0.12);
     }
     .filter-section { margin-bottom: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); }
     .filter-section:last-child { margin-bottom: 0; }
@@ -645,54 +677,6 @@ def IntegrationModal(slug, dataset_title, project_id):
     )
 
 
-# ── Filter chips ──────────────────────────────────────────────────────────────
-
-def _chip(label, param, value, current, category, q, access_f, freq_f):
-    is_on = (current == value) or (value == "" and not current)
-    a = value if param == "access" else access_f
-    f = value if param == "freq"   else freq_f
-    qs = f"q={q}&category={category}&access={a}&freq={f}"
-    return A(label,
-             hx_get=f"/catalog/search?{qs}",
-             hx_target="#catalog-body",
-             hx_push_url=f"/catalog?{qs}",
-             cls=f"chip {'on' if is_on else ''}")
-
-
-def _filter_chips(access_f, freq_f, category, q):
-    return Div(
-        Div(Span("Access", cls="filter-label"),
-            *[_chip(l, "access", v, access_f, category, q, access_f, freq_f) for l, v in ACCESS_FILTERS],
-            cls="filter-group"),
-        Div(Span("Frequency", cls="filter-label"),
-            *[_chip(l, "freq", v, freq_f, category, q, access_f, freq_f) for l, v in FREQ_FILTERS],
-            cls="filter-group"),
-        cls="filters"
-    )
-
-
-def _split_csv(raw):
-    if not raw:
-        return []
-    return [v.strip() for v in str(raw).split(",") if v.strip()]
-
-
-def _build_filter_options(all_datasets):
-    categories = sorted({(d.get("category") or "").strip() for d in all_datasets if d.get("category")})
-    providers = sorted({(d.get("provider") or "").strip() for d in all_datasets if d.get("provider")})
-    frequencies = sorted({(d.get("update_frequency") or "").strip() for d in all_datasets if d.get("update_frequency")})
-    statuses = sorted({(d.get("status") or "").strip() for d in all_datasets if d.get("status")})
-    tags = sorted({tag.strip() for d in all_datasets for tag in (d.get("tags") or []) if str(tag).strip()})
-    return {
-        "category": categories,
-        "provider": providers,
-        "freq": frequencies,
-        "status": statuses,
-        "access": [v for _, v in ACCESS_FILTERS if v],
-        "tags": tags,
-    }
-
-
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 
 def _sidebar(counts, active_cat, total):
@@ -721,7 +705,7 @@ def _sidebar(counts, active_cat, total):
 
 # ── Search area ───────────────────────────────────────────────────────────────
 
-def _keyword_search_area(q, category, access_f, freq_f, provider_f="", status_f="", tags_f=""):
+def _keyword_search_area(q, category, freq_f="", updated_after_f="", size_f=""):
     search_svg = NotStr('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>')
 
     kw_bar = Div(
@@ -732,21 +716,19 @@ def _keyword_search_area(q, category, access_f, freq_f, provider_f="", status_f=
               hx_get="/catalog/search",
               hx_trigger="input changed delay:280ms, search",
               hx_target="#catalog-body",
-              hx_include="[name='q'],[name='category'],[name='access'],[name='freq'],[name='provider'],[name='status'],[name='tags']",
+              hx_include="[name='q'],[name='category'],[name='freq'],[name='updated_after'],[name='size']",
               hx_push_url="true"),
         Input(type="hidden", name="category", value=category, id="kw-filter-category"),
-        Input(type="hidden", name="access",   value=access_f, id="kw-filter-access"),
         Input(type="hidden", name="freq",     value=freq_f, id="kw-filter-freq"),
-        Input(type="hidden", name="provider", value=provider_f, id="kw-filter-provider"),
-        Input(type="hidden", name="status",   value=status_f, id="kw-filter-status"),
-        Input(type="hidden", name="tags",     value=tags_f, id="kw-filter-tags"),
+        Input(type="hidden", name="updated_after", value=updated_after_f, id="kw-filter-updated-after"),
+        Input(type="hidden", name="size", value=size_f, id="kw-filter-size"),
         id="kw-bar", cls="kw-bar"
     )
 
     return Div(kw_bar, cls="kw-search-wrap")
 
 
-def _ai_filter_area(q, category, access_f, freq_f, provider_f="", status_f="", tags_f="", filter_options=None):
+def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f=""):
     ai_btn = Button(NotStr("✦ AI Search"), type="button", cls="ai-pill-btn", onclick="activateAI()")
     controls_slicer = Div(
         Button("AI Search", type="button", id="controls-tab-ai",
@@ -771,74 +753,38 @@ def _ai_filter_area(q, category, access_f, freq_f, provider_f="", status_f="", t
         cls="ai-bar", id="ai-bar"
     )
 
-    selected = {
-        "category": set(_split_csv(category)),
-        "access": set(_split_csv(access_f)),
-        "freq": set(_split_csv(freq_f)),
-        "provider": set(_split_csv(provider_f)),
-        "status": set(_split_csv(status_f)),
-        "tags": set(_split_csv(tags_f)),
-    }
-    options = filter_options or {}
-
-    def chip(filter_name, value, selected_values):
-        is_on = value in selected_values
-        return Button(
-            value,
-            type="button",
-            cls=f"chip {'on' if is_on else ''}",
-            data_filter=filter_name,
-            data_value=value,
-            onclick=f"toggleCatalogFilter({json.dumps(filter_name)}, {json.dumps(value)}, this)"
-        )
-
-    def filter_section(filter_name, label, values, selected_values, searchable=False, default_open=True, limit=12):
-        count_txt = f"{len(selected_values)} selected" if selected_values else "Any"
-        body_cls = "filter-section-body" if default_open else "filter-section-body collapsed"
-        return Div(
-            Div(
-                Button(
-                    Span(label, cls="filter-label"),
-                    Span(count_txt, cls="filter-count", id=f"filter-count-{filter_name}"),
-                    Span("▾", cls="filter-chevron"),
-                    type="button",
-                    cls="filter-section-toggle",
-                    onclick=f"toggleFilterSection({json.dumps(filter_name)})"
-                ),
-                cls="filter-section-head"
-            ),
-            Div(
-                Input(type="search",
-                      placeholder=f"Search {label.lower()}…",
-                      cls="filter-search",
-                      id=f"filter-search-{filter_name}",
-                      oninput=f"filterSectionOptions({json.dumps(filter_name)}, this.value)") if searchable else None,
-                Div(*[chip(filter_name, v, selected_values) for v in values],
-                    cls="filter-chip-wrap", id=f"filter-chips-{filter_name}",
-                    data_filter=filter_name, data_limit=str(limit), data_expanded="0"),
-                Button("Show more",
-                       type="button",
-                       cls="filter-more-btn",
-                       id=f"filter-more-{filter_name}",
-                       onclick=f"toggleFilterMore({json.dumps(filter_name)})"),
-                cls="filter-section-content"
-            ),
-            cls=body_cls,
-            id=f"filter-body-{filter_name}"
-        )
-
     filter_panel = Div(
         Div(
             Span("Filters", cls="filter-panel-title"),
-            Button("Clear filters", type="button", cls="clear-filters-btn", onclick="clearCatalogFilters()"),
+            Button("Clear filters", type="button", cls="clear-filters-btn", onclick="clearCatalogSimpleFilters()"),
             cls="filter-panel-head"
         ),
-        filter_section("category", "Category", options.get("category", []), selected["category"], searchable=True, default_open=True, limit=14),
-        filter_section("provider", "Provider", options.get("provider", []), selected["provider"], searchable=True, default_open=False, limit=10),
-        filter_section("freq", "Frequency", options.get("freq", []), selected["freq"], searchable=False, default_open=True, limit=10),
-        filter_section("access", "Access", options.get("access", []), selected["access"], searchable=False, default_open=True, limit=10),
-        filter_section("status", "Status", options.get("status", []), selected["status"], searchable=False, default_open=True, limit=10),
-        filter_section("tags", "Tags", options.get("tags", []), selected["tags"], searchable=True, default_open=False, limit=12),
+        Div(
+            Span("Last updated after", cls="filter-label"),
+            Input(type="date", value=updated_after_f, id="filter-updated-after", cls="filter-date-input",
+                  onchange="setCatalogSimpleFilter('updated_after', this.value)"),
+            cls="simple-filter-row"
+        ),
+        Div(
+            Span("Frequency", cls="filter-label"),
+            Select(
+                Option("Any frequency", value="", selected=(not freq_f)),
+                *[Option(lbl, value=val, selected=(freq_f == val)) for lbl, val in FREQ_FILTERS],
+                id="filter-frequency", cls="filter-select",
+                onchange="setCatalogSimpleFilter('freq', this.value)"
+            ),
+            cls="simple-filter-row"
+        ),
+        Div(
+            Span("Dataset size", cls="filter-label"),
+            Select(
+                Option("Any size", value="", selected=(not size_f)),
+                *[Option(lbl, value=val, selected=(size_f == val)) for lbl, val in SIZE_FILTERS],
+                id="filter-size", cls="filter-select",
+                onchange="setCatalogSimpleFilter('size', this.value)"
+            ),
+            cls="simple-filter-row"
+        ),
         id="filter-panel",
         cls="filter-panel"
     )
@@ -856,11 +802,9 @@ def _ai_filter_area(q, category, access_f, freq_f, provider_f="", status_f="", t
 
         const _catalogFilterInputIds = {
             category: 'kw-filter-category',
-            access: 'kw-filter-access',
             freq: 'kw-filter-freq',
-            provider: 'kw-filter-provider',
-            status: 'kw-filter-status',
-            tags: 'kw-filter-tags',
+            updated_after: 'kw-filter-updated-after',
+            size: 'kw-filter-size',
         };
 
         function _splitCsv(raw) {
@@ -890,100 +834,13 @@ def _ai_filter_area(q, category, access_f, freq_f, provider_f="", status_f="", t
             if (el) el.value = values.join(',');
         }
 
-        function _updateFilterCount(filterName) {
-            const el = document.getElementById('filter-count-' + filterName);
-            if (!el) return;
-            const n = _readFilter(filterName).length;
-            el.textContent = n ? (n + ' selected') : 'Any';
-        }
-
-        function _refreshFilterSection(filterName) {
-            const chipsWrap = document.getElementById('filter-chips-' + filterName);
-            if (!chipsWrap) return;
-            const chips = Array.from(chipsWrap.querySelectorAll('.chip[data-filter]'));
-            const selected = new Set(_readFilter(filterName));
-            const limit = parseInt(chipsWrap.dataset.limit || "12", 10);
-            const expanded = chipsWrap.dataset.expanded === "1";
-            const searchEl = document.getElementById('filter-search-' + filterName);
-            const q = (searchEl ? searchEl.value : "").trim().toLowerCase();
-            const unlimited = expanded || !!q;
-
-            let shown = 0;
-            let hiddenMatching = 0;
-            chips.forEach(function(chip) {
-                const value = (chip.getAttribute('data-value') || "");
-                const match = !q || value.toLowerCase().includes(q);
-                if (!match) {
-                    chip.classList.add('chip-hidden');
-                    return;
-                }
-                const isSelected = selected.has(value);
-                const show = isSelected || unlimited || shown < limit;
-                if (show) {
-                    chip.classList.remove('chip-hidden');
-                    shown += 1;
-                } else {
-                    chip.classList.add('chip-hidden');
-                    hiddenMatching += 1;
-                }
-            });
-
-            const moreBtn = document.getElementById('filter-more-' + filterName);
-            if (moreBtn) {
-                if (!q && hiddenMatching > 0) {
-                    moreBtn.style.display = '';
-                    moreBtn.textContent = expanded ? 'Show less' : ('Show ' + hiddenMatching + ' more');
-                } else if (!q && expanded && chips.length > limit) {
-                    moreBtn.style.display = '';
-                    moreBtn.textContent = 'Show less';
-                } else {
-                    moreBtn.style.display = 'none';
-                }
-            }
-
-            _updateFilterCount(filterName);
-        }
-
-        function _refreshAllFilterSections() {
-            Object.keys(_catalogFilterInputIds).forEach(function(k) { _refreshFilterSection(k); });
-        }
-
-        function toggleFilterSection(filterName) {
-            const body = document.getElementById('filter-body-' + filterName);
-            if (!body) return;
-            body.classList.toggle('collapsed');
-        }
-
-        function filterSectionOptions(filterName) {
-            _refreshFilterSection(filterName);
-        }
-
-        function toggleFilterMore(filterName) {
-            const wrap = document.getElementById('filter-chips-' + filterName);
-            if (!wrap) return;
-            wrap.dataset.expanded = wrap.dataset.expanded === "1" ? "0" : "1";
-            _refreshFilterSection(filterName);
-        }
-
-        function _updateChipStates() {
-            document.querySelectorAll('#filter-panel .chip[data-filter]').forEach(function(chip) {
-                const name = chip.getAttribute('data-filter');
-                const value = chip.getAttribute('data-value');
-                const selected = _readFilter(name);
-                chip.classList.toggle('on', selected.includes(value));
-            });
-            _refreshAllFilterSections();
-        }
-
         function _runCatalogFilterSearch() {
             const params = new URLSearchParams({
                 q: _currentQuery(),
                 category: (_readFilter('category') || []).join(','),
-                access: (_readFilter('access') || []).join(','),
                 freq: (_readFilter('freq') || []).join(','),
-                provider: (_readFilter('provider') || []).join(','),
-                status: (_readFilter('status') || []).join(','),
-                tags: (_readFilter('tags') || []).join(','),
+                updated_after: (_readFilter('updated_after') || []).join(','),
+                size: (_readFilter('size') || []).join(','),
                 page: '1',
                 per_page: _currentPerPage(),
             });
@@ -994,19 +851,19 @@ def _ai_filter_area(q, category, access_f, freq_f, provider_f="", status_f="", t
             });
         }
 
-        function toggleCatalogFilter(filterName, value) {
-            const selected = _readFilter(filterName);
-            const idx = selected.indexOf(value);
-            if (idx >= 0) selected.splice(idx, 1);
-            else selected.push(value);
-            _writeFilter(filterName, selected);
-            _updateChipStates();
+        function setCatalogSimpleFilter(filterName, value) {
+            _writeFilter(filterName, value ? [value] : []);
             _runCatalogFilterSearch();
         }
 
-        function clearCatalogFilters() {
+        function clearCatalogSimpleFilters() {
             Object.keys(_catalogFilterInputIds).forEach(function(k) { _writeFilter(k, []); });
-            _updateChipStates();
+            const d = document.getElementById('filter-updated-after');
+            const f = document.getElementById('filter-frequency');
+            const s = document.getElementById('filter-size');
+            if (d) d.value = '';
+            if (f) f.value = '';
+            if (s) s.value = '';
             _runCatalogFilterSearch();
         }
 
@@ -1052,7 +909,6 @@ def _ai_filter_area(q, category, access_f, freq_f, provider_f="", status_f="", t
                 clearInterval(_thinkTimer);
             }
         });
-        _updateChipStates();
     """)
 
     return Div(
@@ -1097,7 +953,7 @@ def _page_nums(page, total_pages):
 
 
 def _list_body(page_datasets, total, added, favs, heading, subtext, page=1, per_page=25,
-               q="", category="", access_f="", freq_f="", provider_f="", status_f="", tags_f=""):
+               q="", category="", freq_f="", updated_after_f="", size_f=""):
     if not page_datasets:
         return Div(
             Div(H1(heading, style="font-size:18px;font-weight:600;color:#F8FAFC;letter-spacing:-0.03em;"),
@@ -1110,8 +966,8 @@ def _list_body(page_datasets, total, added, favs, heading, subtext, page=1, per_
     page = max(1, min(page, total_pages))
 
     qs_base = (
-        f"q={q}&category={category}&access={access_f}&freq={freq_f}"
-        f"&provider={provider_f}&status={status_f}&tags={tags_f}"
+        f"q={q}&category={category}&freq={freq_f}"
+        f"&updated_after={updated_after_f}&size={size_f}"
     )
 
     per_page_select = Select(
@@ -1161,23 +1017,21 @@ def _list_body(page_datasets, total, added, favs, heading, subtext, page=1, per_
 
 # ── Public components ─────────────────────────────────────────────────────────
 
-def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="", provider_filter="", status_filter="", tags_filter="", page=1, per_page=25):
+def DataCatalog(category="", q="", user_id="", freq_filter="", updated_after_filter="", size_filter="", page=1, per_page=25):
     from app.supabase_db import get_datasets_paginated, get_category_counts
     try:
         datasets, total_matches = get_datasets_paginated(
-            category, q, access_filter, freq_filter, page, per_page,
-            provider=provider_filter, status=status_filter, tags=tags_filter
+            category, q, "", freq_filter, page, per_page,
+            updated_after=updated_after_filter, size=size_filter
         )
         counts, total_all = get_category_counts()
-        all_datasets = db_select("datasets", limit=2000)
     except Exception:
-        datasets, counts, total_matches, total_all, all_datasets = [], {}, 0, 0, []
+        datasets, counts, total_matches, total_all = [], {}, 0, 0
 
     added, favs = _fetch_user_sets(user_id)
-    filter_options = _build_filter_options(all_datasets)
 
     heading = f'Results for "{q}"' if q else (category or "London Database")
-    has_filters = any([category, access_filter, freq_filter, provider_filter, status_filter, tags_filter])
+    has_filters = any([category, freq_filter, updated_after_filter, size_filter])
     subtext = (f"{total_matches} dataset{'s' if total_matches != 1 else ''} found"
                if (q or has_filters)
                else f"{total_matches} datasets — growing continuously")
@@ -1261,19 +1115,19 @@ def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="",
             _sidebar(counts, category, total_all),
             Div(cls="cat-splitter", id="cat-splitter-left", title="Drag to resize columns (double-click to reset)"),
             Div(
-                _keyword_search_area(q, category, access_filter, freq_filter, provider_filter, status_filter, tags_filter),
+                _keyword_search_area(q, category, freq_filter, updated_after_filter, size_filter),
                 Div(
                     _list_body(datasets, total_matches, added, favs, heading, subtext,
                                page=page, per_page=per_page,
-                               q=q, category=category, access_f=access_filter, freq_f=freq_filter,
-                               provider_f=provider_filter, status_f=status_filter, tags_f=tags_filter),
+                               q=q, category=category, freq_f=freq_filter,
+                               updated_after_f=updated_after_filter, size_f=size_filter),
                     id="catalog-body", cls="cat-main"
                 ),
                 cls="cat-results-col"
             ),
             Div(cls="cat-splitter", id="cat-splitter-right", title="Drag to resize columns (double-click to reset)"),
             Div(
-                _ai_filter_area(q, category, access_filter, freq_filter, provider_filter, status_filter, tags_filter, filter_options),
+                _ai_filter_area(q, category, freq_filter, updated_after_filter, size_filter),
                 cls="cat-controls-col", id="cat-controls-col"
             ),
             cls="cat-wrap"
@@ -1282,26 +1136,26 @@ def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="",
     )
 
 
-def SearchCatalogResults(q="", category="", user_id="", access_filter="", freq_filter="", provider_filter="", status_filter="", tags_filter="", page=1, per_page=25):
+def SearchCatalogResults(q="", category="", user_id="", freq_filter="", updated_after_filter="", size_filter="", page=1, per_page=25):
     from app.supabase_db import get_datasets_paginated
     try:
         datasets, total_matches = get_datasets_paginated(
-            category, q, access_filter, freq_filter, page, per_page,
-            provider=provider_filter, status=status_filter, tags=tags_filter
+            category, q, "", freq_filter, page, per_page,
+            updated_after=updated_after_filter, size=size_filter
         )
     except Exception:
         datasets, total_matches = [], 0
 
     added, favs = _fetch_user_sets(user_id)
     heading = f'Results for "{q}"' if q else (category or "London Database")
-    has_filters = any([category, access_filter, freq_filter, provider_filter, status_filter, tags_filter])
+    has_filters = any([category, freq_filter, updated_after_filter, size_filter])
     subtext = (f"{total_matches} dataset{'s' if total_matches != 1 else ''} found"
                if (q or has_filters)
                else f"{total_matches} datasets — growing continuously")
     return _list_body(datasets, total_matches, added, favs, heading, subtext,
                       page=page, per_page=per_page,
-                      q=q, category=category, access_f=access_filter, freq_f=freq_filter,
-                      provider_f=provider_filter, status_f=status_filter, tags_f=tags_filter)
+                      q=q, category=category, freq_f=freq_filter,
+                      updated_after_f=updated_after_filter, size_f=size_filter)
 
 
 def FavouritesView(user_id=""):
