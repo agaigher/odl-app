@@ -69,24 +69,6 @@ CATALOG_STYLE = Style("""
     .cat-splitter.dragging::before {
         background: rgba(125,211,252,0.5);
     }
-    .cat-reset-wrap { display: flex; justify-content: flex-end; margin-bottom: 10px; }
-    .cat-reset-btn {
-        border: 1px solid rgba(255,255,255,0.12);
-        background: rgba(255,255,255,0.03);
-        color: #94A3B8;
-        border-radius: 8px;
-        padding: 6px 10px;
-        font-size: 12px;
-        font-weight: 500;
-        cursor: pointer;
-        font-family: 'Inter', sans-serif;
-        transition: all 0.15s;
-    }
-    .cat-reset-btn:hover {
-        color: #CBD5E1;
-        border-color: rgba(56,189,248,0.3);
-        background: rgba(2,132,199,0.08);
-    }
 
     .cat-sidebar-title {
         font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
@@ -344,7 +326,6 @@ CATALOG_STYLE = Style("""
         .cat-results-col { width: 100%; border-right: none; padding: 24px 20px 0; }
         .cat-controls-col { width: 100%; min-width: 0; padding: 16px 20px 24px; }
         .cat-splitter { display: none; }
-        .cat-reset-wrap { justify-content: flex-start; }
     }
 """)
 
@@ -754,10 +735,6 @@ def _ai_filter_area(q, category, access_f, freq_f):
 
     return Div(
         Div(
-            Button("Reset columns", type="button", id="cat-reset-cols-btn", cls="cat-reset-btn"),
-            cls="cat-reset-wrap"
-        ),
-        Div(
             Div(ai_btn, cls="search-row", id="ai-cta-wrap"),
             ai_bar,
             cls="search-row"
@@ -871,7 +848,6 @@ def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="",
             const controls = document.getElementById("cat-controls-col");
             const leftHandle = document.getElementById("cat-splitter-left");
             const rightHandle = document.getElementById("cat-splitter-right");
-            const resetBtn = document.getElementById("cat-reset-cols-btn");
             if (!sidebar || !controls || !leftHandle || !rightHandle) return;
 
             const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
@@ -932,7 +908,6 @@ def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="",
             attachDrag(rightHandle, controls, "catalog.controls.width", 180, 840, -1);
             leftHandle.addEventListener("dblclick", resetWidths);
             rightHandle.addEventListener("dblclick", resetWidths);
-            if (resetBtn) resetBtn.addEventListener("click", resetWidths);
             window.addEventListener("resize", loadSavedWidths);
         })();
     """)
