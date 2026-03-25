@@ -11,7 +11,7 @@ from app.ui.components import icon_svg, IC
 # ── Module definitions ────────────────────────────────────────────────────────
 
 MODULES = [
-    ("Data Catalog", "/catalog",    "catalog",  IC.book),
+    ("Catalog",      "/catalog",    "catalog",  IC.book),
     ("Explore",      "/explore",    "explore",  IC.bolt),
     ("Settings",     "/projects",   "settings", IC.cog),
 ]
