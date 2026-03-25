@@ -18,7 +18,7 @@ def register(rt):
                            DataCatalog(category=category, q=q, user_id=user_id,
                                        access_filter=access, freq_filter=freq,
                                        page=page, per_page=per_page),
-                           session=session, active_module="catalog", show_sidebar=False)
+                           session=session, active_module="catalog", show_sidebar=False, full_width=True)
 
     @rt("/catalog/search")
     def get_catalog_search(session, q: str = "", category: str = "", access: str = "", freq: str = "", page: int = 1, per_page: int = 25):

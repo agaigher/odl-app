@@ -31,9 +31,16 @@ FREQ_FILTERS   = [("All", ""), ("Real-time", "Real-time"), ("Daily", "Daily"),
 
 CATALOG_STYLE = Style("""
     /* Dark surfaces — aligned with dashboard (no stark white on #080a0f) */
-    .cat-wrap { display: flex; gap: 24px; align-items: flex-start; }
-    .cat-sidebar { width: 190px; flex-shrink: 0; position: sticky; top: 20px; }
-    .cat-main-col { flex: 1; min-width: 0; }
+    .cat-wrap { display: flex; width: 100%; min-height: calc(100vh - 60px); }
+    .cat-sidebar {
+        width: 240px; flex-shrink: 0;
+        position: sticky; top: 60px; align-self: flex-start;
+        height: calc(100vh - 60px); overflow-y: auto;
+        padding: 24px 16px;
+        border-right: 1px solid rgba(255,255,255,0.05);
+        background: #0a0c10;
+    }
+    .cat-main-col { flex: 1; min-width: 0; padding: 32px 48px; }
     .cat-main { min-width: 0; }
 
     .cat-sidebar-title { font-size: 10px; font-weight: 700; color: #64748B;
