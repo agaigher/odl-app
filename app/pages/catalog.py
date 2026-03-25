@@ -31,7 +31,7 @@ FREQ_FILTERS   = [("All", ""), ("Real-time", "Real-time"), ("Daily", "Daily"),
 
 CATALOG_STYLE = Style("""
     /* Dark surfaces — aligned with dashboard (no stark white on #080a0f) */
-    .cat-wrap { display: flex; width: 100%; min-height: calc(100vh - 60px); align-items: flex-start; }
+    .cat-wrap { display: flex; width: 100%; min-height: calc(100vh - 60px); align-items: stretch; }
     .cat-sidebar {
         width: 240px; flex-shrink: 0;
         position: sticky;
@@ -41,13 +41,52 @@ CATALOG_STYLE = Style("""
         -ms-overflow-style: none;
         scrollbar-width: none;
         padding: 40px 16px 24px;
-        border-right: 1px solid rgba(255,255,255,0.05);
         background: #14120b;
     }
     .cat-sidebar::-webkit-scrollbar { width: 0; height: 0; display: none; }
     .cat-main { min-width: 0; }
-    .cat-results-col { flex: 1; min-width: 0; border-right: 1px solid rgba(255,255,255,0.05); padding: 32px 20px 32px 48px; }
+    .cat-results-col { flex: 1; min-width: 0; padding: 32px 20px 32px 48px; }
     .cat-controls-col { width: 340px; min-width: 280px; flex-shrink: 0; padding: 32px 48px 32px 20px; }
+    .cat-splitter {
+        width: 12px;
+        cursor: col-resize;
+        flex-shrink: 0;
+        position: relative;
+        user-select: none;
+        touch-action: none;
+    }
+    .cat-splitter::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        width: 1px;
+        transform: translateX(-50%);
+        background: rgba(255,255,255,0.05);
+    }
+    .cat-splitter:hover::before,
+    .cat-splitter.dragging::before {
+        background: rgba(125,211,252,0.5);
+    }
+    .cat-reset-wrap { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+    .cat-reset-btn {
+        border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.03);
+        color: #94A3B8;
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        font-family: 'Inter', sans-serif;
+        transition: all 0.15s;
+    }
+    .cat-reset-btn:hover {
+        color: #CBD5E1;
+        border-color: rgba(56,189,248,0.3);
+        background: rgba(2,132,199,0.08);
+    }
 
     .cat-sidebar-title {
         font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
@@ -299,12 +338,13 @@ CATALOG_STYLE = Style("""
             position: static;
             top: auto;
             height: auto;
-            border-right: none;
             border-bottom: 1px solid rgba(255,255,255,0.05);
             padding: 16px 20px;
         }
         .cat-results-col { width: 100%; border-right: none; padding: 24px 20px 0; }
         .cat-controls-col { width: 100%; min-width: 0; padding: 16px 20px 24px; }
+        .cat-splitter { display: none; }
+        .cat-reset-wrap { justify-content: flex-start; }
     }
 """)
 
@@ -600,7 +640,7 @@ def _sidebar(counts, active_cat, total):
             href=f"/catalog?category={cat}",
             cls=f"cat-sidebar-item {'active' if cat == active_cat else ''}",
         ))
-    return Div(*items, cls="cat-sidebar")
+    return Div(*items, cls="cat-sidebar", id="cat-sidebar-col")
 
 
 # ── Search area ───────────────────────────────────────────────────────────────
@@ -714,6 +754,10 @@ def _ai_filter_area(q, category, access_f, freq_f):
 
     return Div(
         Div(
+            Button("Reset columns", type="button", id="cat-reset-cols-btn", cls="cat-reset-btn"),
+            cls="cat-reset-wrap"
+        ),
+        Div(
             Div(ai_btn, cls="search-row", id="ai-cta-wrap"),
             ai_bar,
             cls="search-row"
@@ -818,10 +862,86 @@ def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="",
                if (q or category or access_filter or freq_filter)
                else f"{total_matches} datasets — growing continuously")
 
+    resize_script = Script("""
+        (function () {
+            const minDesktop = window.matchMedia("(min-width: 1101px)");
+            const defaultSidebar = 240;
+            const defaultControls = 340;
+            const sidebar = document.getElementById("cat-sidebar-col");
+            const controls = document.getElementById("cat-controls-col");
+            const leftHandle = document.getElementById("cat-splitter-left");
+            const rightHandle = document.getElementById("cat-splitter-right");
+            const resetBtn = document.getElementById("cat-reset-cols-btn");
+            if (!sidebar || !controls || !leftHandle || !rightHandle) return;
+
+            const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+
+            function loadSavedWidths() {
+                if (!minDesktop.matches) {
+                    sidebar.style.width = "";
+                    controls.style.width = "";
+                    return;
+                }
+                const sw = parseInt(localStorage.getItem("catalog.sidebar.width") || "", 10);
+                const cw = parseInt(localStorage.getItem("catalog.controls.width") || "", 10);
+                if (Number.isFinite(sw)) sidebar.style.width = clamp(sw, 180, 420) + "px";
+                if (Number.isFinite(cw)) controls.style.width = clamp(cw, 260, 560) + "px";
+            }
+
+            function resetWidths() {
+                sidebar.style.width = defaultSidebar + "px";
+                controls.style.width = defaultControls + "px";
+                localStorage.removeItem("catalog.sidebar.width");
+                localStorage.removeItem("catalog.controls.width");
+            }
+
+            function attachDrag(handle, target, key, minW, maxW, sign) {
+                let startX = 0;
+                let startW = 0;
+
+                function onMove(e) {
+                    const delta = e.clientX - startX;
+                    const next = clamp(startW + delta * sign, minW, maxW);
+                    target.style.width = next + "px";
+                }
+
+                function onUp() {
+                    handle.classList.remove("dragging");
+                    document.body.style.userSelect = "";
+                    document.body.style.cursor = "";
+                    localStorage.setItem(key, parseInt(target.style.width, 10));
+                    window.removeEventListener("mousemove", onMove);
+                    window.removeEventListener("mouseup", onUp);
+                }
+
+                handle.addEventListener("mousedown", function (e) {
+                    if (!minDesktop.matches) return;
+                    e.preventDefault();
+                    startX = e.clientX;
+                    startW = target.getBoundingClientRect().width;
+                    handle.classList.add("dragging");
+                    document.body.style.userSelect = "none";
+                    document.body.style.cursor = "col-resize";
+                    window.addEventListener("mousemove", onMove);
+                    window.addEventListener("mouseup", onUp);
+                });
+            }
+
+            loadSavedWidths();
+            attachDrag(leftHandle, sidebar, "catalog.sidebar.width", 180, 420, 1);
+            attachDrag(rightHandle, controls, "catalog.controls.width", 260, 560, -1);
+            leftHandle.addEventListener("dblclick", resetWidths);
+            rightHandle.addEventListener("dblclick", resetWidths);
+            if (resetBtn) resetBtn.addEventListener("click", resetWidths);
+            window.addEventListener("resize", loadSavedWidths);
+        })();
+    """)
+
     return Div(
         CATALOG_STYLE,
         Div(
             _sidebar(counts, category, total_all),
+            Div(cls="cat-splitter", id="cat-splitter-left", title="Drag to resize columns (double-click to reset)"),
             Div(
                 _keyword_search_area(q, category, access_filter, freq_filter),
                 Div(
@@ -832,12 +952,14 @@ def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="",
                 ),
                 cls="cat-results-col"
             ),
+            Div(cls="cat-splitter", id="cat-splitter-right", title="Drag to resize columns (double-click to reset)"),
             Div(
                 _ai_filter_area(q, category, access_filter, freq_filter),
-                cls="cat-controls-col"
+                cls="cat-controls-col", id="cat-controls-col"
             ),
             cls="cat-wrap"
-        )
+        ),
+        resize_script
     )
 
 
