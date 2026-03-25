@@ -21,9 +21,9 @@ MODULES = [
 
 MODULE_HEADER_STYLE = Style("""
     .module-header {
-        background: linear-gradient(180deg, var(--bg-muted) 0%, var(--bg-page) 100%);
-        border-bottom: 1px solid var(--border);
-        box-shadow: 0 1px 0 rgba(2, 132, 199, 0.05);
+        background: linear-gradient(180deg, #1a1711 0%, #14120b 100%);
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        box-shadow: 0 1px 0 rgba(255,255,255,0.02);
         padding: 0 28px; height: 60px;
         display: flex; align-items: center; justify-content: space-between;
         position: sticky; top: 0; z-index: 1000;

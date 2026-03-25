@@ -42,7 +42,7 @@ CATALOG_STYLE = Style("""
         scrollbar-width: none;
         padding: 40px 16px 24px;
         border-right: 1px solid rgba(255,255,255,0.05);
-        background: #0a0c10;
+        background: #14120b;
     }
     .cat-sidebar::-webkit-scrollbar { width: 0; height: 0; display: none; }
     .cat-main-col { flex: 1; min-width: 0; padding: 32px 48px; }
