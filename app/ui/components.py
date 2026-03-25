@@ -54,7 +54,7 @@ def OrgSwitcher(active_org, all_orgs):
             Div(
                 Img(src=active_org.get("avatar_url"), style="width: 20px; height: 20px; border-radius: 4px; margin-right: 10px; object-fit: cover;") if active_org and active_org.get("avatar_url") else
                 Div(style="width: 20px; height: 20px; border-radius: 4px; border: 1.5px solid #475569; margin-right: 10px;") if active_org else None,
-                Span(f"Organization: {active_name}" if active_org else "Select Organization", style="font-weight: 500; font-size: 14px; color: #F8FAFC;"),
+                Span(f"Organization: {active_name}" if active_org else "Select Organization", style="font-weight: 500; font-size: 14px; color: var(--text-main);"),
                 style="display: flex; align-items: center;"
             ),
             icon_svg(IC.chevron_up_down),
@@ -65,7 +65,7 @@ def OrgSwitcher(active_org, all_orgs):
             Div(
                 icon_svg(IC.search),
                 Input(placeholder="Find organization...", oninput="filterOrgs(this.value)", cls="org-search-input"),
-                style="display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #334155; gap: 10px; color: #94A3B8;"
+                style="display: flex; align-items: center; padding: 12px; border-bottom: 1px solid var(--border); gap: 10px; color: var(--text-muted);"
             ),
             Div(
                 *[Div(
@@ -85,7 +85,7 @@ def OrgSwitcher(active_org, all_orgs):
                 ) for o in all_orgs] if all_orgs else [],
                 A(
                     Div("All Organizations", style="font-size: 13px;"),
-                    href="/organisations", cls="org-item", style="margin-top: 4px; border-top: 1px solid #334155; padding-top: 12px;"
+                    href="/organisations", cls="org-item", style="margin-top: 4px; border-top: 1px solid var(--border); padding-top: 12px;"
                 ),
                 A(
                     Div(
@@ -126,7 +126,7 @@ def ProjectSwitcher(active_project, all_projects):
         Button(
             Div(
                 icon_svg(IC.box, style="margin-right: 8px; opacity: 0.7;"),
-                Span(f"Project: {active_name}", style="font-weight: 500; font-size: 14px; color: #F8FAFC;"),
+                Span(f"Project: {active_name}", style="font-weight: 500; font-size: 14px; color: var(--text-main);"),
                 style="display: flex; align-items: center;"
             ),
             icon_svg(IC.chevron_up_down),
@@ -137,7 +137,7 @@ def ProjectSwitcher(active_project, all_projects):
             Div(
                 icon_svg(IC.search),
                 Input(placeholder="Find project...", oninput="filterProjects(this.value)", cls="org-search-input"),
-                style="display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #334155; gap: 10px; color: #94A3B8;"
+                style="display: flex; align-items: center; padding: 12px; border-bottom: 1px solid var(--border); gap: 10px; color: var(--text-muted);"
             ),
             Div(
                 *[Div(
@@ -162,7 +162,7 @@ def ProjectSwitcher(active_project, all_projects):
                         Span("New project"),
                         style="display: flex; align-items: center; gap: 8px; font-size: 13px;"
                     ),
-                    href="/projects", cls="org-item", style="margin-top: 4px; border-top: 1px solid #334155; padding-top: 10px;"
+                    href="/projects", cls="org-item", style="margin-top: 4px; border-top: 1px solid var(--border); padding-top: 10px;"
                 ),
                 style="padding: 4px 0;"
             ),
@@ -257,7 +257,9 @@ def odl_navbar(user=None, active_org=None, all_orgs=None, active_project=None, a
     )
 
 
-def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None):
+def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None, 
+                active_org=None, all_orgs=None, active_project=None, all_projects=None,
+                is_settings_module=False):
     def nav_item(label, path, icon_path):
         exact_match_only = ("/", "/dashboard", "/projects", "/favourites")
         is_active = current_path == path or (path not in exact_match_only and current_path.startswith(path))
@@ -267,33 +269,20 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None):
             label, href=path, cls=f"sidebar-item {active_cls}"
         )
 
-    return Nav(
-        Style("""
-            .app-sidebar {
-                width: 240px; background: #0a0c10;
-                border-right: 1px solid rgba(255,255,255,0.05);
-                padding: 20px 0; display: flex; flex-direction: column; flex-shrink: 0;
-                position: sticky; top: 60px; height: calc(100vh - 60px); overflow-y: auto;
-            }
-            .sidebar-section { padding: 0 12px; margin-bottom: 24px; }
-            .sidebar-title {
-                font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
-                color: #4B5563; text-transform: uppercase; letter-spacing: 1px;
-                margin-bottom: 6px; padding: 0 12px;
-            }
-            .sidebar-item {
-                display: flex; align-items: center; padding: 8px 12px; color: #9CA3AF;
-                text-decoration: none; font-size: 13px; font-weight: 500;
-                border-radius: 6px; margin-bottom: 2px; transition: all 0.15s;
-            }
-            .sidebar-item:hover { background: rgba(255,255,255,0.05); color: #F9FAFB; }
-            .sidebar-item.active {
-                background: rgba(255,255,255,0.06); color: #FFFFFF; font-weight: 600;
-                box-shadow: inset 2px 0 0 0 rgba(56, 189, 248, 0.65);
-            }
-            .sidebar-item.active span { opacity: 1; color: #38bdf8; }
-        """),
-        Div(
+    # ── Sidebar sections ──
+    if is_settings_module and (active_org or all_orgs):
+        # Settings-exclusive context selectors
+        context_section = Div(
+            Div("Current Workspace", cls="sidebar-title", style="margin-bottom: 10px;"),
+            OrgSwitcher(active_org, all_orgs),
+            Div(style="height: 8px;"),
+            ProjectSwitcher(active_project, all_projects),
+            cls="sidebar-section",
+            style="margin-bottom: 28px; padding-top: 4px;"
+        )
+    else:
+        # Standard org display for other modules
+        context_section = Div(
             Div(
                 Img(src=avatar_url, style="width: 24px; height: 24px; border-radius: 4px; margin-right: 10px; object-fit: cover;") if avatar_url else
                 Div(org_name[0].upper(), style="width: 24px; height: 24px; border-radius: 4px; background: #374151; color: #fff; font-size: 11px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-weight: 700;"),
@@ -303,7 +292,61 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None):
             Div("Home", cls="sidebar-title"),
             nav_item("Project Overview", "/dashboard", IC.grid),
             cls="sidebar-section"
-        ),
+        )
+
+    return Nav(
+        Style("""
+            .app-sidebar {
+                width: 240px; background: #0a0c10;
+                border-right: 1px solid rgba(255,255,255,0.05);
+                padding: 24px 0; display: flex; flex-direction: column; flex-shrink: 0;
+                position: sticky; top: 60px; height: calc(100vh - 60px); overflow-y: auto;
+            }
+            .sidebar-section { padding: 0 16px; margin-bottom: 24px; }
+            .sidebar-title {
+                font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+                color: #4B5563; text-transform: uppercase; letter-spacing: 1px;
+                margin-bottom: 8px; padding: 0 12px;
+            }
+            .sidebar-item {
+                display: flex; align-items: center; padding: 8px 12px; color: #9CA3AF;
+                text-decoration: none; font-size: 13px; font-weight: 500;
+                border-radius: 6px; margin-bottom: 2px; transition: all 0.15s;
+            }
+            .sidebar-item:hover { background: rgba(255,255,255,0.05); color: #F9FAFB; }
+            .sidebar-item.active {
+                background: rgba(255,255,255,0.06); color: #FFFFFF; font-weight: 600;
+                box-shadow: inset 2px 0 0 0 rgba(2, 132, 199, 0.65);
+            }
+            .sidebar-item.active span { opacity: 1; color: #0284C7; }
+
+            /* ── Switcher overrides for sidebar ── */
+            .org-switcher-container { position: relative; width: 100%; display: block; }
+            .org-switcher-trigger {
+                background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+                color: #F1F5F9; padding: 8px 12px; border-radius: 8px;
+                display: flex; align-items: center; justify-content: space-between;
+                cursor: pointer; transition: all 0.2s; width: 100%;
+                font-family: 'Inter', sans-serif;
+            }
+            .org-switcher-trigger:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); }
+            .org-dropdown-panel {
+                position: absolute; top: calc(100% + 4px); left: 0; width: 260px;
+                background: #0f1219; border: 1px solid rgba(255,255,255,0.08);
+                border-radius: 10px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+                z-index: 1001; overflow: hidden;
+            }
+            .hidden { display: none !important; }
+            .org-search-input { background: transparent; border: none; color: #F8FAFC; font-size: 13px; width: 100%; outline: none; }
+            .org-item {
+                display: flex; align-items: center; justify-content: space-between;
+                padding: 10px 16px; color: #94A3B8; text-decoration: none; font-size: 13px;
+                cursor: pointer; transition: 0.15s; background: transparent; border: none;
+                width: 100%; text-align: left;
+            }
+            .org-item:hover { background: #1e293b; color: #F1F5F9; }
+        """),
+        context_section,
         Div(
             Div("Discovery", cls="sidebar-title"),
             nav_item("Data Catalog", "/catalog", IC.book),
@@ -476,7 +519,12 @@ def module_page_layout(page_title, current_path, user, *content,
         body_content = Div(
             header,
             Div(
-                odl_sidebar(current_path, org_name, avatar_url),
+                odl_sidebar(
+                    current_path, org_name, avatar_url,
+                    active_org=active_org, all_orgs=all_orgs,
+                    active_project=active_project, all_projects=all_projects,
+                    is_settings_module=(active_module == "settings")
+                ),
                 Main(*content, cls=f"main-content {'full-width' if full_width else ''}"),
                 cls="app-container"
             ),

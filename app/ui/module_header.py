@@ -159,16 +159,6 @@ def odl_module_header(active_module="catalog", user=None,
     center = Div(slicer, cls="mh-slicer-wrap")
 
     right_items = []
-    if active_org or all_orgs:
-        right_items.append(
-            Div(
-                OrgSwitcher(active_org, all_orgs),
-                Span("/", cls="mh-ctx-sep"),
-                ProjectSwitcher(active_project, all_projects),
-                cls="mh-context"
-            )
-        )
-
     if user:
         right_items.append(Div(user, cls="mh-user"))
         right_items.append(A("Sign Out", href="/logout", cls="mh-signout"))
