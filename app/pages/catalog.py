@@ -289,8 +289,8 @@ CATALOG_STYLE = Style("""
     .filter-more-btn:hover { color: #bae6fd; }
 
     .ai-bar { display: flex; flex-direction: column; gap: 10px; }
-    .ai-prompt-wrap { display: flex; flex-direction: column; gap: 8px; }
     .ai-bar-inner { display: flex; align-items: stretch; gap: 0;
+        position: relative;
         border-radius: 12px; padding: 12px 14px;
         border: 2px solid transparent;
         background-image:
@@ -303,11 +303,19 @@ CATALOG_STYLE = Style("""
         from { opacity: 0; transform: scaleY(0.9); }
         to   { opacity: 1; transform: scaleY(1); } }
     .ai-query-input { width: 100%; border: none; outline: none; background: transparent;
-        resize: vertical; min-height: 96px; max-height: 220px;
+        resize: vertical; min-height: 192px; max-height: 320px;
+        padding: 0 0 48px 0;
         font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.45;
         color: #F1F5F9; }
     .ai-query-input::placeholder { color: #94A3B8; }
-    .ai-submit-row { display: flex; justify-content: flex-end; }
+    .ai-field-actions {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
     .ai-submit-btn {
         background: linear-gradient(135deg, #6366F1, #8B5CF6);
         color: #fff; border: none; border-radius: 10px;
@@ -317,10 +325,10 @@ CATALOG_STYLE = Style("""
         font-family: 'Inter', sans-serif; transition: opacity 0.15s; line-height: 1; }
     .ai-submit-btn:hover { opacity: 0.88; }
 
-    .thinking-bar { display: none; align-items: center; gap: 10px;
-        margin-top: 8px; padding: 10px 14px;
-        background: rgba(99,102,241,0.08);
-        border: 1px solid rgba(139,92,246,0.2); border-radius: 10px; }
+    .thinking-bar { display: none; align-items: center; gap: 8px;
+        padding: 6px 10px;
+        background: rgba(99,102,241,0.12);
+        border: 1px solid rgba(139,92,246,0.26); border-radius: 999px; }
     .thinking-bar.active { display: flex; }
     .thinking-dots { display: flex; gap: 4px; align-items: center; }
     @keyframes dotPulse {
@@ -805,13 +813,18 @@ def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f="", keywo
                     cls="ai-query-input",
                     id="ai-query-input"
                 ),
-                cls="ai-bar-inner"
-            ),
-            Div(
+                Div(
+                    Div(
+                        Div(cls="thinking-dot"), Div(cls="thinking-dot"), Div(cls="thinking-dot"),
+                        cls="thinking-dots"
+                    ),
+                    Span("Searching...", id="thinking-msg", cls="thinking-msg"),
+                    id="thinking-bar", cls="thinking-bar"
+                ),
                 Button("↑", type="submit", cls="ai-submit-btn", title="Run AI search"),
-                cls="ai-submit-row"
+                cls="ai-field-actions"
             ),
-            cls="ai-prompt-wrap"
+            cls="ai-bar-inner"
         ),
         hx_post="/catalog/ai-search",
         hx_target="#catalog-body",
@@ -881,13 +894,6 @@ def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f="", keywo
         ),
         id="filter-panel",
         cls="filter-panel"
-    )
-
-    thinking_bar = Div(
-        Div(Div(cls="thinking-dot"), Div(cls="thinking-dot"), Div(cls="thinking-dot"),
-            cls="thinking-dots"),
-        Span("Searching...", id="thinking-msg", cls="thinking-msg"),
-        id="thinking-bar", cls="thinking-bar"
     )
 
     script = Script("""
@@ -1063,7 +1069,6 @@ def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f="", keywo
         Div(
             Div(
                 ai_bar,
-                thinking_bar,
                 id="controls-panel-ai",
                 cls="controls-panel active"
             ),
