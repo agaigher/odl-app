@@ -47,7 +47,7 @@ CATALOG_STYLE = Style("""
     .cat-sidebar::-webkit-scrollbar { width: 0; height: 0; display: none; }
     .cat-main-col { flex: 1; min-width: 0; padding: 32px 48px; }
     .cat-main { min-width: 0; }
-    .cat-content-grid { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(0, 2fr); gap: 20px; align-items: start; }
+    .cat-content-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 20px; align-items: start; }
     .cat-controls-col { min-width: 0; }
     .cat-results-col { min-width: 0; }
 
@@ -71,6 +71,7 @@ CATALOG_STYLE = Style("""
 
     .search-outer { margin: 0; }
     .search-row { display: flex; align-items: center; gap: 8px; }
+    .kw-search-wrap { margin-bottom: 14px; }
 
     .kw-bar { flex: 1; display: flex; align-items: center; gap: 0;
         background: rgba(255,255,255,0.04);
@@ -596,12 +597,8 @@ def _sidebar(counts, active_cat, total):
 
 # ── Search area ───────────────────────────────────────────────────────────────
 
-def _search_area(q, category, access_f, freq_f):
+def _keyword_search_area(q, category, access_f, freq_f):
     search_svg = NotStr('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>')
-    filter_svg = NotStr('<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.5" fill="#475569"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="16" cy="12" r="2.5" fill="#475569"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2.5" fill="#475569"/></svg>')
-
-    has_filters = bool(access_f or freq_f)
-    filter_btn_cls = "filter-btn" + (" on has-filters" if has_filters else "")
 
     kw_bar = Div(
         Div(search_svg, cls="kw-icon"),
@@ -619,6 +616,10 @@ def _search_area(q, category, access_f, freq_f):
         id="kw-bar", cls="kw-bar"
     )
 
+    return Div(kw_bar, cls="kw-search-wrap")
+
+
+def _ai_filter_area(q, category, access_f, freq_f):
     ai_btn = Button(NotStr("✦ AI Search"), type="button", cls="ai-pill-btn", onclick="activateAI()")
 
     ai_bar = Form(
@@ -675,12 +676,12 @@ def _search_area(q, category, access_f, freq_f):
         let _thinkIdx = 0, _thinkTimer = null;
 
         function activateAI() {
-            document.getElementById('kw-bar-wrap').style.display = 'none';
+            document.getElementById('ai-cta-wrap').style.display = 'none';
             document.getElementById('ai-bar').classList.add('active');
             document.getElementById('ai-query-input').focus();
         }
         function deactivateAI() {
-            document.getElementById('kw-bar-wrap').style.display = '';
+            document.getElementById('ai-cta-wrap').style.display = '';
             document.getElementById('ai-bar').classList.remove('active');
             document.getElementById('thinking-bar').classList.remove('active');
             clearInterval(_thinkTimer);
@@ -705,7 +706,7 @@ def _search_area(q, category, access_f, freq_f):
 
     return Div(
         Div(
-            Div(kw_bar, ai_btn, cls="search-row", id="kw-bar-wrap"),
+            Div(ai_btn, cls="search-row", id="ai-cta-wrap"),
             ai_bar,
             cls="search-row"
         ),
@@ -816,14 +817,15 @@ def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="",
             Div(
                 Div(
                     Div(
-                        _search_area(q, category, access_filter, freq_filter),
-                        cls="cat-controls-col"
-                    ),
-                    Div(
+                        _keyword_search_area(q, category, access_filter, freq_filter),
                         _list_body(datasets, total_matches, added, favs, heading, subtext,
                                    page=page, per_page=per_page,
                                    q=q, category=category, access_f=access_filter, freq_f=freq_filter),
                         id="catalog-body", cls="cat-main cat-results-col"
+                    ),
+                    Div(
+                        _ai_filter_area(q, category, access_filter, freq_filter),
+                        cls="cat-controls-col"
                     ),
                     cls="cat-content-grid"
                 ),
