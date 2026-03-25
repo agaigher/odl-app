@@ -47,6 +47,9 @@ CATALOG_STYLE = Style("""
     .cat-sidebar::-webkit-scrollbar { width: 0; height: 0; display: none; }
     .cat-main-col { flex: 1; min-width: 0; padding: 32px 48px; }
     .cat-main { min-width: 0; }
+    .cat-content-grid { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(0, 2fr); gap: 20px; align-items: start; }
+    .cat-controls-col { min-width: 0; }
+    .cat-results-col { min-width: 0; }
 
     .cat-sidebar-title {
         font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
@@ -66,7 +69,7 @@ CATALOG_STYLE = Style("""
     .cat-sidebar-count { font-size: 12px; color: #64748B; }
     .cat-sidebar-item.active .cat-sidebar-count { color: #94A3B8; }
 
-    .search-outer { max-width: 640px; margin: 0 auto 20px; }
+    .search-outer { margin: 0; }
     .search-row { display: flex; align-items: center; gap: 8px; }
 
     .kw-bar { flex: 1; display: flex; align-items: center; gap: 0;
@@ -289,6 +292,11 @@ CATALOG_STYLE = Style("""
         font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 6px;
         border-radius: 4px; transition: all 0.15s; flex-shrink: 0; }
     .fav-remove-btn:hover { background: rgba(239,68,68,0.12); color: #EF4444; }
+
+    @media (max-width: 1100px) {
+        .cat-main-col { padding: 24px 20px; }
+        .cat-content-grid { grid-template-columns: 1fr; gap: 16px; }
+    }
 """)
 
 
@@ -806,11 +814,19 @@ def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="",
         Div(
             _sidebar(counts, category, total_all),
             Div(
-                _search_area(q, category, access_filter, freq_filter),
-                Div(_list_body(datasets, total_matches, added, favs, heading, subtext,
-                               page=page, per_page=per_page,
-                               q=q, category=category, access_f=access_filter, freq_f=freq_filter),
-                    id="catalog-body", cls="cat-main"),
+                Div(
+                    Div(
+                        _search_area(q, category, access_filter, freq_filter),
+                        cls="cat-controls-col"
+                    ),
+                    Div(
+                        _list_body(datasets, total_matches, added, favs, heading, subtext,
+                                   page=page, per_page=per_page,
+                                   q=q, category=category, access_f=access_filter, freq_f=freq_filter),
+                        id="catalog-body", cls="cat-main cat-results-col"
+                    ),
+                    cls="cat-content-grid"
+                ),
                 cls="cat-main-col"
             ),
             cls="cat-wrap"
