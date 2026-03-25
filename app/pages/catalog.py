@@ -929,7 +929,7 @@ def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="",
 
             loadSavedWidths();
             attachDrag(leftHandle, sidebar, "catalog.sidebar.width", 180, 840, 1);
-            attachDrag(rightHandle, controls, "catalog.controls.width", 260, 560, -1);
+            attachDrag(rightHandle, controls, "catalog.controls.width", 180, 840, -1);
             leftHandle.addEventListener("dblclick", resetWidths);
             rightHandle.addEventListener("dblclick", resetWidths);
             if (resetBtn) resetBtn.addEventListener("click", resetWidths);
