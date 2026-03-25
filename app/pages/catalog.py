@@ -34,9 +34,9 @@ CATALOG_STYLE = Style("""
     .cat-wrap { display: flex; width: 100%; min-height: calc(100vh - 60px); }
     .cat-sidebar {
         width: 240px; flex-shrink: 0;
-        position: sticky; top: 60px; align-self: flex-start;
-        height: calc(100vh - 60px); overflow-y: auto;
-        padding: 24px 16px;
+        min-height: calc(100vh - 60px);
+        overflow-y: auto;
+        padding: 40px 16px 24px;
         border-right: 1px solid rgba(255,255,255,0.05);
         background: #0a0c10;
     }
