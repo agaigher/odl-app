@@ -1,3 +1,4 @@
+import json
 from fasthtml.common import *
 from app.supabase_db import db_select
 
@@ -204,6 +205,42 @@ CATALOG_STYLE = Style("""
     .filter-date-input:focus, .filter-select:focus {
         border-color: rgba(56,189,248,0.35);
         box-shadow: 0 0 0 1px rgba(2,132,199,0.12);
+    }
+    .keyword-add-row { display: flex; gap: 8px; }
+    .keyword-input {
+        flex: 1;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.04);
+        color: #E2E8F0;
+        font-size: 13px;
+        font-family: 'Inter', sans-serif;
+        outline: none;
+    }
+    .keyword-input:focus { border-color: rgba(56,189,248,0.35); }
+    .keyword-add-btn {
+        border: 1px solid rgba(255,255,255,0.14);
+        background: rgba(255,255,255,0.05);
+        color: #cbd5e1;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Inter', sans-serif;
+    }
+    .keyword-chip-list { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .keyword-chip { display: inline-flex; align-items: center; gap: 6px; }
+    .keyword-remove {
+        border: none; background: transparent; color: #94A3B8; cursor: pointer;
+        padding: 0; font-size: 12px; line-height: 1;
+    }
+    .keyword-tools { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+    .keyword-hint { color: #64748B; font-size: 11px; }
+    .keyword-clear-btn {
+        border: none; background: transparent; color: #94A3B8; cursor: pointer;
+        padding: 0; font-size: 12px; font-family: 'Inter', sans-serif;
     }
     .filter-section { margin-bottom: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); }
     .filter-section:last-child { margin-bottom: 0; }
@@ -705,7 +742,7 @@ def _sidebar(counts, active_cat, total):
 
 # ── Search area ───────────────────────────────────────────────────────────────
 
-def _keyword_search_area(q, category, freq_f="", updated_after_f="", size_f=""):
+def _keyword_search_area(q, category, freq_f="", updated_after_f="", size_f="", keywords_f=""):
     search_svg = NotStr('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>')
 
     kw_bar = Div(
@@ -716,20 +753,22 @@ def _keyword_search_area(q, category, freq_f="", updated_after_f="", size_f=""):
               hx_get="/catalog/search",
               hx_trigger="input changed delay:280ms, search",
               hx_target="#catalog-body",
-              hx_include="[name='q'],[name='category'],[name='freq'],[name='updated_after'],[name='size']",
+              hx_include="[name='q'],[name='category'],[name='freq'],[name='updated_after'],[name='size'],[name='keywords']",
               hx_push_url="true"),
         Input(type="hidden", name="category", value=category, id="kw-filter-category"),
         Input(type="hidden", name="freq",     value=freq_f, id="kw-filter-freq"),
         Input(type="hidden", name="updated_after", value=updated_after_f, id="kw-filter-updated-after"),
         Input(type="hidden", name="size", value=size_f, id="kw-filter-size"),
+        Input(type="hidden", name="keywords", value=keywords_f, id="kw-filter-keywords"),
         id="kw-bar", cls="kw-bar"
     )
 
     return Div(kw_bar, cls="kw-search-wrap")
 
 
-def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f=""):
+def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f="", keywords_f=""):
     ai_btn = Button(NotStr("✦ AI Search"), type="button", cls="ai-pill-btn", onclick="activateAI()")
+    keyword_items = [w.strip() for w in str(keywords_f or "").split(",") if w.strip()][:10]
     controls_slicer = Div(
         Button("AI Search", type="button", id="controls-tab-ai",
                cls="controls-slicer-btn active", onclick="setControlsPanel('ai')"),
@@ -766,7 +805,7 @@ def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f=""):
             cls="simple-filter-row"
         ),
         Div(
-            Span("Frequency", cls="filter-label"),
+            Span("Update frequency", cls="filter-label"),
             Select(
                 Option("Any frequency", value="", selected=(not freq_f)),
                 *[Option(lbl, value=val, selected=(freq_f == val)) for lbl, val in FREQ_FILTERS],
@@ -782,6 +821,35 @@ def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f=""):
                 *[Option(lbl, value=val, selected=(size_f == val)) for lbl, val in SIZE_FILTERS],
                 id="filter-size", cls="filter-select",
                 onchange="setCatalogSimpleFilter('size', this.value)"
+            ),
+            cls="simple-filter-row"
+        ),
+        Div(
+            Span("Keywords", cls="filter-label"),
+            Div(
+                Input(type="text", id="filter-keyword-input", cls="keyword-input",
+                      placeholder="Type a word and add",
+                      onkeydown="if(event.key==='Enter'){event.preventDefault();addCatalogKeyword();}"),
+                Button("Add", type="button", cls="keyword-add-btn", onclick="addCatalogKeyword()"),
+                cls="keyword-add-row"
+            ),
+            Div(
+                *[
+                    Span(
+                        Span(w),
+                        Button("×", type="button", cls="keyword-remove",
+                               onclick=f"removeCatalogKeyword({json.dumps(w)})"),
+                        cls="chip keyword-chip"
+                    )
+                    for w in keyword_items
+                ],
+                id="keyword-chip-list",
+                cls="keyword-chip-list"
+            ),
+            Div(
+                Span("Up to 10 keywords. OR matching.", cls="keyword-hint"),
+                Button("Clear all", type="button", cls="keyword-clear-btn", onclick="clearCatalogKeywords()"),
+                cls="keyword-tools"
             ),
             cls="simple-filter-row"
         ),
@@ -805,6 +873,7 @@ def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f=""):
             freq: 'kw-filter-freq',
             updated_after: 'kw-filter-updated-after',
             size: 'kw-filter-size',
+            keywords: 'kw-filter-keywords',
         };
 
         function _splitCsv(raw) {
@@ -841,6 +910,7 @@ def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f=""):
                 freq: (_readFilter('freq') || []).join(','),
                 updated_after: (_readFilter('updated_after') || []).join(','),
                 size: (_readFilter('size') || []).join(','),
+                keywords: (_readFilter('keywords') || []).join(','),
                 page: '1',
                 per_page: _currentPerPage(),
             });
@@ -856,14 +926,74 @@ def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f=""):
             _runCatalogFilterSearch();
         }
 
+        function _readKeywords() {
+            return (_readFilter('keywords') || []).slice(0, 10);
+        }
+
+        function _renderKeywordChips() {
+            const list = document.getElementById('keyword-chip-list');
+            if (!list) return;
+            const words = _readKeywords();
+            list.innerHTML = '';
+            words.forEach(function(w) {
+                const chip = document.createElement('span');
+                chip.className = 'chip keyword-chip';
+                const text = document.createElement('span');
+                text.textContent = w;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'keyword-remove';
+                btn.textContent = '×';
+                btn.addEventListener('click', function() { removeCatalogKeyword(w); });
+                chip.appendChild(text);
+                chip.appendChild(btn);
+                list.appendChild(chip);
+            });
+        }
+
+        function addCatalogKeyword() {
+            const input = document.getElementById('filter-keyword-input');
+            if (!input) return;
+            const word = (input.value || '').trim();
+            if (!word) return;
+            const words = _readKeywords();
+            const lower = words.map(function(w) { return w.toLowerCase(); });
+            if (lower.includes(word.toLowerCase())) {
+                input.value = '';
+                return;
+            }
+            if (words.length >= 10) return;
+            words.push(word);
+            _writeFilter('keywords', words);
+            input.value = '';
+            _renderKeywordChips();
+            _runCatalogFilterSearch();
+        }
+
+        function removeCatalogKeyword(word) {
+            const words = _readKeywords().filter(function(w) { return w !== word; });
+            _writeFilter('keywords', words);
+            _renderKeywordChips();
+            _runCatalogFilterSearch();
+        }
+
+        function clearCatalogKeywords() {
+            _writeFilter('keywords', []);
+            _renderKeywordChips();
+            _runCatalogFilterSearch();
+        }
+
         function clearCatalogSimpleFilters() {
             Object.keys(_catalogFilterInputIds).forEach(function(k) { _writeFilter(k, []); });
             const d = document.getElementById('filter-updated-after');
             const f = document.getElementById('filter-frequency');
             const s = document.getElementById('filter-size');
+            const k = document.getElementById('filter-keyword-input');
             if (d) d.value = '';
             if (f) f.value = '';
             if (s) s.value = '';
+            if (k) k.value = '';
+            _renderKeywordChips();
             _runCatalogFilterSearch();
         }
 
@@ -909,6 +1039,7 @@ def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f=""):
                 clearInterval(_thinkTimer);
             }
         });
+        _renderKeywordChips();
     """)
 
     return Div(
@@ -953,7 +1084,7 @@ def _page_nums(page, total_pages):
 
 
 def _list_body(page_datasets, total, added, favs, heading, subtext, page=1, per_page=25,
-               q="", category="", freq_f="", updated_after_f="", size_f=""):
+               q="", category="", freq_f="", updated_after_f="", size_f="", keywords_f=""):
     if not page_datasets:
         return Div(
             Div(H1(heading, style="font-size:18px;font-weight:600;color:#F8FAFC;letter-spacing:-0.03em;"),
@@ -967,7 +1098,7 @@ def _list_body(page_datasets, total, added, favs, heading, subtext, page=1, per_
 
     qs_base = (
         f"q={q}&category={category}&freq={freq_f}"
-        f"&updated_after={updated_after_f}&size={size_f}"
+        f"&updated_after={updated_after_f}&size={size_f}&keywords={keywords_f}"
     )
 
     per_page_select = Select(
@@ -1017,12 +1148,12 @@ def _list_body(page_datasets, total, added, favs, heading, subtext, page=1, per_
 
 # ── Public components ─────────────────────────────────────────────────────────
 
-def DataCatalog(category="", q="", user_id="", freq_filter="", updated_after_filter="", size_filter="", page=1, per_page=25):
+def DataCatalog(category="", q="", user_id="", freq_filter="", updated_after_filter="", size_filter="", keywords_filter="", page=1, per_page=25):
     from app.supabase_db import get_datasets_paginated, get_category_counts
     try:
         datasets, total_matches = get_datasets_paginated(
             category, q, "", freq_filter, page, per_page,
-            updated_after=updated_after_filter, size=size_filter
+            updated_after=updated_after_filter, size=size_filter, keywords=keywords_filter
         )
         counts, total_all = get_category_counts()
     except Exception:
@@ -1031,7 +1162,7 @@ def DataCatalog(category="", q="", user_id="", freq_filter="", updated_after_fil
     added, favs = _fetch_user_sets(user_id)
 
     heading = f'Results for "{q}"' if q else (category or "London Database")
-    has_filters = any([category, freq_filter, updated_after_filter, size_filter])
+    has_filters = any([category, freq_filter, updated_after_filter, size_filter, keywords_filter])
     subtext = (f"{total_matches} dataset{'s' if total_matches != 1 else ''} found"
                if (q or has_filters)
                else f"{total_matches} datasets — growing continuously")
@@ -1115,19 +1246,19 @@ def DataCatalog(category="", q="", user_id="", freq_filter="", updated_after_fil
             _sidebar(counts, category, total_all),
             Div(cls="cat-splitter", id="cat-splitter-left", title="Drag to resize columns (double-click to reset)"),
             Div(
-                _keyword_search_area(q, category, freq_filter, updated_after_filter, size_filter),
+                _keyword_search_area(q, category, freq_filter, updated_after_filter, size_filter, keywords_filter),
                 Div(
                     _list_body(datasets, total_matches, added, favs, heading, subtext,
                                page=page, per_page=per_page,
                                q=q, category=category, freq_f=freq_filter,
-                               updated_after_f=updated_after_filter, size_f=size_filter),
+                               updated_after_f=updated_after_filter, size_f=size_filter, keywords_f=keywords_filter),
                     id="catalog-body", cls="cat-main"
                 ),
                 cls="cat-results-col"
             ),
             Div(cls="cat-splitter", id="cat-splitter-right", title="Drag to resize columns (double-click to reset)"),
             Div(
-                _ai_filter_area(q, category, freq_filter, updated_after_filter, size_filter),
+                _ai_filter_area(q, category, freq_filter, updated_after_filter, size_filter, keywords_filter),
                 cls="cat-controls-col", id="cat-controls-col"
             ),
             cls="cat-wrap"
@@ -1136,26 +1267,26 @@ def DataCatalog(category="", q="", user_id="", freq_filter="", updated_after_fil
     )
 
 
-def SearchCatalogResults(q="", category="", user_id="", freq_filter="", updated_after_filter="", size_filter="", page=1, per_page=25):
+def SearchCatalogResults(q="", category="", user_id="", freq_filter="", updated_after_filter="", size_filter="", keywords_filter="", page=1, per_page=25):
     from app.supabase_db import get_datasets_paginated
     try:
         datasets, total_matches = get_datasets_paginated(
             category, q, "", freq_filter, page, per_page,
-            updated_after=updated_after_filter, size=size_filter
+            updated_after=updated_after_filter, size=size_filter, keywords=keywords_filter
         )
     except Exception:
         datasets, total_matches = [], 0
 
     added, favs = _fetch_user_sets(user_id)
     heading = f'Results for "{q}"' if q else (category or "London Database")
-    has_filters = any([category, freq_filter, updated_after_filter, size_filter])
+    has_filters = any([category, freq_filter, updated_after_filter, size_filter, keywords_filter])
     subtext = (f"{total_matches} dataset{'s' if total_matches != 1 else ''} found"
                if (q or has_filters)
                else f"{total_matches} datasets — growing continuously")
     return _list_body(datasets, total_matches, added, favs, heading, subtext,
                       page=page, per_page=per_page,
                       q=q, category=category, freq_f=freq_filter,
-                      updated_after_f=updated_after_filter, size_f=size_filter)
+                      updated_after_f=updated_after_filter, size_f=size_filter, keywords_f=keywords_filter)
 
 
 def FavouritesView(user_id=""):

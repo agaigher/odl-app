@@ -124,6 +124,17 @@ def _matches_size_bucket(dataset, size_bucket):
     return True
 
 
+def _matches_keywords(dataset, keywords):
+    if not keywords:
+        return True
+    hay = " ".join([
+        str(dataset.get("title") or ""),
+        str(dataset.get("description") or ""),
+        str(dataset.get("provider") or ""),
+    ]).lower()
+    return any(k.lower() in hay for k in keywords if k)
+
+
 def _fetch_all(url, params, limit=10000):
     h = _headers()
     all_rows = []
@@ -141,7 +152,7 @@ def _fetch_all(url, params, limit=10000):
 
 
 def get_datasets_paginated(category="", q="", access="", freq="", page=1, per_page=25,
-                           provider="", status="", tags="", updated_after="", size=""):
+                           provider="", status="", tags="", updated_after="", size="", keywords=""):
     url = f"{SUPABASE_URL}/rest/v1/datasets"
     params = {}
 
@@ -151,6 +162,7 @@ def get_datasets_paginated(category="", q="", access="", freq="", page=1, per_pa
     providers = _split_csv(provider)
     statuses = _split_csv(status)
     tags_list = _split_csv(tags)
+    keyword_list = _split_csv(keywords)[:10]
 
     if categories:
         if len(categories) == 1:
@@ -207,9 +219,12 @@ def get_datasets_paginated(category="", q="", access="", freq="", page=1, per_pa
     if q:
         params["or"] = f"(title.ilike.*{q}*,description.ilike.*{q}*,provider.ilike.*{q}*,category.ilike.*{q}*)"
 
-    if size:
+    if size or keyword_list:
         rows = _fetch_all(url, params=params, limit=12000)
-        filtered = [d for d in rows if _matches_size_bucket(d, size)]
+        filtered = [
+            d for d in rows
+            if _matches_size_bucket(d, size) and _matches_keywords(d, keyword_list)
+        ]
         total = len(filtered)
         offset = (page - 1) * per_page
         return filtered[offset: offset + per_page], total
