@@ -48,8 +48,8 @@ CATALOG_STYLE = Style("""
     .cat-main-col { flex: 1; min-width: 0; padding: 32px 48px; }
     .cat-main { min-width: 0; }
     .cat-content-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 20px; align-items: start; }
-    .cat-controls-col { min-width: 0; }
-    .cat-results-col { min-width: 0; }
+    .cat-controls-col { min-width: 0; padding-left: 20px; }
+    .cat-results-col { min-width: 0; border-right: 1px solid rgba(255,255,255,0.05); padding-right: 20px; }
 
     .cat-sidebar-title {
         font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
@@ -297,6 +297,8 @@ CATALOG_STYLE = Style("""
     @media (max-width: 1100px) {
         .cat-main-col { padding: 24px 20px; }
         .cat-content-grid { grid-template-columns: 1fr; gap: 16px; }
+        .cat-results-col { border-right: none; padding-right: 0; }
+        .cat-controls-col { padding-left: 0; }
     }
 """)
 
