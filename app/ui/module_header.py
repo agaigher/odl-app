@@ -5,7 +5,7 @@ The slicer provides navigation between the three main modules:
   Data Catalog  |  Explore  |  Settings
 """
 from fasthtml.common import *
-from app.ui.components import icon_svg, IC, OrgSwitcher, ProjectSwitcher
+from app.ui.components import icon_svg, IC
 
 
 # ── Module definitions ────────────────────────────────────────────────────────
@@ -130,9 +130,7 @@ MODULE_HEADER_STYLE = Style("""
 
 # ── Component ─────────────────────────────────────────────────────────────────
 
-def odl_module_header(active_module="catalog", user=None,
-                      active_org=None, all_orgs=None,
-                      active_project=None, all_projects=None):
+def odl_module_header(active_module="catalog", user=None):
     """Renders the top-level module header with the centered 3-way slicer."""
 
     # ── Module slicer buttons ──

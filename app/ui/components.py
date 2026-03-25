@@ -245,10 +245,6 @@ def odl_navbar(user=None, active_org=None, all_orgs=None, active_project=None, a
         Div(
             A("OpenData.London", href="/projects", cls="app-logo",
               style="font-family: 'Space Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 15px; color: #F8FAFC; text-decoration: none; letter-spacing: -0.04em;"),
-            Span("/", cls="brand-separator"),
-            OrgSwitcher(active_org, all_orgs),
-            Span("/", cls="brand-separator"),
-            ProjectSwitcher(active_project, all_projects),
             Span("FREE", cls="plan-pill") if active_org else None,
             cls="nav-brand-wrap"
         ),
@@ -511,8 +507,6 @@ def module_page_layout(page_title, current_path, user, *content,
     header = odl_module_header(
         active_module=active_module,
         user=user,
-        active_org=active_org, all_orgs=all_orgs,
-        active_project=active_project, all_projects=all_projects,
     )
 
     if show_sidebar:
