@@ -45,11 +45,9 @@ CATALOG_STYLE = Style("""
         background: #14120b;
     }
     .cat-sidebar::-webkit-scrollbar { width: 0; height: 0; display: none; }
-    .cat-main-col { flex: 1; min-width: 0; padding: 32px 48px; }
     .cat-main { min-width: 0; }
-    .cat-content-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 20px; align-items: start; }
-    .cat-controls-col { min-width: 0; padding-left: 20px; }
-    .cat-results-col { min-width: 0; border-right: 1px solid rgba(255,255,255,0.05); padding-right: 20px; }
+    .cat-results-col { flex: 1; min-width: 0; border-right: 1px solid rgba(255,255,255,0.05); padding: 32px 20px 32px 48px; }
+    .cat-controls-col { width: 340px; min-width: 280px; flex-shrink: 0; padding: 32px 48px 32px 20px; }
 
     .cat-sidebar-title {
         font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
@@ -295,10 +293,18 @@ CATALOG_STYLE = Style("""
     .fav-remove-btn:hover { background: rgba(239,68,68,0.12); color: #EF4444; }
 
     @media (max-width: 1100px) {
-        .cat-main-col { padding: 24px 20px; }
-        .cat-content-grid { grid-template-columns: 1fr; gap: 16px; }
-        .cat-results-col { border-right: none; padding-right: 0; }
-        .cat-controls-col { padding-left: 0; }
+        .cat-wrap { flex-wrap: wrap; }
+        .cat-sidebar {
+            width: 100%;
+            position: static;
+            top: auto;
+            height: auto;
+            border-right: none;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 16px 20px;
+        }
+        .cat-results-col { width: 100%; border-right: none; padding: 24px 20px 0; }
+        .cat-controls-col { width: 100%; min-width: 0; padding: 16px 20px 24px; }
     }
 """)
 
@@ -817,24 +823,18 @@ def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="",
         Div(
             _sidebar(counts, category, total_all),
             Div(
+                _keyword_search_area(q, category, access_filter, freq_filter),
                 Div(
-                    Div(
-                        _keyword_search_area(q, category, access_filter, freq_filter),
-                        Div(
-                            _list_body(datasets, total_matches, added, favs, heading, subtext,
-                                       page=page, per_page=per_page,
-                                       q=q, category=category, access_f=access_filter, freq_f=freq_filter),
-                            id="catalog-body", cls="cat-main"
-                        ),
-                        cls="cat-results-col"
-                    ),
-                    Div(
-                        _ai_filter_area(q, category, access_filter, freq_filter),
-                        cls="cat-controls-col"
-                    ),
-                    cls="cat-content-grid"
+                    _list_body(datasets, total_matches, added, favs, heading, subtext,
+                               page=page, per_page=per_page,
+                               q=q, category=category, access_f=access_filter, freq_f=freq_filter),
+                    id="catalog-body", cls="cat-main"
                 ),
-                cls="cat-main-col"
+                cls="cat-results-col"
+            ),
+            Div(
+                _ai_filter_area(q, category, access_filter, freq_filter),
+                cls="cat-controls-col"
             ),
             cls="cat-wrap"
         )
