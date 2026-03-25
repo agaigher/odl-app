@@ -45,7 +45,7 @@ CATALOG_STYLE = Style("""
     }
     .cat-sidebar::-webkit-scrollbar { width: 0; height: 0; display: none; }
     .cat-main { min-width: 0; }
-    .cat-results-col { flex: 1; min-width: 0; padding: 32px 20px 32px 48px; }
+    .cat-results-col { flex: 1; min-width: 0; padding: 32px 20px; }
     .cat-controls-col { width: 340px; min-width: 280px; flex-shrink: 0; padding: 32px 48px 32px 20px; }
     .cat-splitter {
         width: 12px;
