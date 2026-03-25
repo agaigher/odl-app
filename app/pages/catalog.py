@@ -884,7 +884,7 @@ def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="",
                 }
                 const sw = parseInt(localStorage.getItem("catalog.sidebar.width") || "", 10);
                 const cw = parseInt(localStorage.getItem("catalog.controls.width") || "", 10);
-                if (Number.isFinite(sw)) sidebar.style.width = clamp(sw, 180, 420) + "px";
+                if (Number.isFinite(sw)) sidebar.style.width = clamp(sw, 180, 840) + "px";
                 if (Number.isFinite(cw)) controls.style.width = clamp(cw, 260, 560) + "px";
             }
 
@@ -928,7 +928,7 @@ def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="",
             }
 
             loadSavedWidths();
-            attachDrag(leftHandle, sidebar, "catalog.sidebar.width", 180, 420, 1);
+            attachDrag(leftHandle, sidebar, "catalog.sidebar.width", 180, 840, 1);
             attachDrag(rightHandle, controls, "catalog.controls.width", 260, 560, -1);
             leftHandle.addEventListener("dblclick", resetWidths);
             rightHandle.addEventListener("dblclick", resetWidths);
