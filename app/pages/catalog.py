@@ -288,10 +288,10 @@ CATALOG_STYLE = Style("""
     }
     .filter-more-btn:hover { color: #bae6fd; }
 
-    .ai-bar { flex: 1; display: none; flex-direction: column; gap: 6px; }
-    .ai-bar.active { display: flex; }
-    .ai-bar-inner { display: flex; align-items: center; gap: 0;
-        border-radius: 12px; padding: 10px 6px 10px 16px;
+    .ai-bar { display: flex; flex-direction: column; gap: 10px; }
+    .ai-prompt-wrap { display: flex; flex-direction: column; gap: 8px; }
+    .ai-bar-inner { display: flex; align-items: stretch; gap: 0;
+        border-radius: 12px; padding: 12px 14px;
         border: 2px solid transparent;
         background-image:
             linear-gradient(rgba(15,23,42,0.95), rgba(15,23,42,0.95)),
@@ -302,20 +302,20 @@ CATALOG_STYLE = Style("""
     @keyframes aiExpand {
         from { opacity: 0; transform: scaleY(0.9); }
         to   { opacity: 1; transform: scaleY(1); } }
-    .ai-sparkle { font-size: 15px; margin-right: 10px; flex-shrink: 0; }
-    .ai-query-input { flex: 1; border: none; outline: none; background: transparent;
-        font-family: 'Inter', sans-serif; font-size: 14px; color: #F1F5F9; min-width: 0; }
+    .ai-query-input { width: 100%; border: none; outline: none; background: transparent;
+        resize: vertical; min-height: 96px; max-height: 220px;
+        font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.45;
+        color: #F1F5F9; }
     .ai-query-input::placeholder { color: #94A3B8; }
-    .ai-submit-btn { flex-shrink: 0;
+    .ai-submit-row { display: flex; justify-content: flex-end; }
+    .ai-submit-btn {
         background: linear-gradient(135deg, #6366F1, #8B5CF6);
-        color: #fff; border: none; border-radius: 8px; padding: 8px 16px;
-        font-size: 13px; font-weight: 600; cursor: pointer;
-        font-family: 'Inter', sans-serif; transition: opacity 0.15s; white-space: nowrap; }
+        color: #fff; border: none; border-radius: 10px;
+        width: 42px; height: 42px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 20px; font-weight: 700; cursor: pointer;
+        font-family: 'Inter', sans-serif; transition: opacity 0.15s; line-height: 1; }
     .ai-submit-btn:hover { opacity: 0.88; }
-    .ai-back-btn { background: none; border: none; color: #94A3B8; font-size: 12px;
-        cursor: pointer; font-family: 'Inter', sans-serif; padding: 0;
-        text-align: left; transition: color 0.15s; }
-    .ai-back-btn:hover { color: #CBD5E1; }
 
     .thinking-bar { display: none; align-items: center; gap: 10px;
         margin-top: 8px; padding: 10px 14px;
@@ -787,7 +787,6 @@ def _keyword_search_area(q, category, freq_f="", updated_after_f="", size_f="", 
 
 
 def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f="", keywords_f=""):
-    ai_btn = Button(NotStr("✦ AI Search"), type="button", cls="ai-pill-btn", onclick="activateAI()")
     keyword_items = [w.strip() for w in str(keywords_f or "").split(",") if w.strip()][:10]
     controls_slicer = Div(
         Button("AI Search", type="button", id="controls-tab-ai",
@@ -799,14 +798,21 @@ def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f="", keywo
 
     ai_bar = Form(
         Div(
-            Span("✦", cls="ai-sparkle"),
-            Input(type="text", name="query",
-                  placeholder="Describe what you're looking for, e.g. 'company directors for KYC'…",
-                  cls="ai-query-input", id="ai-query-input"),
-            Button("Search →", type="submit", cls="ai-submit-btn"),
-            cls="ai-bar-inner"
+            Div(
+                Textarea(
+                    name="query",
+                    placeholder="Describe the data you need or the task you are working on (for example: 'Find datasets for KYC and company ownership checks').",
+                    cls="ai-query-input",
+                    id="ai-query-input"
+                ),
+                cls="ai-bar-inner"
+            ),
+            Div(
+                Button("↑", type="submit", cls="ai-submit-btn", title="Run AI search"),
+                cls="ai-submit-row"
+            ),
+            cls="ai-prompt-wrap"
         ),
-        Button("← back to keyword search", type="button", cls="ai-back-btn", onclick="deactivateAI()"),
         hx_post="/catalog/ai-search",
         hx_target="#catalog-body",
         cls="ai-bar", id="ai-bar"
@@ -1031,18 +1037,8 @@ def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f="", keywo
             filterPanel.classList.toggle('active', !isAi);
         }
 
-        function activateAI() {
-            setControlsPanel('ai');
-            document.getElementById('ai-cta-wrap').style.display = 'none';
-            document.getElementById('ai-bar').classList.add('active');
-            document.getElementById('ai-query-input').focus();
-        }
-        function deactivateAI() {
-            document.getElementById('ai-cta-wrap').style.display = '';
-            document.getElementById('ai-bar').classList.remove('active');
-            document.getElementById('thinking-bar').classList.remove('active');
-            clearInterval(_thinkTimer);
-        }
+        function activateAI() { setControlsPanel('ai'); }
+        function deactivateAI() {}
         document.body.addEventListener('htmx:beforeRequest', function(e) {
             if (e.target.id === 'ai-bar') {
                 document.getElementById('thinking-bar').classList.add('active');
@@ -1066,11 +1062,7 @@ def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f="", keywo
         controls_slicer,
         Div(
             Div(
-                Div(
-                    Div(ai_btn, cls="search-row", id="ai-cta-wrap"),
-                    ai_bar,
-                    cls="search-row"
-                ),
+                ai_bar,
                 thinking_bar,
                 id="controls-panel-ai",
                 cls="controls-panel active"
