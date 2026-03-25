@@ -89,6 +89,37 @@ CATALOG_STYLE = Style("""
     .cat-sidebar-item.active .cat-sidebar-count { color: #94A3B8; }
 
     .search-outer { margin: 0; }
+    .controls-slicer {
+        display: flex; align-items: center;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px; padding: 3px; gap: 2px;
+        box-shadow: inset 0 1px 1px rgba(0,0,0,0.2);
+        margin-bottom: 14px;
+    }
+    .controls-slicer-btn {
+        flex: 1;
+        display: flex; align-items: center; justify-content: center;
+        padding: 7px 12px; border-radius: 9px;
+        border: 1px solid transparent; background: transparent;
+        color: #94A3B8; font-family: 'Inter', sans-serif;
+        font-size: 13px; font-weight: 500; cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: nowrap;
+    }
+    .controls-slicer-btn:hover {
+        color: #F1F5F9;
+        background: rgba(255,255,255,0.05);
+    }
+    .controls-slicer-btn.active {
+        color: #F8FAFC;
+        background: rgba(2, 132, 199, 0.12);
+        border-color: rgba(2, 132, 199, 0.3);
+        font-weight: 600;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 0 0 1px rgba(2, 132, 199, 0.05) inset;
+    }
+    .controls-panel { display: none; }
+    .controls-panel.active { display: block; }
     .search-row { display: flex; align-items: center; gap: 8px; }
     .kw-search-wrap { margin-bottom: 14px; }
 
@@ -122,7 +153,7 @@ CATALOG_STYLE = Style("""
         width: 6px; height: 6px; border-radius: 50%; background: #38bdf8; }
     .filter-btn.has-filters .filter-dot { display: block; }
 
-    .filter-panel { display: block; margin-top: 16px; padding: 14px 16px;
+    .filter-panel { display: block; margin-top: 0; padding: 14px 16px;
         background: rgba(255,255,255,0.02);
         border: 1px solid rgba(255,255,255,0.06); border-radius: 12px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -650,6 +681,13 @@ def _keyword_search_area(q, category, access_f, freq_f):
 
 def _ai_filter_area(q, category, access_f, freq_f):
     ai_btn = Button(NotStr("✦ AI Search"), type="button", cls="ai-pill-btn", onclick="activateAI()")
+    controls_slicer = Div(
+        Button("AI Search", type="button", id="controls-tab-ai",
+               cls="controls-slicer-btn active", onclick="setControlsPanel('ai')"),
+        Button("Filters", type="button", id="controls-tab-filters",
+               cls="controls-slicer-btn", onclick="setControlsPanel('filters')"),
+        cls="controls-slicer"
+    )
 
     ai_bar = Form(
         Div(
@@ -704,7 +742,22 @@ def _ai_filter_area(q, category, access_f, freq_f):
         const _thinkMsgs = ['Searching...','Thinking...','Analysing datasets...','Finding matches...','Almost there...'];
         let _thinkIdx = 0, _thinkTimer = null;
 
+        function setControlsPanel(panel) {
+            const aiTab = document.getElementById('controls-tab-ai');
+            const filterTab = document.getElementById('controls-tab-filters');
+            const aiPanel = document.getElementById('controls-panel-ai');
+            const filterPanel = document.getElementById('controls-panel-filters');
+            if (!aiTab || !filterTab || !aiPanel || !filterPanel) return;
+
+            const isAi = panel === 'ai';
+            aiTab.classList.toggle('active', isAi);
+            filterTab.classList.toggle('active', !isAi);
+            aiPanel.classList.toggle('active', isAi);
+            filterPanel.classList.toggle('active', !isAi);
+        }
+
         function activateAI() {
+            setControlsPanel('ai');
             document.getElementById('ai-cta-wrap').style.display = 'none';
             document.getElementById('ai-bar').classList.add('active');
             document.getElementById('ai-query-input').focus();
@@ -734,13 +787,24 @@ def _ai_filter_area(q, category, access_f, freq_f):
     """)
 
     return Div(
+        controls_slicer,
         Div(
-            Div(ai_btn, cls="search-row", id="ai-cta-wrap"),
-            ai_bar,
-            cls="search-row"
+            Div(
+                Div(
+                    Div(ai_btn, cls="search-row", id="ai-cta-wrap"),
+                    ai_bar,
+                    cls="search-row"
+                ),
+                thinking_bar,
+                id="controls-panel-ai",
+                cls="controls-panel active"
+            ),
+            Div(
+                filter_panel,
+                id="controls-panel-filters",
+                cls="controls-panel"
+            )
         ),
-        filter_panel,
-        thinking_bar,
         script,
         cls="search-outer"
     )
