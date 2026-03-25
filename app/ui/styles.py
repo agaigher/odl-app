@@ -87,7 +87,7 @@ def get_shared_style():
     return Style("""
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Roboto+Mono:wght@400;700&display=swap');
         :root {
-            --odl-bg: #f8f9fa; --odl-bg-elevated: #ffffff;
+            --odl-bg: #f7f7f4; --odl-bg-elevated: #ffffff;
             --odl-border-subtle: rgba(0, 0, 0, 0.1);
             --odl-text: #111827; --odl-text-muted: #4b5563;
             --odl-accent: #f97316; --odl-accent-soft: rgba(249, 115, 22, 0.15);

@@ -8,9 +8,10 @@ This document is for agents and contributors working on the **Python FastHTML ap
 
 | Layer | Location | Role |
 |--------|----------|------|
-| **Global shell** | `app/__init__.py` → `get_app_style()` | `:root` tokens, `body.app-layout`, `.main-content`, shared form classes (`odl-input`, `odl-btn-primary`) |
+| **Global shell** | `app/ui/styles.py` → `get_app_style()` | `:root` tokens, `body.app-layout`, `.main-content`, shared form classes (`odl-input`, `odl-btn-primary`) |
+| **Shared/light pages** | `app/ui/styles.py` → `get_shared_style()` | Light page tokens (`--odl-bg`, `--odl-bg-elevated`) used by marketing/catalog content |
 | **Page-specific** | Inline `Style(...)` next to the page component (e.g. `app/pages/projects.py` → `_projects_style()`) | Scoped class prefixes (e.g. `pd-*` on Projects) to avoid collisions |
-| **Layout chrome** | `app/components.py` | Navbar / sidebar inline styles co-located with `odl_navbar`, `odl_sidebar` |
+| **Layout chrome** | `app/ui/components.py` | Navbar / sidebar inline styles co-located with `odl_navbar`, `odl_sidebar` |
 
 Prefer **reusing `get_app_style()` tokens** (via matching hex or future `var(--*)` in page CSS) over inventing unrelated palettes.
 
@@ -79,7 +80,8 @@ When adding similar dashboards, **pick a short unique prefix** (`xx-`) and keep 
 **Don’t**
 
 - Introduce a second accent color (e.g. orange/purple) for primary actions without product approval.
-- Use `app/styles.py` `get_shared_style()` for authenticated `page_layout` pages—it targets a different (lighter) marketing/catalog context unless explicitly composed.
+- Keep shared/light page background aligned with `https://www.financialdatasets.ai/` by using `--odl-bg: #f7f7f4` in `get_shared_style()`.
+- Use `app/ui/styles.py` `get_shared_style()` for authenticated `page_layout` pages only when you intentionally want that lighter marketing/catalog context.
 
 ---
 
@@ -88,6 +90,7 @@ When adding similar dashboards, **pick a short unique prefix** (`xx-`) and keep 
 | Use | Hex |
 |-----|-----|
 | Page background | `#080a0f` |
+| Shared/light page background (financialdatasets.ai match) | `#f7f7f4` |
 | Primary text | `#F8FAFC` |
 | Muted text | `#94A3B8` |
 | Primary button / links (accent) | `#0284C7` → hover `#0369A1` |
@@ -96,4 +99,4 @@ When adding similar dashboards, **pick a short unique prefix** (`xx-`) and keep 
 
 ---
 
-*Last updated to reflect `get_app_style()` in `app/__init__.py` and Projects patterns in `app/pages/projects.py`.*
+*Last updated to reflect `get_app_style()` / `get_shared_style()` in `app/ui/styles.py` and Projects patterns in `app/pages/projects.py`.*
