@@ -43,18 +43,23 @@ CATALOG_STYLE = Style("""
     .cat-main-col { flex: 1; min-width: 0; padding: 32px 48px; }
     .cat-main { min-width: 0; }
 
-    .cat-sidebar-title { font-size: 10px; font-weight: 700; color: #64748B;
-        text-transform: uppercase; letter-spacing: 0.1em; padding: 0 8px; margin-bottom: 6px; }
-    .cat-sidebar-item { display: flex; align-items: center; justify-content: space-between;
-        padding: 6px 8px; border-radius: 8px; text-decoration: none;
-        margin-bottom: 1px; transition: background 0.12s, border-color 0.12s; gap: 6px;
-        border: 1px solid transparent; }
-    .cat-sidebar-item:hover { background: rgba(255,255,255,0.06); }
-    .cat-sidebar-item.active { background: rgba(2,132,199,0.12); border-color: rgba(56,189,248,0.2); }
-    .cat-sidebar-label { font-size: 13px; font-weight: 500; color: #CBD5E1; flex: 1; }
-    .cat-sidebar-item.active .cat-sidebar-label { color: #7dd3fc; font-weight: 600; }
-    .cat-sidebar-count { font-size: 11px; color: #94A3B8;
-        background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 999px; }
+    .cat-sidebar-title {
+        font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
+        color: #475569; text-transform: uppercase; letter-spacing: 0.1em;
+        padding-left: 4px; margin-bottom: 12px;
+    }
+    .cat-sidebar-item {
+        display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        padding: 8px 12px; border-radius: 6px; text-decoration: none;
+        margin-bottom: 2px; transition: background 0.15s, color 0.15s;
+    }
+    .cat-sidebar-item:hover { background: rgba(255,255,255,0.03); }
+    .cat-sidebar-item.active { background: rgba(255,255,255,0.06); }
+    .cat-sidebar-label { font-size: 14px; color: #94A3B8; flex: 1; }
+    .cat-sidebar-item:hover .cat-sidebar-label { color: #F8FAFC; }
+    .cat-sidebar-item.active .cat-sidebar-label { color: #FFFFFF; font-weight: 500; }
+    .cat-sidebar-count { font-size: 12px; color: #64748B; }
+    .cat-sidebar-item.active .cat-sidebar-count { color: #94A3B8; }
 
     .search-outer { max-width: 640px; margin: 0 auto 20px; }
     .search-row { display: flex; align-items: center; gap: 8px; }
