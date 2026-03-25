@@ -59,23 +59,76 @@ def db_select(table: str, filters: dict = None, limit: int = 1000, order: str = 
     return all_results
 
 
-def get_datasets_paginated(category="", q="", access="", freq="", page=1, per_page=25):
+def _split_csv(raw):
+    if not raw:
+        return []
+    return [v.strip() for v in str(raw).split(",") if v.strip()]
+
+
+def _in_values(values):
+    escaped = [f'"{v.replace(chr(34), r"\"")}"' for v in values]
+    return "in.(" + ",".join(escaped) + ")"
+
+
+def get_datasets_paginated(category="", q="", access="", freq="", page=1, per_page=25,
+                           provider="", status="", tags=""):
     url = f"{SUPABASE_URL}/rest/v1/datasets"
     params = {}
 
-    if category:
-        params["category"] = f"eq.{category}"
-    if freq:
+    categories = _split_csv(category)
+    freqs = _split_csv(freq)
+    access_methods = _split_csv(access)
+    providers = _split_csv(provider)
+    statuses = _split_csv(status)
+    tags_list = _split_csv(tags)
+
+    if categories:
+        if len(categories) == 1:
+            params["category"] = f"eq.{categories[0]}"
+        else:
+            params["category"] = _in_values(categories)
+
+    if freqs:
         freq_map = {
-            "Real-time": "(Real-time,Streaming)",
-            "Hourly": "(Hourly)",
-            "Daily": "(Daily)",
-            "Monthly": "(Monthly)",
-            "Annual": "(Annual)",
+            "Real-time": ["Real-time", "Streaming"],
+            "Hourly": ["Hourly"],
+            "Daily": ["Daily"],
+            "Monthly": ["Monthly"],
+            "Annual": ["Annual"],
         }
-        params["update_frequency"] = f"in.{freq_map[freq]}" if freq in freq_map else f"eq.{freq}"
-    if access:
-        params["access_methods"] = f"cs.{{{access}}}"
+        expanded = []
+        for f in freqs:
+            expanded.extend(freq_map.get(f, [f]))
+        expanded = sorted(set(expanded))
+        if len(expanded) == 1:
+            params["update_frequency"] = f"eq.{expanded[0]}"
+        else:
+            params["update_frequency"] = _in_values(expanded)
+
+    if access_methods:
+        if len(access_methods) == 1:
+            params["access_methods"] = f"cs.{{{access_methods[0]}}}"
+        else:
+            params["access_methods"] = "ov.{" + ",".join(access_methods) + "}"
+
+    if providers:
+        if len(providers) == 1:
+            params["provider"] = f"eq.{providers[0]}"
+        else:
+            params["provider"] = _in_values(providers)
+
+    if statuses:
+        if len(statuses) == 1:
+            params["status"] = f"eq.{statuses[0]}"
+        else:
+            params["status"] = _in_values(statuses)
+
+    if tags_list:
+        if len(tags_list) == 1:
+            params["tags"] = f"cs.{{{tags_list[0]}}}"
+        else:
+            params["tags"] = "ov.{" + ",".join(tags_list) + "}"
+
     if q:
         params["or"] = f"(title.ilike.*{q}*,description.ilike.*{q}*,provider.ilike.*{q}*,category.ilike.*{q}*)"
 
