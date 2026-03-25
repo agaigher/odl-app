@@ -58,7 +58,7 @@ def OrgSwitcher(active_org, all_orgs):
                 style="display: flex; align-items: center;"
             ),
             icon_svg(IC.chevron_up_down),
-            onclick="document.getElementById('org-dropdown').classList.toggle('hidden')",
+            onclick="var p=document.getElementById('org-dropdown');if(p.classList.contains('hidden')){var r=this.getBoundingClientRect();p.style.top=(r.bottom+4)+'px';p.style.left=r.left+'px';}p.classList.toggle('hidden');",
             cls="org-switcher-trigger"
         ),
         Div(
@@ -130,7 +130,7 @@ def ProjectSwitcher(active_project, all_projects):
                 style="display: flex; align-items: center;"
             ),
             icon_svg(IC.chevron_up_down),
-            onclick="document.getElementById('project-dropdown').classList.toggle('hidden')",
+            onclick="var p=document.getElementById('project-dropdown');if(p.classList.contains('hidden')){var r=this.getBoundingClientRect();p.style.top=(r.bottom+4)+'px';p.style.left=r.left+'px';}p.classList.toggle('hidden');",
             cls="org-switcher-trigger"
         ),
         Div(
@@ -327,7 +327,7 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None,
             }
             .org-switcher-trigger:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); }
             .org-dropdown-panel {
-                position: absolute; top: calc(100% + 4px); left: 0; width: 260px;
+                position: fixed; top: 0; left: 0; width: 260px;
                 background: #0f1219; border: 1px solid rgba(255,255,255,0.08);
                 border-radius: 10px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
                 z-index: 1001; overflow: hidden;
@@ -542,7 +542,7 @@ def module_page_layout(page_title, current_path, user, *content,
             Link(rel="stylesheet", href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap"),
             get_app_style()
         ),
-        Body(body_content)
+        Body(body_content, cls="app-layout")
     )
 
 
