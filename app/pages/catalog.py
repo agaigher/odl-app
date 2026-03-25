@@ -818,10 +818,13 @@ def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="",
                 Div(
                     Div(
                         _keyword_search_area(q, category, access_filter, freq_filter),
-                        _list_body(datasets, total_matches, added, favs, heading, subtext,
-                                   page=page, per_page=per_page,
-                                   q=q, category=category, access_f=access_filter, freq_f=freq_filter),
-                        id="catalog-body", cls="cat-main cat-results-col"
+                        Div(
+                            _list_body(datasets, total_matches, added, favs, heading, subtext,
+                                       page=page, per_page=per_page,
+                                       q=q, category=category, access_f=access_filter, freq_f=freq_filter),
+                            id="catalog-body", cls="cat-main"
+                        ),
+                        cls="cat-results-col"
                     ),
                     Div(
                         _ai_filter_area(q, category, access_filter, freq_filter),
