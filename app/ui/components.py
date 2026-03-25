@@ -64,7 +64,7 @@ def odl_navbar(user=None, active_org=None, all_orgs=None, active_project=None, a
         Style("""
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
             .app-navbar {
-                background: linear-gradient(180deg, #0c0e14 0%, #080a0f 100%);
+                background: #14120b;
                 border-bottom: 1px solid rgba(255,255,255,0.06);
                 box-shadow: 0 1px 0 rgba(56, 189, 248, 0.1);
                 padding: 0 28px; height: 56px;
@@ -149,7 +149,7 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None,
     return Nav(
         Style("""
             .app-sidebar {
-                width: 240px; background: #0a0c10;
+                width: 240px; background: #14120b;
                 border-right: 1px solid rgba(255,255,255,0.05);
                 padding: 24px 0; display: flex; flex-direction: column; flex-shrink: 0;
                 position: sticky; top: 60px; height: calc(100vh - 60px); overflow-y: auto;

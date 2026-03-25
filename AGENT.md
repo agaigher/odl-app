@@ -22,7 +22,7 @@ Prefer **reusing `get_app_style()` tokens** (via matching hex or future `var(--*
 Use these as the **canonical** app colors and fonts:
 
 - **Fonts:** `--font-display` = Space Grotesk (headings, brand); `--font-body` = Inter (UI body); `--font-mono` = JetBrains Mono (code).
-- **Canvas:** `--bg-page` `#080a0f`, `--bg-elevated` `#0f1118`, `--bg-surface` `#141824`, `--bg-card` `#161a2a`, `--bg-muted` `#0c1018`.
+- **Canvas:** `--bg-page` `#14120b` (matched to financialdatasets.ai dark background), `--bg-elevated` `#0f1118`, `--bg-surface` `#141824`, `--bg-card` `#161a2a`, `--bg-muted` `#0c1018`.
 - **Text:** `--text-main` `#F8FAFC`, `--text-muted` `#94A3B8`, `--text-faint` `#475569`.
 - **Light surfaces (rare in-app):** `--surface-light`, `--text-on-light`, `--border-light` for light cards/modals/catalog rows on dark shell.
 - **Brand:** `--accent` `#0284C7`, `--accent-hover` `#0369A1`, `--accent-light` (sky tint for backgrounds).
@@ -89,7 +89,7 @@ When adding similar dashboards, **pick a short unique prefix** (`xx-`) and keep 
 
 | Use | Hex |
 |-----|-----|
-| Page background | `#080a0f` |
+| Page background (dark shell, financialdatasets.ai match) | `#14120b` |
 | Shared/light page background (financialdatasets.ai match) | `#f7f7f4` |
 | Primary text | `#F8FAFC` |
 | Muted text | `#94A3B8` |

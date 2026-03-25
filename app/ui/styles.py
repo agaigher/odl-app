@@ -16,7 +16,7 @@ def get_app_style():
             --font-display: "Space Grotesk", system-ui, sans-serif;
             --font-body: "Inter", system-ui, sans-serif;
             --font-mono: "JetBrains Mono", ui-monospace, monospace;
-            --bg-page: #080a0f;
+            --bg-page: #14120b;
             --bg-elevated: #0f1118;
             --bg-surface: #141824;
             --bg-card: #161a2a;
