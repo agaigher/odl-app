@@ -302,8 +302,8 @@ CATALOG_STYLE = Style("""
     @keyframes aiExpand {
         from { opacity: 0; transform: scaleY(0.9); }
         to   { opacity: 1; transform: scaleY(1); } }
-    .ai-query-input { width: 100%; border: none; outline: none; background: transparent;
-        resize: vertical; min-height: 192px; max-height: 320px;
+    .ai-query-input { display: block; width: 100%; border: none; outline: none; background: transparent;
+        resize: vertical; height: 192px; min-height: 192px; max-height: 320px;
         padding: 0 0 48px 0;
         font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.45;
         color: #F1F5F9; }
@@ -806,13 +806,13 @@ def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f="", keywo
 
     ai_bar = Form(
         Div(
+            Textarea(
+                name="query",
+                placeholder="Describe the data you need or the task you are working on (for example: 'Find datasets for KYC and company ownership checks').",
+                cls="ai-query-input",
+                id="ai-query-input"
+            ),
             Div(
-                Textarea(
-                    name="query",
-                    placeholder="Describe the data you need or the task you are working on (for example: 'Find datasets for KYC and company ownership checks').",
-                    cls="ai-query-input",
-                    id="ai-query-input"
-                ),
                 Div(
                     Div(
                         Div(cls="thinking-dot"), Div(cls="thinking-dot"), Div(cls="thinking-dot"),
