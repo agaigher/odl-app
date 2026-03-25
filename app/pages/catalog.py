@@ -1,3 +1,4 @@
+import json
 from fasthtml.common import *
 from app.supabase_db import db_select
 
@@ -172,11 +173,37 @@ CATALOG_STYLE = Style("""
     .clear-filters-btn:hover {
         color: #E2E8F0; border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.07);
     }
-    .filter-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-    .filter-row:last-child { margin-bottom: 0; }
+    .filter-section { margin-bottom: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); }
+    .filter-section:last-child { margin-bottom: 0; }
+    .filter-section-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .filter-section-toggle {
+        display: inline-flex; align-items: center; gap: 8px;
+        border: none; background: transparent; color: #94A3B8;
+        padding: 0; cursor: pointer; font-family: 'Inter', sans-serif;
+    }
+    .filter-section-toggle:hover .filter-label { color: #cbd5e1; }
     .filter-label { font-size: 11px; font-weight: 700; color: #64748B;
-        text-transform: uppercase; letter-spacing: 0.08em; min-width: 72px; }
+        text-transform: uppercase; letter-spacing: 0.08em; }
+    .filter-count { font-size: 11px; color: #64748B; text-transform: none; letter-spacing: 0; }
+    .filter-chevron { font-size: 11px; color: #64748B; transition: transform 0.15s; }
+    .filter-section-body.collapsed .filter-chevron { transform: rotate(-90deg); }
+    .filter-search {
+        width: 100%; margin: 8px 0 8px; padding: 7px 10px;
+        border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(255,255,255,0.03); color: #e2e8f0;
+        font-size: 12px; font-family: 'Inter', sans-serif; outline: none;
+    }
+    .filter-search:focus { border-color: rgba(56,189,248,0.35); }
+    .filter-search::placeholder { color: #64748B; }
+    .filter-section-body.collapsed .filter-section-content { display: none; }
     .filter-chip-wrap { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+    .chip-hidden { display: none; }
+    .filter-more-btn {
+        margin-top: 8px; border: none; background: transparent; color: #7dd3fc;
+        font-size: 12px; font-weight: 600; font-family: 'Inter', sans-serif;
+        cursor: pointer; padding: 0;
+    }
+    .filter-more-btn:hover { color: #bae6fd; }
 
     .ai-bar { flex: 1; display: none; flex-direction: column; gap: 6px; }
     .ai-bar.active { display: flex; }
@@ -762,7 +789,42 @@ def _ai_filter_area(q, category, access_f, freq_f, provider_f="", status_f="", t
             cls=f"chip {'on' if is_on else ''}",
             data_filter=filter_name,
             data_value=value,
-            onclick=f"toggleCatalogFilter('{filter_name}', '{value}', this)"
+            onclick=f"toggleCatalogFilter({json.dumps(filter_name)}, {json.dumps(value)}, this)"
+        )
+
+    def filter_section(filter_name, label, values, selected_values, searchable=False, default_open=True, limit=12):
+        count_txt = f"{len(selected_values)} selected" if selected_values else "Any"
+        body_cls = "filter-section-body" if default_open else "filter-section-body collapsed"
+        return Div(
+            Div(
+                Button(
+                    Span(label, cls="filter-label"),
+                    Span(count_txt, cls="filter-count", id=f"filter-count-{filter_name}"),
+                    Span("▾", cls="filter-chevron"),
+                    type="button",
+                    cls="filter-section-toggle",
+                    onclick=f"toggleFilterSection({json.dumps(filter_name)})"
+                ),
+                cls="filter-section-head"
+            ),
+            Div(
+                Input(type="search",
+                      placeholder=f"Search {label.lower()}…",
+                      cls="filter-search",
+                      id=f"filter-search-{filter_name}",
+                      oninput=f"filterSectionOptions({json.dumps(filter_name)}, this.value)") if searchable else None,
+                Div(*[chip(filter_name, v, selected_values) for v in values],
+                    cls="filter-chip-wrap", id=f"filter-chips-{filter_name}",
+                    data_filter=filter_name, data_limit=str(limit), data_expanded="0"),
+                Button("Show more",
+                       type="button",
+                       cls="filter-more-btn",
+                       id=f"filter-more-{filter_name}",
+                       onclick=f"toggleFilterMore({json.dumps(filter_name)})"),
+                cls="filter-section-content"
+            ),
+            cls=body_cls,
+            id=f"filter-body-{filter_name}"
         )
 
     filter_panel = Div(
@@ -771,36 +833,12 @@ def _ai_filter_area(q, category, access_f, freq_f, provider_f="", status_f="", t
             Button("Clear filters", type="button", cls="clear-filters-btn", onclick="clearCatalogFilters()"),
             cls="filter-panel-head"
         ),
-        Div(
-            Span("Category", cls="filter-label"),
-            Div(*[chip("category", v, selected["category"]) for v in options.get("category", [])], cls="filter-chip-wrap"),
-            cls="filter-row"
-        ),
-        Div(
-            Span("Provider", cls="filter-label"),
-            Div(*[chip("provider", v, selected["provider"]) for v in options.get("provider", [])], cls="filter-chip-wrap"),
-            cls="filter-row"
-        ),
-        Div(
-            Span("Frequency", cls="filter-label"),
-            Div(*[chip("freq", v, selected["freq"]) for v in options.get("freq", [])], cls="filter-chip-wrap"),
-            cls="filter-row"
-        ),
-        Div(
-            Span("Access", cls="filter-label"),
-            Div(*[chip("access", v, selected["access"]) for v in options.get("access", [])], cls="filter-chip-wrap"),
-            cls="filter-row"
-        ),
-        Div(
-            Span("Status", cls="filter-label"),
-            Div(*[chip("status", v, selected["status"]) for v in options.get("status", [])], cls="filter-chip-wrap"),
-            cls="filter-row"
-        ),
-        Div(
-            Span("Tags", cls="filter-label"),
-            Div(*[chip("tags", v, selected["tags"]) for v in options.get("tags", [])], cls="filter-chip-wrap"),
-            cls="filter-row"
-        ),
+        filter_section("category", "Category", options.get("category", []), selected["category"], searchable=True, default_open=True, limit=14),
+        filter_section("provider", "Provider", options.get("provider", []), selected["provider"], searchable=True, default_open=False, limit=10),
+        filter_section("freq", "Frequency", options.get("freq", []), selected["freq"], searchable=False, default_open=True, limit=10),
+        filter_section("access", "Access", options.get("access", []), selected["access"], searchable=False, default_open=True, limit=10),
+        filter_section("status", "Status", options.get("status", []), selected["status"], searchable=False, default_open=True, limit=10),
+        filter_section("tags", "Tags", options.get("tags", []), selected["tags"], searchable=True, default_open=False, limit=12),
         id="filter-panel",
         cls="filter-panel"
     )
@@ -852,6 +890,81 @@ def _ai_filter_area(q, category, access_f, freq_f, provider_f="", status_f="", t
             if (el) el.value = values.join(',');
         }
 
+        function _updateFilterCount(filterName) {
+            const el = document.getElementById('filter-count-' + filterName);
+            if (!el) return;
+            const n = _readFilter(filterName).length;
+            el.textContent = n ? (n + ' selected') : 'Any';
+        }
+
+        function _refreshFilterSection(filterName) {
+            const chipsWrap = document.getElementById('filter-chips-' + filterName);
+            if (!chipsWrap) return;
+            const chips = Array.from(chipsWrap.querySelectorAll('.chip[data-filter]'));
+            const selected = new Set(_readFilter(filterName));
+            const limit = parseInt(chipsWrap.dataset.limit || "12", 10);
+            const expanded = chipsWrap.dataset.expanded === "1";
+            const searchEl = document.getElementById('filter-search-' + filterName);
+            const q = (searchEl ? searchEl.value : "").trim().toLowerCase();
+            const unlimited = expanded || !!q;
+
+            let shown = 0;
+            let hiddenMatching = 0;
+            chips.forEach(function(chip) {
+                const value = (chip.getAttribute('data-value') || "");
+                const match = !q || value.toLowerCase().includes(q);
+                if (!match) {
+                    chip.classList.add('chip-hidden');
+                    return;
+                }
+                const isSelected = selected.has(value);
+                const show = isSelected || unlimited || shown < limit;
+                if (show) {
+                    chip.classList.remove('chip-hidden');
+                    shown += 1;
+                } else {
+                    chip.classList.add('chip-hidden');
+                    hiddenMatching += 1;
+                }
+            });
+
+            const moreBtn = document.getElementById('filter-more-' + filterName);
+            if (moreBtn) {
+                if (!q && hiddenMatching > 0) {
+                    moreBtn.style.display = '';
+                    moreBtn.textContent = expanded ? 'Show less' : ('Show ' + hiddenMatching + ' more');
+                } else if (!q && expanded && chips.length > limit) {
+                    moreBtn.style.display = '';
+                    moreBtn.textContent = 'Show less';
+                } else {
+                    moreBtn.style.display = 'none';
+                }
+            }
+
+            _updateFilterCount(filterName);
+        }
+
+        function _refreshAllFilterSections() {
+            Object.keys(_catalogFilterInputIds).forEach(function(k) { _refreshFilterSection(k); });
+        }
+
+        function toggleFilterSection(filterName) {
+            const body = document.getElementById('filter-body-' + filterName);
+            if (!body) return;
+            body.classList.toggle('collapsed');
+        }
+
+        function filterSectionOptions(filterName) {
+            _refreshFilterSection(filterName);
+        }
+
+        function toggleFilterMore(filterName) {
+            const wrap = document.getElementById('filter-chips-' + filterName);
+            if (!wrap) return;
+            wrap.dataset.expanded = wrap.dataset.expanded === "1" ? "0" : "1";
+            _refreshFilterSection(filterName);
+        }
+
         function _updateChipStates() {
             document.querySelectorAll('#filter-panel .chip[data-filter]').forEach(function(chip) {
                 const name = chip.getAttribute('data-filter');
@@ -859,6 +972,7 @@ def _ai_filter_area(q, category, access_f, freq_f, provider_f="", status_f="", t
                 const selected = _readFilter(name);
                 chip.classList.toggle('on', selected.includes(value));
             });
+            _refreshAllFilterSections();
         }
 
         function _runCatalogFilterSearch() {
