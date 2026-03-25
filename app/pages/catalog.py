@@ -33,7 +33,8 @@ CATALOG_STYLE = Style("""
     /* Dark surfaces — aligned with dashboard (no stark white on #080a0f) */
     .cat-wrap { display: flex; gap: 24px; align-items: flex-start; }
     .cat-sidebar { width: 190px; flex-shrink: 0; position: sticky; top: 20px; }
-    .cat-main { flex: 1; min-width: 0; }
+    .cat-main-col { flex: 1; min-width: 0; }
+    .cat-main { min-width: 0; }
 
     .cat-sidebar-title { font-size: 10px; font-weight: 700; color: #64748B;
         text-transform: uppercase; letter-spacing: 0.1em; padding: 0 8px; margin-bottom: 6px; }
@@ -785,13 +786,16 @@ def DataCatalog(category="", q="", user_id="", access_filter="", freq_filter="",
 
     return Div(
         CATALOG_STYLE,
-        _search_area(q, category, access_filter, freq_filter),
         Div(
             _sidebar(counts, category, total_all),
-            Div(_list_body(datasets, total_matches, added, favs, heading, subtext,
-                           page=page, per_page=per_page,
-                           q=q, category=category, access_f=access_filter, freq_f=freq_filter),
-                id="catalog-body", cls="cat-main"),
+            Div(
+                _search_area(q, category, access_filter, freq_filter),
+                Div(_list_body(datasets, total_matches, added, favs, heading, subtext,
+                               page=page, per_page=per_page,
+                               q=q, category=category, access_f=access_filter, freq_f=freq_filter),
+                    id="catalog-body", cls="cat-main"),
+                cls="cat-main-col"
+            ),
             cls="cat-wrap"
         )
     )
