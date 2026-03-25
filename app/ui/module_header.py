@@ -20,80 +20,83 @@ MODULES = [
 # ── Header style ──────────────────────────────────────────────────────────────
 
 MODULE_HEADER_STYLE = Style("""
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
-
     .module-header {
-        background: linear-gradient(180deg, #0c0e14 0%, #080a0f 100%);
-        border-bottom: 1px solid rgba(255,255,255,0.06);
-        box-shadow: 0 1px 0 rgba(56, 189, 248, 0.08);
-        padding: 0 28px; height: 56px;
+        background: linear-gradient(180deg, var(--bg-muted) 0%, var(--bg-page) 100%);
+        border-bottom: 1px solid var(--border);
+        box-shadow: 0 1px 0 rgba(2, 132, 199, 0.05);
+        padding: 0 28px; height: 60px;
         display: flex; align-items: center; justify-content: space-between;
         position: sticky; top: 0; z-index: 1000;
     }
 
     .mh-left {
-        display: flex; align-items: center; gap: 24px;
+        display: flex; align-items: center; gap: 16px;
+        flex: 1; min-width: 0;
     }
 
     .mh-brand {
-        font-family: 'Space Grotesk', system-ui, sans-serif;
-        font-weight: 600; font-size: 15px; color: #F8FAFC;
+        font-family: var(--font-display);
+        font-weight: 600; font-size: 15px; color: var(--text-main);
         text-decoration: none; letter-spacing: -0.04em;
         white-space: nowrap;
     }
-    .mh-brand:hover { color: #F8FAFC; }
-
-    .mh-separator {
-        width: 1px; height: 24px;
-        background: rgba(148, 163, 184, 0.2);
-    }
+    .mh-brand:hover { color: var(--text-main); }
 
     /* ── Module slicer ──────────────────────────────────────────────────── */
+    .mh-slicer-wrap {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex; justify-content: center;
+    }
+
     .mh-slicer {
         display: flex; align-items: center;
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 10px; padding: 3px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--border);
+        border-radius: 12px; padding: 3px;
         gap: 2px;
+        box-shadow: inset 0 1px 1px rgba(0,0,0,0.2);
     }
 
     .mh-slicer-btn {
-        display: flex; align-items: center; gap: 7px;
-        padding: 7px 16px; border-radius: 8px;
-        font-family: 'Inter', sans-serif;
+        display: flex; align-items: center; gap: 8px;
+        padding: 7px 16px; border-radius: 9px;
+        font-family: var(--font-body);
         font-size: 13px; font-weight: 500;
-        color: #94A3B8; text-decoration: none;
+        color: var(--text-muted); text-decoration: none;
         border: 1px solid transparent;
         background: transparent;
-        transition: all 0.18s ease;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         white-space: nowrap;
         cursor: pointer;
     }
 
     .mh-slicer-btn:hover {
-        color: #E2E8F0;
-        background: rgba(255,255,255,0.06);
+        color: var(--text-main);
+        background: rgba(255,255,255,0.05);
     }
 
     .mh-slicer-btn.active {
-        color: #F8FAFC;
-        background: rgba(255,255,255,0.08);
-        border-color: rgba(255,255,255,0.1);
+        color: var(--text-main);
+        background: rgba(2, 132, 199, 0.12);
+        border-color: rgba(2, 132, 199, 0.3);
         font-weight: 600;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 0 0 1px rgba(2, 132, 199, 0.05) inset;
     }
     .mh-slicer-btn.active .mh-slicer-icon {
-        color: #38bdf8;
+        color: var(--accent);
     }
 
     .mh-slicer-icon {
         display: flex; align-items: center;
-        color: #64748B; transition: color 0.18s;
+        color: var(--text-faint); transition: color 0.2s;
     }
 
     /* ── Right side ─────────────────────────────────────────────────────── */
     .mh-right {
-        display: flex; align-items: center; gap: 12px;
+        display: flex; align-items: center; gap: 16px;
+        flex: 1; justify-content: flex-end;
     }
 
     .mh-context {
@@ -101,25 +104,26 @@ MODULE_HEADER_STYLE = Style("""
     }
 
     .mh-ctx-sep {
-        color: rgba(148, 163, 184, 0.35); font-weight: 300;
-        font-size: 16px; user-select: none;
+        color: var(--text-faint); font-weight: 300;
+        font-size: 16px; user-select: none; opacity: 0.5;
     }
 
     .mh-user {
-        color: #94A3B8; font-size: 13px;
-        font-family: 'Inter', sans-serif;
+        color: var(--text-muted); font-size: 13px;
+        font-family: var(--font-body);
     }
 
     .mh-signout {
         background: transparent;
-        border: 1px solid rgba(255,255,255,0.1);
-        color: #CBD5E1; padding: 5px 12px; border-radius: 5px;
+        border: 1px solid var(--border);
+        color: var(--text-muted); padding: 5px 12px; border-radius: 5px;
         font-size: 13px; cursor: pointer;
         transition: all 0.15s; text-decoration: none;
-        font-family: 'Inter', sans-serif;
+        font-family: var(--font-body);
     }
     .mh-signout:hover {
-        background: rgba(255,255,255,0.08); color: #ffffff;
+        background: rgba(255,255,255,0.08); color: var(--text-main);
+        border-color: var(--text-faint);
     }
 """)
 
@@ -129,7 +133,7 @@ MODULE_HEADER_STYLE = Style("""
 def odl_module_header(active_module="catalog", user=None,
                       active_org=None, all_orgs=None,
                       active_project=None, all_projects=None):
-    """Renders the top-level module header with the 3-way slicer."""
+    """Renders the top-level module header with the centered 3-way slicer."""
 
     # ── Module slicer buttons ──
     slicer_btns = []
@@ -146,18 +150,15 @@ def odl_module_header(active_module="catalog", user=None,
 
     slicer = Div(*slicer_btns, cls="mh-slicer")
 
-    # ── Left section ──
+    # ── Sections ──
     left = Div(
         A("OpenData.London", href="/catalog", cls="mh-brand"),
-        Div(cls="mh-separator"),
-        slicer,
         cls="mh-left"
     )
 
-    # ── Right section ──
-    right_items = []
+    center = Div(slicer, cls="mh-slicer-wrap")
 
-    # Compact org / project context
+    right_items = []
     if active_org or all_orgs:
         right_items.append(
             Div(
@@ -176,6 +177,7 @@ def odl_module_header(active_module="catalog", user=None,
 
     return Header(
         MODULE_HEADER_STYLE,
-        left, right,
+        left, center, right,
         cls="module-header"
     )
+
