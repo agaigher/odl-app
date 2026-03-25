@@ -266,29 +266,17 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None,
         )
 
     # ── Sidebar sections ──
-    if is_settings_module and (active_org or all_orgs):
-        # Settings-exclusive context selectors
-        context_section = Div(
-            Div("Current Workspace", cls="sidebar-title", style="margin-bottom: 10px;"),
-            OrgSwitcher(active_org, all_orgs),
-            Div(style="height: 8px;"),
-            ProjectSwitcher(active_project, all_projects),
-            cls="sidebar-section",
-            style="margin-bottom: 28px; padding-top: 4px;"
-        )
-    else:
-        # Standard org display for other modules
-        context_section = Div(
-            Div(
-                Img(src=avatar_url, style="width: 24px; height: 24px; border-radius: 4px; margin-right: 10px; object-fit: cover;") if avatar_url else
-                Div(org_name[0].upper(), style="width: 24px; height: 24px; border-radius: 4px; background: #374151; color: #fff; font-size: 11px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-weight: 700;"),
-                Span(org_name, style="font-weight: 600; font-size: 14px; color: #F3F4F6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"),
-                style="display: flex; align-items: center; padding: 0 12px; margin-bottom: 20px;"
-            ),
-            Div("Home", cls="sidebar-title"),
-            nav_item("Project Overview", "/dashboard", IC.grid),
-            cls="sidebar-section"
-        )
+    context_section = Div(
+        Div(
+            Img(src=avatar_url, style="width: 24px; height: 24px; border-radius: 4px; margin-right: 10px; object-fit: cover;") if avatar_url else
+            Div(org_name[0].upper(), style="width: 24px; height: 24px; border-radius: 4px; background: #374151; color: #fff; font-size: 11px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-weight: 700;"),
+            Span(org_name, style="font-weight: 600; font-size: 14px; color: #F3F4F6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"),
+            style="display: flex; align-items: center; padding: 0 12px; margin-bottom: 20px;"
+        ),
+        Div("Home", cls="sidebar-title"),
+        nav_item("Project Overview", "/dashboard", IC.grid),
+        cls="sidebar-section"
+    )
 
     return Nav(
         Style("""
@@ -315,32 +303,6 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None,
                 box-shadow: inset 2px 0 0 0 rgba(2, 132, 199, 0.65);
             }
             .sidebar-item.active span { opacity: 1; color: #0284C7; }
-
-            /* ── Switcher overrides for sidebar ── */
-            .org-switcher-container { position: relative; width: 100%; display: block; }
-            .org-switcher-trigger {
-                background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
-                color: #F1F5F9; padding: 8px 12px; border-radius: 8px;
-                display: flex; align-items: center; justify-content: space-between;
-                cursor: pointer; transition: all 0.2s; width: 100%;
-                font-family: 'Inter', sans-serif;
-            }
-            .org-switcher-trigger:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); }
-            .org-dropdown-panel {
-                position: fixed; top: 0; left: 0; width: 260px;
-                background: #0f1219; border: 1px solid rgba(255,255,255,0.08);
-                border-radius: 10px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
-                z-index: 1001; overflow: hidden;
-            }
-            .hidden { display: none !important; }
-            .org-search-input { background: transparent; border: none; color: #F8FAFC; font-size: 13px; width: 100%; outline: none; }
-            .org-item {
-                display: flex; align-items: center; justify-content: space-between;
-                padding: 10px 16px; color: #94A3B8; text-decoration: none; font-size: 13px;
-                cursor: pointer; transition: 0.15s; background: transparent; border: none;
-                width: 100%; text-align: left;
-            }
-            .org-item:hover { background: #1e293b; color: #F1F5F9; }
         """),
         context_section,
         Div(
