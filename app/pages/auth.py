@@ -1,5 +1,8 @@
 from fasthtml.common import *
 
+from app.auth.password_policy import PASSWORD_POLICY_HINT, password_policy_html_pattern
+
+
 def AuthPage(mode="login"):
 
     auth_style = Style("""
@@ -155,6 +158,12 @@ def AuthPage(mode="login"):
         }
         .form-input::placeholder { color: #334155; }
 
+        .form-hint {
+            font-size: 12px;
+            color: #64748B;
+            line-height: 1.45;
+        }
+
         .forgot-link {
             font-size: 12px;
             color: #7dd3fc;
@@ -275,6 +284,9 @@ def AuthPage(mode="login"):
         cls="auth-divider"
     )
 
+    pw_pattern = password_policy_html_pattern()
+    pw_title = "At least 8 characters, including one special character (not a letter or digit)."
+
     if is_login:
         form = Form(
             Div(
@@ -285,8 +297,18 @@ def AuthPage(mode="login"):
             ),
             Div(
                 Label("Password", fr="password", cls="form-label"),
-                Input(type="password", id="password", name="password", required=True,
-                      placeholder="••••••••", cls="form-input"),
+                Input(
+                    type="password",
+                    id="password",
+                    name="password",
+                    required=True,
+                    minlength=8,
+                    pattern=pw_pattern,
+                    title=pw_title,
+                    placeholder="••••••••",
+                    cls="form-input",
+                ),
+                P(PASSWORD_POLICY_HINT, cls="form-hint"),
                 cls="form-group"
             ),
             A("Forgot password?", href="/forgot-password", cls="forgot-link"),
@@ -311,8 +333,18 @@ def AuthPage(mode="login"):
             ),
             Div(
                 Label("Password", fr="password", cls="form-label"),
-                Input(type="password", id="password", name="password", required=True,
-                      placeholder="8+ characters", cls="form-input"),
+                Input(
+                    type="password",
+                    id="password",
+                    name="password",
+                    required=True,
+                    minlength=8,
+                    pattern=pw_pattern,
+                    title=pw_title,
+                    placeholder="8+ characters, 1 special char",
+                    cls="form-input",
+                ),
+                P(PASSWORD_POLICY_HINT, cls="form-hint"),
                 cls="form-group"
             ),
             Button("Create Account", type="submit", cls="auth-submit-btn"),

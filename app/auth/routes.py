@@ -19,6 +19,7 @@ from supabase_auth.errors import AuthApiError
 
 from app.auth.client import get_auth_client
 from app.auth.middleware import get_user_id
+from app.auth.password_policy import password_policy_error
 from app.pages.auth import AuthPage
 from app.pages.forgot_password import ForgotPasswordPage, ResetPasswordPage
 
@@ -70,6 +71,9 @@ def register(rt):
 
     @rt("/login", methods=["POST"])
     def post_login(req, email: str, password: str, session):
+        policy_err = password_policy_error(password)
+        if policy_err:
+            return Div(policy_err, cls="error-text")
         supabase = get_auth_client()
         if not supabase:
             return Div("Supabase not configured.", cls="error-text")
@@ -93,6 +97,9 @@ def register(rt):
 
     @rt("/register", methods=["POST"])
     def post_register(req, email: str, password: str, session):
+        policy_err = password_policy_error(password)
+        if policy_err:
+            return Div(policy_err, cls="error-text")
         supabase = get_auth_client()
         if not supabase:
             return Div("Supabase not configured.", cls="error-text")
@@ -240,6 +247,9 @@ def register(rt):
     def post_reset_password(token: str, password: str, confirm_password: str):
         if password != confirm_password:
             return Div("Passwords do not match.", cls="error-text")
+        policy_err = password_policy_error(password)
+        if policy_err:
+            return Div(policy_err, cls="error-text")
         supabase = get_auth_client()
         if not supabase:
             return Div("Supabase not configured.", cls="error-text")

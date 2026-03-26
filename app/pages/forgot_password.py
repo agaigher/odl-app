@@ -1,5 +1,8 @@
 from fasthtml.common import *
 
+from app.auth.password_policy import PASSWORD_POLICY_HINT, password_policy_html_pattern
+
+
 def ForgotPasswordPage():
     return Html(
         Head(
@@ -62,6 +65,8 @@ def ForgotPasswordPage():
 
 
 def ResetPasswordPage(token: str = ""):
+    pw_pattern = password_policy_html_pattern()
+    pw_title = "At least 8 characters, including one special character (not a letter or digit)."
     return Html(
         Head(
             Title("Set New Password | OpenData.London"),
@@ -82,6 +87,7 @@ def ResetPasswordPage(token: str = ""):
                 .form-input { width: 100%; background: #020617; border: 1px solid rgba(148,163,184,0.18); color: #F8FAFC; padding: 11px 14px; border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 14px; transition: border-color 0.2s; }
                 .form-input:focus { outline: none; border-color: #0284C7; }
                 .form-input::placeholder { color: #334155; }
+                .form-hint { font-size: 12px; color: #64748B; line-height: 1.45; margin-top: 4px; }
                 .auth-submit-btn { width: 100%; background: #0284C7; color: #020617; font-weight: 700; font-size: 14px; padding: 12px; border: none; border-radius: 7px; cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.2s; }
                 .auth-submit-btn:hover { opacity: 0.88; }
                 .auth-message { min-height: 20px; text-align: center; font-size: 13px; margin-top: 12px; }
@@ -102,8 +108,18 @@ def ResetPasswordPage(token: str = ""):
                         Input(type="hidden", name="token", value=token),
                         Div(
                             Label("New Password", fr="password", cls="form-label"),
-                            Input(type="password", id="password", name="password", required=True,
-                                  placeholder="8+ characters", cls="form-input"),
+                            Input(
+                                type="password",
+                                id="password",
+                                name="password",
+                                required=True,
+                                minlength=8,
+                                pattern=pw_pattern,
+                                title=pw_title,
+                                placeholder="8+ characters, 1 special char",
+                                cls="form-input",
+                            ),
+                            P(PASSWORD_POLICY_HINT, cls="form-hint"),
                             cls="form-group"
                         ),
                         Div(
