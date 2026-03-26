@@ -2,29 +2,11 @@ import json
 from fasthtml.common import *
 from app.supabase_db import db_select
 
-STATUS_BADGE = {
-    "live":        ("#10B981", "Live"),
-    "coming_soon": ("#F59E0B", "Coming Soon"),
-    "restricted":  ("#EF4444", "Restricted"),
-}
 FREQ_SHORT = {
     "Real-time": "Real-time", "Streaming": "Real-time",
     "Hourly": "Hourly", "Daily": "Daily", "Weekly": "Weekly",
     "Monthly": "Monthly", "Quarterly": "Quarterly", "Annual": "Annual",
     "Irregular": "Irregular", "One-off": "One-off",
-}
-CAT_COLORS = {
-    "Corporate Registries": "#6366F1",
-    "Financial Regulation": "#F59E0B",
-    "Real Estate":          "#10B981",
-    "Transportation":       "#3B82F6",
-    "Public Safety":        "#EF4444",
-    "Environment":          "#22C55E",
-    "Demographics":         "#8B5CF6",
-    "Health":               "#EC4899",
-    "Legal":                "#F97316",
-    "Education":            "#06B6D4",
-    "Electoral":            "#A855F7",
 }
 FREQ_FILTERS = [
     ("Real-time", "Real-time"),
@@ -565,10 +547,6 @@ CATALOG_STYLE = Style("""
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _cat_color(cat):
-    return CAT_COLORS.get(cat, "#64748B")
-
-
 def _fetch_user_sets(user_id):
     """Return (added_slugs, fav_slugs) for a user. fav_slugs = in any list."""
     added, favs = set(), set()
@@ -721,15 +699,12 @@ def _dataset_inline_detail(d):
 
 def _list_row(d, is_fav=False, ai_reason=None):
     slug   = d.get("slug", "")
-    status_color, status_label = STATUS_BADGE.get(d.get("status", "live"), ("#64748B", "Unknown"))
     cat    = d.get("category") or ""
     freq   = FREQ_SHORT.get(d.get("update_frequency") or "", "")
-    color  = _cat_color(cat)
 
     mid = Div(
         Span(d.get("title") or slug, cls="ds-name ds-name-btn"),
         Div(
-            Div(style=f"width:6px;height:6px;border-radius:50%;background:{color};flex-shrink:0;"),
             Span(cat, cls="ds-cat-label"),
             Span("·", cls="ds-sep"),
             Span(d.get("provider") or "", cls="ds-prov"),
@@ -741,7 +716,6 @@ def _list_row(d, is_fav=False, ai_reason=None):
     )
     right = Div(
         *([Span(freq, cls="badge badge-freq")] if freq else []),
-        Div(title=status_label, style=f"width:7px;height:7px;border-radius:50%;background:{status_color};"),
         _fav_btn(slug, is_fav),
         cls="ds-row-right",
         onclick="event.stopPropagation()",
