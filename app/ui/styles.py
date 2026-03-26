@@ -35,6 +35,19 @@ def get_app_style():
             --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
         }
 
+        html[data-theme="light"] {
+            --bg-page: #f1f5f9;
+            --bg-elevated: #ffffff;
+            --bg-surface: #ffffff;
+            --bg-card: #f8fafc;
+            --bg-muted: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --text-faint: #94a3b8;
+            --border: rgba(15, 23, 42, 0.1);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+        }
+
         *, *::before, *::after { box-sizing: border-box; }
 
         body.app-layout {
@@ -63,7 +76,7 @@ def get_app_style():
             padding: 12px 16px; border-radius: 8px;
             font-family: var(--font-body); font-size: 14px; margin-bottom: 16px;
         }
-        /* Ensure native opened dropdown menus match dark app theme. */
+        /* Ensure native opened dropdown menus match app theme. */
         select,
         select option {
             background: var(--bg-surface);

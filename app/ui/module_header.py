@@ -142,6 +142,62 @@ MODULE_HEADER_STYLE = Style("""
         background: rgba(255,255,255,0.08); color: var(--text-main);
         border-color: var(--text-faint);
     }
+
+    .mh-theme-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+        padding: 0;
+        font: inherit;
+    }
+    .mh-theme-toggle:hover {
+        background: rgba(255,255,255,0.08);
+        color: var(--text-main);
+        border-color: var(--text-faint);
+    }
+    .mh-theme-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    html[data-theme="dark"] .mh-theme-icon-moon,
+    html:not([data-theme]) .mh-theme-icon-moon {
+        display: none;
+    }
+    html[data-theme="light"] .mh-theme-icon-sun {
+        display: none;
+    }
+
+    html[data-theme="light"] .module-header {
+        background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+        box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+    }
+    html[data-theme="light"] .mh-slicer {
+        background: rgba(15, 23, 42, 0.04);
+        border-color: var(--border);
+        box-shadow: inset 0 1px 1px rgba(15, 23, 42, 0.06);
+    }
+    html[data-theme="light"] .mh-slicer-btn:hover {
+        background: rgba(15, 23, 42, 0.06);
+    }
+    html[data-theme="light"] .mh-theme-toggle:hover {
+        background: rgba(15, 23, 42, 0.06);
+    }
+    html[data-theme="light"] .mh-settings-link:hover {
+        background: rgba(15, 23, 42, 0.06);
+    }
+    html[data-theme="light"] .mh-signout:hover {
+        background: rgba(15, 23, 42, 0.06);
+    }
 """)
 
 
@@ -173,7 +229,17 @@ def odl_module_header(active_module="catalog", user=None):
 
     center = Div(slicer, cls="mh-slicer-wrap")
 
-    right_items = []
+    right_items = [
+        Button(
+            Span(icon_svg(IC.sun, width="16", height="16"), cls="mh-theme-icon mh-theme-icon-sun"),
+            Span(icon_svg(IC.moon, width="16", height="16"), cls="mh-theme-icon mh-theme-icon-moon"),
+            type="button",
+            id="theme-toggle",
+            cls="mh-theme-toggle",
+            title="Toggle light / dark theme",
+            aria_label="Toggle light or dark theme",
+        ),
+    ]
     if user:
         right_items.append(Div(user, cls="mh-user"))
         right_items.append(

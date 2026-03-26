@@ -30,6 +30,8 @@ class IC:
     chevron_left = "m15 18-6-6 6-6"
     chevron_right = "m9 18 6-6-6-6"
     credit_card = "M2 10h20 M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
+    sun = "M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+    moon = "M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"
 
 
 def icon_svg(d_path, width="18", height="18", **kwargs):
@@ -137,8 +139,8 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None,
     context_section = Div(
         Div(
             Img(src=avatar_url, style="width: 24px; height: 24px; border-radius: 4px; margin-right: 10px; object-fit: cover;") if avatar_url else
-            Div(org_name[0].upper(), style="width: 24px; height: 24px; border-radius: 4px; background: #374151; color: #fff; font-size: 11px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-weight: 700;"),
-            Span(org_name, style="font-weight: 600; font-size: 14px; color: #F3F4F6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"),
+            Div(org_name[0].upper(), cls="sidebar-org-fallback"),
+            Span(org_name, cls="sidebar-org-name"),
             style="display: flex; align-items: center; padding: 0 12px; margin-bottom: 20px;"
         ),
         Div("Home", cls="sidebar-title"),
@@ -155,6 +157,18 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None,
                 position: sticky; top: 60px; height: calc(100vh - 60px); overflow-y: auto;
             }
             .sidebar-section { padding: 0 16px; margin-bottom: 24px; }
+            .sidebar-org-fallback {
+                width: 24px; height: 24px; border-radius: 4px; margin-right: 10px;
+                background: #374151; color: #fff; font-size: 11px; font-weight: 700;
+                display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            }
+            .sidebar-org-name {
+                font-weight: 600; font-size: 14px; color: var(--text-main);
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            }
+            html[data-theme="light"] .sidebar-org-fallback {
+                background: #e2e8f0; color: #475569;
+            }
             .sidebar-title {
                 font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
                 color: #4B5563; text-transform: uppercase; letter-spacing: 1px;
@@ -171,6 +185,19 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None,
                 box-shadow: inset 2px 0 0 0 rgba(2, 132, 199, 0.65);
             }
             .sidebar-item.active span { opacity: 1; color: #0284C7; }
+            html[data-theme="light"] .app-sidebar {
+                background: #ffffff;
+                border-right: 1px solid var(--border);
+            }
+            html[data-theme="light"] .sidebar-title { color: #94a3b8; }
+            html[data-theme="light"] .sidebar-item { color: #475569; }
+            html[data-theme="light"] .sidebar-item:hover {
+                background: rgba(15,23,42,0.05); color: #0f172a;
+            }
+            html[data-theme="light"] .sidebar-item.active {
+                background: rgba(2,132,199,0.08); color: #0f172a;
+                box-shadow: inset 2px 0 0 0 rgba(2, 132, 199, 0.65);
+            }
         """),
         context_section,
         Div(
@@ -286,24 +313,40 @@ MODAL_STYLE = Style("""
         position: fixed; inset: 0; background: rgba(2,6,15,0.72);
         display: flex; align-items: center; justify-content: center; z-index: 9999;
     }
+    html[data-theme="light"] .modal-backdrop {
+        background: rgba(15,23,42,0.35);
+    }
     .modal-box {
         position: relative; background: rgba(15,23,42,0.98);
         border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
         padding: 28px; width: 400px; max-width: 92vw; z-index: 1;
         box-shadow: 0 24px 64px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04) inset;
     }
+    html[data-theme="light"] .modal-box {
+        background: #ffffff;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow), 0 0 0 1px rgba(15,23,42,0.04) inset;
+    }
     .modal-title { font-size: 16px; font-weight: 600; color: #F1F5F9; margin-bottom: 4px; }
+    html[data-theme="light"] .modal-title { color: var(--text-main); }
     .modal-sub { font-size: 13px; color: #94A3B8; margin-bottom: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    html[data-theme="light"] .modal-sub { color: var(--text-muted); }
     .modal-divider { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 16px 0; }
     .list-check-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
     .list-check-row:last-child { border-bottom: none; }
     .list-check-row input[type=checkbox] { width: 16px; height: 16px; accent-color: #0284C7; cursor: pointer; flex-shrink: 0; }
     .list-check-name { font-size: 14px; color: #E2E8F0; flex: 1; }
+    html[data-theme="light"] .list-check-name { color: var(--text-main); }
     .modal-new-list { display: flex; gap: 8px; margin-top: 4px; }
     .modal-new-input {
         flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
         color: #F1F5F9; padding: 8px 12px; border-radius: 6px;
         font-family: 'Inter', sans-serif; font-size: 13px; outline: none; transition: border-color 0.2s;
+    }
+    html[data-theme="light"] .modal-new-input {
+        background: var(--bg-muted);
+        border: 1px solid var(--border);
+        color: var(--text-main);
     }
     .modal-new-input:focus { border-color: rgba(56,189,248,0.35); box-shadow: 0 0 0 1px rgba(2,132,199,0.12); }
     .modal-new-input::placeholder { color: #64748B; }
@@ -320,6 +363,7 @@ MODAL_STYLE = Style("""
     }
     .modal-done-btn:hover { background: #0369A1; }
     .modal-empty { font-size: 13px; color: #94A3B8; padding: 8px 0 12px; }
+    html[data-theme="light"] .modal-empty { color: var(--text-muted); }
 """)
 
 
@@ -365,12 +409,36 @@ def module_page_layout(page_title, current_path, user, *content,
             cls="app-layout"
         )
 
+    theme_init = Script("""
+(function(){
+  try {
+    var k='odl-theme', s=localStorage.getItem(k);
+    if(!s) s = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', s);
+  } catch(e) {}
+})();
+""")
+    theme_toggle = Script("""
+document.addEventListener('DOMContentLoaded', function() {
+  var btn = document.getElementById('theme-toggle');
+  if (!btn) return;
+  btn.addEventListener('click', function() {
+    var cur = document.documentElement.getAttribute('data-theme') || 'dark';
+    var next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('odl-theme', next); } catch(e) {}
+  });
+});
+""")
+
     return Html(
         Head(
             Title(f"{page_title} | ODL App"),
+            theme_init,
             Script(src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"),
             Link(rel="stylesheet", href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap"),
-            get_app_style()
+            get_app_style(),
+            theme_toggle,
         ),
         Body(body_content, cls="app-layout")
     )
