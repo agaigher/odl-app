@@ -6,6 +6,7 @@ import base64
 import httpx as _httpx
 from urllib.parse import urlencode
 from fasthtml.common import *
+from starlette.responses import Response
 
 from app.config import (
     APP_URL,
@@ -25,9 +26,11 @@ ENTRY_ROUTE = "/catalog"
 def _sf_base_url():
     return f"https://{SNOWFLAKE_ACCOUNT}.snowflakecomputing.com"
 
-def _to_entry_route():
-    # Works for both normal form posts and HTMX requests.
-    return RedirectResponse(ENTRY_ROUTE, status_code=303, headers={"HX-Redirect": ENTRY_ROUTE})
+def _to_entry_route(req=None):
+    # HTMX requests should use HX-Redirect to trigger full-page navigation.
+    if req and req.headers.get("HX-Request") == "true":
+        return Response(status_code=200, headers={"HX-Redirect": ENTRY_ROUTE})
+    return RedirectResponse(ENTRY_ROUTE, status_code=303)
 
 
 def register(rt):
@@ -39,7 +42,7 @@ def register(rt):
         return AuthPage(mode="login")
 
     @rt("/login", methods=["POST"])
-    def post_login(email: str, password: str, session):
+    def post_login(req, email: str, password: str, session):
         supabase = get_auth_client()
         if not supabase:
             return Div("Supabase not configured.", cls="error-text")
@@ -47,7 +50,7 @@ def register(rt):
             res = supabase.sign_in_with_password({"email": email, "password": password})
             session['user'] = email
             session['access_token'] = res.session.access_token
-            return _to_entry_route()
+            return _to_entry_route(req)
         except Exception as e:
             return Div(f"Login failed: {str(e)}", cls="error-text")
 
@@ -62,7 +65,7 @@ def register(rt):
         return AuthPage(mode="register")
 
     @rt("/register", methods=["POST"])
-    def post_register(email: str, password: str, session):
+    def post_register(req, email: str, password: str, session):
         supabase = get_auth_client()
         if not supabase:
             return Div("Supabase not configured.", cls="error-text")
@@ -71,15 +74,15 @@ def register(rt):
             session['user'] = email
             if res.session:
                 session['access_token'] = res.session.access_token
-            return _to_entry_route()
+            return _to_entry_route(req)
         except Exception as e:
             if "User already registered" in str(e):
                 return Div("Account already exists. Try logging in.", cls="error-text")
             return Div(f"Registration failed: {str(e)}", cls="error-text")
 
     @rt("/signup", methods=["POST"])
-    def post_signup(email: str, password: str, session):
-        return post_register(email=email, password=password, session=session)
+    def post_signup(req, email: str, password: str, session):
+        return post_register(req=req, email=email, password=password, session=session)
 
     @rt("/logout")
     def get_logout(session):
