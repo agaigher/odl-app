@@ -19,9 +19,15 @@ from app.auth.middleware import get_user_id
 from app.pages.auth import AuthPage
 from app.pages.forgot_password import ForgotPasswordPage, ResetPasswordPage
 
+ENTRY_ROUTE = "/catalog"
+
 
 def _sf_base_url():
     return f"https://{SNOWFLAKE_ACCOUNT}.snowflakecomputing.com"
+
+def _to_entry_route():
+    # Works for both normal form posts and HTMX requests.
+    return RedirectResponse(ENTRY_ROUTE, status_code=303, headers={"HX-Redirect": ENTRY_ROUTE})
 
 
 def register(rt):
@@ -29,7 +35,7 @@ def register(rt):
     @rt("/login", methods=["GET"])
     def get_login(session):
         if get_user_id(session):
-            return RedirectResponse('/projects', status_code=303)
+            return RedirectResponse(ENTRY_ROUTE, status_code=303)
         return AuthPage(mode="login")
 
     @rt("/login", methods=["POST"])
@@ -41,7 +47,7 @@ def register(rt):
             res = supabase.sign_in_with_password({"email": email, "password": password})
             session['user'] = email
             session['access_token'] = res.session.access_token
-            return Script("window.location.href = '/projects';")
+            return _to_entry_route()
         except Exception as e:
             return Div(f"Login failed: {str(e)}", cls="error-text")
 
@@ -52,7 +58,7 @@ def register(rt):
     @rt("/register", methods=["GET"])
     def get_register(session):
         if get_user_id(session):
-            return RedirectResponse('/projects', status_code=303)
+            return RedirectResponse(ENTRY_ROUTE, status_code=303)
         return AuthPage(mode="register")
 
     @rt("/register", methods=["POST"])
@@ -65,11 +71,15 @@ def register(rt):
             session['user'] = email
             if res.session:
                 session['access_token'] = res.session.access_token
-            return Script("window.location.href = '/projects';")
+            return _to_entry_route()
         except Exception as e:
             if "User already registered" in str(e):
                 return Div("Account already exists. Try logging in.", cls="error-text")
             return Div(f"Registration failed: {str(e)}", cls="error-text")
+
+    @rt("/signup", methods=["POST"])
+    def post_signup(email: str, password: str, session):
+        return post_register(email=email, password=password, session=session)
 
     @rt("/logout")
     def get_logout(session):
@@ -157,7 +167,7 @@ def register(rt):
             session['user'] = f"{username}@snowflake"
             session['access_token'] = access_token
             session['auth_provider'] = 'snowflake'
-            return RedirectResponse('/projects', status_code=303)
+            return RedirectResponse(ENTRY_ROUTE, status_code=303)
         except Exception:
             return RedirectResponse('/login?error=snowflake_failed', status_code=303)
 
@@ -171,7 +181,7 @@ def register(rt):
             result = supabase.exchange_code_for_session({"auth_code": code})
             session['user'] = result.user.email
             session['access_token'] = result.session.access_token
-            return RedirectResponse('/projects', status_code=303)
+            return RedirectResponse(ENTRY_ROUTE, status_code=303)
         except Exception:
             return RedirectResponse('/login?error=oauth_failed', status_code=303)
 

@@ -8,12 +8,14 @@ from app.auth.middleware import get_user_id
 from app.ui.components import page_layout
 from app.pages.dashboard import Dashboard
 
+ENTRY_ROUTE = "/catalog"
+
 
 def register(rt):
 
     @rt("/")
     def get_home(session):
-        return RedirectResponse('/catalog', status_code=303)
+        return RedirectResponse(ENTRY_ROUTE, status_code=303)
 
     @rt("/dashboard")
     def get_dashboard(session):
