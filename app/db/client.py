@@ -3,6 +3,7 @@ Core Supabase PostgREST operations: insert, select, patch, delete.
 """
 import httpx
 import re
+from datetime import datetime
 
 from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
 
@@ -135,6 +136,94 @@ def _matches_keywords(dataset, keywords):
     return any(k.lower() in hay for k in keywords if k)
 
 
+def _parse_iso_datetime(value):
+    if not value or not isinstance(value, str):
+        return None
+    raw = value.strip()
+    if not raw:
+        return None
+    if raw.endswith("Z"):
+        raw = raw[:-1] + "+00:00"
+    try:
+        return datetime.fromisoformat(raw)
+    except ValueError:
+        return None
+
+
+def _extract_size_mb(dataset):
+    direct_mb_keys = (
+        "size_mb",
+        "dataset_size_mb",
+        "file_size_mb",
+        "download_size_mb",
+    )
+    for key in direct_mb_keys:
+        value = dataset.get(key)
+        if isinstance(value, (int, float)) and value >= 0:
+            return float(value)
+
+    bytes_keys = (
+        "size_bytes",
+        "dataset_size_bytes",
+        "file_size_bytes",
+        "bytes",
+    )
+    for key in bytes_keys:
+        value = dataset.get(key)
+        if isinstance(value, (int, float)) and value >= 0:
+            return float(value) / (1024 * 1024)
+
+    text = f'{dataset.get("description") or ""} {dataset.get("long_description") or ""}'.lower()
+    match = re.search(r"(\d[\d,]*(?:\.\d+)?)\s*(gb|gib|mb|mib|kb|kib|bytes?|b)\b", text)
+    if not match:
+        return None
+    amount = float(match.group(1).replace(",", ""))
+    unit = match.group(2)
+    if unit in ("gb", "gib"):
+        return amount * 1024
+    if unit in ("mb", "mib"):
+        return amount
+    if unit in ("kb", "kib"):
+        return amount / 1024
+    return amount / (1024 * 1024)
+
+
+def _extract_sort_datetime(dataset):
+    for key in ("updated_at", "last_updated", "modified_at", "created_at"):
+        parsed = _parse_iso_datetime(dataset.get(key))
+        if parsed is not None:
+            return parsed
+    return datetime.min
+
+
+def _sort_datasets(rows, sort):
+    sort_key = (sort or "recent").strip().lower()
+    decorated = [
+        {
+            "row": d,
+            "title": str(d.get("title") or d.get("slug") or "").lower(),
+            "size_mb": _extract_size_mb(d),
+            "row_est": _extract_row_estimate(d),
+            "dt": _extract_sort_datetime(d),
+        }
+        for d in rows
+    ]
+
+    if sort_key == "name_asc":
+        return [i["row"] for i in sorted(decorated, key=lambda i: i["title"])]
+    if sort_key == "name_desc":
+        return [i["row"] for i in sorted(decorated, key=lambda i: i["title"], reverse=True)]
+    if sort_key == "size_desc":
+        return [i["row"] for i in sorted(decorated, key=lambda i: (i["size_mb"] is None, -(i["size_mb"] or 0.0), i["title"]))]
+    if sort_key == "size_asc":
+        return [i["row"] for i in sorted(decorated, key=lambda i: (i["size_mb"] is None, (i["size_mb"] or 0.0), i["title"]))]
+    if sort_key == "rows_desc":
+        return [i["row"] for i in sorted(decorated, key=lambda i: (i["row_est"] is None, -(i["row_est"] or 0), i["title"]))]
+    if sort_key == "rows_asc":
+        return [i["row"] for i in sorted(decorated, key=lambda i: (i["row_est"] is None, (i["row_est"] or 0), i["title"]))]
+    return [i["row"] for i in sorted(decorated, key=lambda i: (i["dt"], i["title"]), reverse=True)]
+
+
 def _fetch_all(url, params, limit=10000):
     h = _headers()
     all_rows = []
@@ -152,7 +241,7 @@ def _fetch_all(url, params, limit=10000):
 
 
 def get_datasets_paginated(category="", q="", access="", freq="", page=1, per_page=25,
-                           provider="", status="", tags="", updated_after="", size="", keywords=""):
+                           provider="", status="", tags="", updated_after="", size="", keywords="", sort="recent"):
     url = f"{SUPABASE_URL}/rest/v1/datasets"
     params = {}
 
@@ -219,15 +308,26 @@ def get_datasets_paginated(category="", q="", access="", freq="", page=1, per_pa
     if q:
         params["or"] = f"(title.ilike.*{q}*,description.ilike.*{q}*,provider.ilike.*{q}*,category.ilike.*{q}*)"
 
-    if size or keyword_list:
+    sort_key = (sort or "recent").strip().lower()
+    requires_full_scan = bool(size or keyword_list or sort_key in {"size_desc", "size_asc", "rows_desc", "rows_asc"})
+
+    if requires_full_scan:
         rows = _fetch_all(url, params=params, limit=12000)
         filtered = [
             d for d in rows
             if _matches_size_bucket(d, size) and _matches_keywords(d, keyword_list)
         ]
+        filtered = _sort_datasets(filtered, sort_key)
         total = len(filtered)
         offset = (page - 1) * per_page
         return filtered[offset: offset + per_page], total
+
+    order_map = {
+        "recent": "created_at.desc",
+        "name_asc": "title.asc",
+        "name_desc": "title.desc",
+    }
+    params["order"] = order_map.get(sort_key, "created_at.desc")
 
     offset = (page - 1) * per_page
     h = _headers()

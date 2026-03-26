@@ -45,6 +45,15 @@ SIZE_FILTERS = [
     ("Up to 100m rows", "le_100m"),
     ("100m+ rows", "gt_100m"),
 ]
+SORT_OPTIONS = [
+    ("Most recently updated", "recent"),
+    ("Name (A to Z)", "name_asc"),
+    ("Name (Z to A)", "name_desc"),
+    ("Size (MB): largest first", "size_desc"),
+    ("Size (MB): smallest first", "size_asc"),
+    ("Row count: largest first", "rows_desc"),
+    ("Row count: smallest first", "rows_asc"),
+]
 
 CATALOG_STYLE = Style("""
     /* Dark surfaces — aligned with dashboard (no stark white on #080a0f) */
@@ -357,6 +366,7 @@ CATALOG_STYLE = Style("""
     .ds-count-bar { display: flex; align-items: center; justify-content: space-between;
         padding: 8px 16px; border-bottom: 1px solid rgba(255,255,255,0.06);
         font-size: 12px; color: #94A3B8; background: rgba(0,0,0,0.2); }
+    .ds-count-controls { display: flex; align-items: center; gap: 12px; }
     .per-page-wrap { display: flex; align-items: center; gap: 6px; }
     .per-page-label { font-size: 11px; color: #64748B; }
     .per-page-select { font-size: 12px; color: #CBD5E1; background: rgba(255,255,255,0.06);
@@ -770,7 +780,7 @@ def _sidebar(counts, active_cat, total):
 
 # ── Search area ───────────────────────────────────────────────────────────────
 
-def _keyword_search_area(q, category, freq_f="", updated_after_f="", size_f="", keywords_f=""):
+def _keyword_search_area(q, category, freq_f="", updated_after_f="", size_f="", keywords_f="", sort_f="recent"):
     search_svg = NotStr('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>')
 
     kw_bar = Div(
@@ -781,13 +791,14 @@ def _keyword_search_area(q, category, freq_f="", updated_after_f="", size_f="", 
               hx_get="/catalog/search",
               hx_trigger="input changed delay:280ms, search",
               hx_target="#catalog-body",
-              hx_include="[name='q'],[name='category'],[name='freq'],[name='updated_after'],[name='size'],[name='keywords']",
+              hx_include="[name='q'],[name='category'],[name='freq'],[name='updated_after'],[name='size'],[name='keywords'],[name='sort']",
               hx_push_url="true"),
         Input(type="hidden", name="category", value=category, id="kw-filter-category"),
         Input(type="hidden", name="freq",     value=freq_f, id="kw-filter-freq"),
         Input(type="hidden", name="updated_after", value=updated_after_f, id="kw-filter-updated-after"),
         Input(type="hidden", name="size", value=size_f, id="kw-filter-size"),
         Input(type="hidden", name="keywords", value=keywords_f, id="kw-filter-keywords"),
+        Input(type="hidden", name="sort", value=sort_f or "recent", id="kw-filter-sort"),
         id="kw-bar", cls="kw-bar"
     )
 
@@ -923,6 +934,11 @@ def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f="", keywo
             return pp ? pp.value : '25';
         }
 
+        function _currentSort() {
+            const sort = document.getElementById('kw-filter-sort');
+            return sort ? (sort.value || 'recent') : 'recent';
+        }
+
         function _readFilter(filterName) {
             const id = _catalogFilterInputIds[filterName];
             const el = id ? document.getElementById(id) : null;
@@ -943,6 +959,7 @@ def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f="", keywo
                 updated_after: (_readFilter('updated_after') || []).join(','),
                 size: (_readFilter('size') || []).join(','),
                 keywords: (_readFilter('keywords') || []).join(','),
+                sort: _currentSort(),
                 page: '1',
                 per_page: _currentPerPage(),
             });
@@ -1101,7 +1118,7 @@ def _page_nums(page, total_pages):
 
 
 def _list_body(page_datasets, total, added, favs, heading, subtext, page=1, per_page=25,
-               q="", category="", freq_f="", updated_after_f="", size_f="", keywords_f=""):
+               q="", category="", freq_f="", updated_after_f="", size_f="", keywords_f="", sort_f="recent"):
     if not page_datasets:
         return Div(
             Div(H1(heading, style="font-size:18px;font-weight:600;color:#F8FAFC;letter-spacing:-0.03em;"),
@@ -1113,10 +1130,11 @@ def _list_body(page_datasets, total, added, favs, heading, subtext, page=1, per_
     total_pages = max(1, (total + per_page - 1) // per_page)
     page = max(1, min(page, total_pages))
 
-    qs_base = (
+    qs_base_no_sort = (
         f"q={q}&category={category}&freq={freq_f}"
         f"&updated_after={updated_after_f}&size={size_f}&keywords={keywords_f}"
     )
+    qs_base = f"{qs_base_no_sort}&sort={sort_f or 'recent'}"
 
     per_page_select = Select(
         *[Option(str(n), value=str(n), selected=(n == per_page)) for n in [25, 50, 100, 200]],
@@ -1124,10 +1142,24 @@ def _list_body(page_datasets, total, added, favs, heading, subtext, page=1, per_
         onchange=f"htmx.ajax('GET', '/catalog/search?{qs_base}&page=1&per_page=' + this.value, "
                  f"{{target:'#catalog-body', pushUrl:'/catalog?{qs_base}&page=1&per_page=' + this.value}})"
     )
+    sort_select = Select(
+        *[Option(lbl, value=val, selected=((sort_f or "recent") == val)) for lbl, val in SORT_OPTIONS],
+        cls="per-page-select",
+        onchange=(
+            "var hidden=document.getElementById('kw-filter-sort');"
+            "if(hidden){hidden.value=this.value;}"
+            f"htmx.ajax('GET', '/catalog/search?{qs_base_no_sort}&sort=' + encodeURIComponent(this.value) + '&page=1&per_page={per_page}', "
+            f"{{target:'#catalog-body', pushUrl:'/catalog?{qs_base_no_sort}&sort=' + encodeURIComponent(this.value) + '&page=1&per_page={per_page}'}})"
+        )
+    )
 
     count_bar = Div(
         Span(f"{total} dataset{'s' if total != 1 else ''}"),
-        Div(Span("View", cls="per-page-label"), per_page_select, cls="per-page-wrap"),
+        Div(
+            Div(Span("Sort", cls="per-page-label"), sort_select, cls="per-page-wrap"),
+            Div(Span("View", cls="per-page-label"), per_page_select, cls="per-page-wrap"),
+            cls="ds-count-controls"
+        ),
         cls="ds-count-bar"
     )
 
@@ -1165,12 +1197,12 @@ def _list_body(page_datasets, total, added, favs, heading, subtext, page=1, per_
 
 # ── Public components ─────────────────────────────────────────────────────────
 
-def DataCatalog(category="", q="", user_id="", freq_filter="", updated_after_filter="", size_filter="", keywords_filter="", page=1, per_page=25):
+def DataCatalog(category="", q="", user_id="", freq_filter="", updated_after_filter="", size_filter="", keywords_filter="", sort_filter="recent", page=1, per_page=25):
     from app.supabase_db import get_datasets_paginated, get_category_counts
     try:
         datasets, total_matches = get_datasets_paginated(
             category, q, "", freq_filter, page, per_page,
-            updated_after=updated_after_filter, size=size_filter, keywords=keywords_filter
+            updated_after=updated_after_filter, size=size_filter, keywords=keywords_filter, sort=sort_filter
         )
         counts, total_all = get_category_counts()
     except Exception:
@@ -1263,12 +1295,13 @@ def DataCatalog(category="", q="", user_id="", freq_filter="", updated_after_fil
             _sidebar(counts, category, total_all),
             Div(cls="cat-splitter", id="cat-splitter-left", title="Drag to resize columns (double-click to reset)"),
             Div(
-                _keyword_search_area(q, category, freq_filter, updated_after_filter, size_filter, keywords_filter),
+                _keyword_search_area(q, category, freq_filter, updated_after_filter, size_filter, keywords_filter, sort_filter),
                 Div(
                     _list_body(datasets, total_matches, added, favs, heading, subtext,
                                page=page, per_page=per_page,
                                q=q, category=category, freq_f=freq_filter,
-                               updated_after_f=updated_after_filter, size_f=size_filter, keywords_f=keywords_filter),
+                               updated_after_f=updated_after_filter, size_f=size_filter, keywords_f=keywords_filter,
+                               sort_f=sort_filter),
                     id="catalog-body", cls="cat-main"
                 ),
                 cls="cat-results-col"
@@ -1284,12 +1317,12 @@ def DataCatalog(category="", q="", user_id="", freq_filter="", updated_after_fil
     )
 
 
-def SearchCatalogResults(q="", category="", user_id="", freq_filter="", updated_after_filter="", size_filter="", keywords_filter="", page=1, per_page=25):
+def SearchCatalogResults(q="", category="", user_id="", freq_filter="", updated_after_filter="", size_filter="", keywords_filter="", sort_filter="recent", page=1, per_page=25):
     from app.supabase_db import get_datasets_paginated
     try:
         datasets, total_matches = get_datasets_paginated(
             category, q, "", freq_filter, page, per_page,
-            updated_after=updated_after_filter, size=size_filter, keywords=keywords_filter
+            updated_after=updated_after_filter, size=size_filter, keywords=keywords_filter, sort=sort_filter
         )
     except Exception:
         datasets, total_matches = [], 0
@@ -1303,7 +1336,8 @@ def SearchCatalogResults(q="", category="", user_id="", freq_filter="", updated_
     return _list_body(datasets, total_matches, added, favs, heading, subtext,
                       page=page, per_page=per_page,
                       q=q, category=category, freq_f=freq_filter,
-                      updated_after_f=updated_after_filter, size_f=size_filter, keywords_f=keywords_filter)
+                      updated_after_f=updated_after_filter, size_f=size_filter, keywords_f=keywords_filter,
+                      sort_f=sort_filter)
 
 
 def FavouritesView(user_id=""):
