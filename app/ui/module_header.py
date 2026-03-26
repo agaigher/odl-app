@@ -14,15 +14,11 @@ MODULES = [
     ("Catalog",      "/catalog",    "catalog",  IC.book),
     ("Explore",      "/explore",    "explore",  IC.bolt),
 ]
-
-
-# ── Header style ──────────────────────────────────────────────────────────────
-
 MODULE_HEADER_STYLE = Style("""
     .module-header {
-        background: linear-gradient(180deg, #1a1711 0%, #14120b 100%);
-        border-bottom: 1px solid rgba(255,255,255,0.06);
-        box-shadow: 0 1px 0 rgba(255,255,255,0.02);
+        background: linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-page) 100%);
+        border-bottom: 1px solid var(--border);
+        box-shadow: 0 1px 0 var(--border-subtle);
         padding: 0 28px; height: 60px;
         display: flex; align-items: center; justify-content: space-between;
         position: sticky; top: 0; z-index: 1000;
@@ -51,11 +47,11 @@ MODULE_HEADER_STYLE = Style("""
 
     .mh-slicer {
         display: flex; align-items: center;
-        background: rgba(255,255,255,0.03);
+        background: var(--bg-surface);
         border: 1px solid var(--border);
         border-radius: 12px; padding: 3px;
         gap: 2px;
-        box-shadow: inset 0 1px 1px rgba(0,0,0,0.2);
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
     }
 
     .mh-slicer-btn {
@@ -73,15 +69,15 @@ MODULE_HEADER_STYLE = Style("""
 
     .mh-slicer-btn:hover {
         color: var(--text-main);
-        background: rgba(255,255,255,0.05);
+        background: var(--bg-muted);
     }
 
     .mh-slicer-btn.active {
         color: var(--text-main);
-        background: rgba(2, 132, 199, 0.12);
-        border-color: rgba(2, 132, 199, 0.3);
+        background: var(--accent-light);
+        border-color: var(--accent);
         font-weight: 600;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 0 0 1px rgba(2, 132, 199, 0.05) inset;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     .mh-slicer-btn.active .mh-slicer-icon {
         color: var(--accent);
@@ -116,18 +112,18 @@ MODULE_HEADER_STYLE = Style("""
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 30px;
-        height: 30px;
-        border-radius: 6px;
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
         border: 1px solid var(--border);
         color: var(--text-muted);
         text-decoration: none;
         transition: all 0.15s;
     }
     .mh-settings-link:hover {
-        background: rgba(255,255,255,0.08);
+        background: var(--bg-surface);
         color: var(--text-main);
-        border-color: var(--text-faint);
+        border-color: var(--text-muted);
     }
 
     .mh-signout {
@@ -139,17 +135,17 @@ MODULE_HEADER_STYLE = Style("""
         font-family: var(--font-body);
     }
     .mh-signout:hover {
-        background: rgba(255,255,255,0.08); color: var(--text-main);
-        border-color: var(--text-faint);
+        background: var(--bg-surface); color: var(--text-main);
+        border-color: var(--text-muted);
     }
 
     .mh-theme-toggle {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 30px;
-        height: 30px;
-        border-radius: 6px;
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
         border: 1px solid var(--border);
         background: transparent;
         color: var(--text-muted);
@@ -159,9 +155,9 @@ MODULE_HEADER_STYLE = Style("""
         font: inherit;
     }
     .mh-theme-toggle:hover {
-        background: rgba(255,255,255,0.08);
+        background: var(--bg-surface);
         color: var(--text-main);
-        border-color: var(--text-faint);
+        border-color: var(--text-muted);
     }
     .mh-theme-icon {
         display: flex;
@@ -177,26 +173,9 @@ MODULE_HEADER_STYLE = Style("""
     }
 
     html[data-theme="light"] .module-header {
-        background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
-        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-        box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
-    }
-    html[data-theme="light"] .mh-slicer {
-        background: rgba(15, 23, 42, 0.04);
-        border-color: var(--border);
-        box-shadow: inset 0 1px 1px rgba(15, 23, 42, 0.06);
-    }
-    html[data-theme="light"] .mh-slicer-btn:hover {
-        background: rgba(15, 23, 42, 0.06);
-    }
-    html[data-theme="light"] .mh-theme-toggle:hover {
-        background: rgba(15, 23, 42, 0.06);
-    }
-    html[data-theme="light"] .mh-settings-link:hover {
-        background: rgba(15, 23, 42, 0.06);
-    }
-    html[data-theme="light"] .mh-signout:hover {
-        background: rgba(15, 23, 42, 0.06);
+        background: linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-page) 100%);
+        border-bottom: 1px solid var(--border);
+        box-shadow: 0 1px 0 var(--border-subtle);
     }
 """)
 

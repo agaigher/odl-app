@@ -151,53 +151,37 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None,
     return Nav(
         Style("""
             .app-sidebar {
-                width: 240px; background: #14120b;
-                border-right: 1px solid rgba(255,255,255,0.05);
+                width: 240px; background: var(--bg-elevated);
+                border-right: 1px solid var(--border);
                 padding: 24px 0; display: flex; flex-direction: column; flex-shrink: 0;
                 position: sticky; top: 60px; height: calc(100vh - 60px); overflow-y: auto;
             }
             .sidebar-section { padding: 0 16px; margin-bottom: 24px; }
             .sidebar-org-fallback {
                 width: 24px; height: 24px; border-radius: 4px; margin-right: 10px;
-                background: #374151; color: #fff; font-size: 11px; font-weight: 700;
+                background: var(--bg-muted); color: var(--text-main); font-size: 11px; font-weight: 700;
                 display: flex; align-items: center; justify-content: center; flex-shrink: 0;
             }
             .sidebar-org-name {
                 font-weight: 600; font-size: 14px; color: var(--text-main);
                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             }
-            html[data-theme="light"] .sidebar-org-fallback {
-                background: #e2e8f0; color: #475569;
-            }
             .sidebar-title {
-                font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
-                color: #4B5563; text-transform: uppercase; letter-spacing: 1px;
+                font-family: var(--font-display); font-size: 10px; font-weight: 700;
+                color: var(--text-faint); text-transform: uppercase; letter-spacing: 1px;
                 margin-bottom: 8px; padding: 0 12px;
             }
             .sidebar-item {
-                display: flex; align-items: center; padding: 8px 12px; color: #9CA3AF;
+                display: flex; align-items: center; padding: 8px 12px; color: var(--text-muted);
                 text-decoration: none; font-size: 13px; font-weight: 500;
                 border-radius: 6px; margin-bottom: 2px; transition: all 0.15s;
             }
-            .sidebar-item:hover { background: rgba(255,255,255,0.05); color: #F9FAFB; }
+            .sidebar-item:hover { background: var(--bg-surface); color: var(--text-main); }
             .sidebar-item.active {
-                background: rgba(255,255,255,0.06); color: #FFFFFF; font-weight: 600;
-                box-shadow: inset 2px 0 0 0 rgba(2, 132, 199, 0.65);
+                background: var(--accent-light); color: var(--text-main); font-weight: 600;
+                box-shadow: inset 2px 0 0 0 var(--accent);
             }
-            .sidebar-item.active span { opacity: 1; color: #0284C7; }
-            html[data-theme="light"] .app-sidebar {
-                background: #ffffff;
-                border-right: 1px solid var(--border);
-            }
-            html[data-theme="light"] .sidebar-title { color: #94a3b8; }
-            html[data-theme="light"] .sidebar-item { color: #475569; }
-            html[data-theme="light"] .sidebar-item:hover {
-                background: rgba(15,23,42,0.05); color: #0f172a;
-            }
-            html[data-theme="light"] .sidebar-item.active {
-                background: rgba(2,132,199,0.08); color: #0f172a;
-                box-shadow: inset 2px 0 0 0 rgba(2, 132, 199, 0.65);
-            }
+            .sidebar-item.active span { opacity: 1; color: var(--accent); }
         """),
         context_section,
         Div(
@@ -310,60 +294,44 @@ def _resolve_org_project_context(user, session):
 
 MODAL_STYLE = Style("""
     .modal-backdrop {
-        position: fixed; inset: 0; background: rgba(2,6,15,0.72);
+        position: fixed; inset: 0; background: rgba(0,0,0,0.6);
         display: flex; align-items: center; justify-content: center; z-index: 9999;
-    }
-    html[data-theme="light"] .modal-backdrop {
-        background: rgba(15,23,42,0.35);
+        backdrop-filter: blur(4px);
     }
     .modal-box {
-        position: relative; background: rgba(15,23,42,0.98);
-        border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+        position: relative; background: var(--bg-elevated);
+        border: 1px solid var(--border); border-radius: 12px;
         padding: 28px; width: 400px; max-width: 92vw; z-index: 1;
-        box-shadow: 0 24px 64px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04) inset;
+        box-shadow: var(--shadow);
     }
-    html[data-theme="light"] .modal-box {
-        background: #ffffff;
-        border: 1px solid var(--border);
-        box-shadow: var(--shadow), 0 0 0 1px rgba(15,23,42,0.04) inset;
-    }
-    .modal-title { font-size: 16px; font-weight: 600; color: #F1F5F9; margin-bottom: 4px; }
-    html[data-theme="light"] .modal-title { color: var(--text-main); }
-    .modal-sub { font-size: 13px; color: #94A3B8; margin-bottom: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    html[data-theme="light"] .modal-sub { color: var(--text-muted); }
-    .modal-divider { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 16px 0; }
-    .list-check-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .modal-title { font-size: 16px; font-weight: 600; color: var(--text-main); margin-bottom: 4px; }
+    .modal-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .modal-divider { border: none; border-top: 1px solid var(--border-subtle); margin: 16px 0; }
+    .list-check-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-subtle); }
     .list-check-row:last-child { border-bottom: none; }
-    .list-check-row input[type=checkbox] { width: 16px; height: 16px; accent-color: #0284C7; cursor: pointer; flex-shrink: 0; }
-    .list-check-name { font-size: 14px; color: #E2E8F0; flex: 1; }
-    html[data-theme="light"] .list-check-name { color: var(--text-main); }
+    .list-check-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+    .list-check-name { font-size: 14px; color: var(--text-main); flex: 1; }
     .modal-new-list { display: flex; gap: 8px; margin-top: 4px; }
     .modal-new-input {
-        flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-        color: #F1F5F9; padding: 8px 12px; border-radius: 6px;
-        font-family: 'Inter', sans-serif; font-size: 13px; outline: none; transition: border-color 0.2s;
+        flex: 1; background: var(--bg-surface); border: 1px solid var(--border);
+        color: var(--text-main); padding: 8px 12px; border-radius: 6px;
+        font-family: var(--font-body); font-size: 13px; outline: none; transition: border-color 0.2s;
     }
-    html[data-theme="light"] .modal-new-input {
-        background: var(--bg-muted);
-        border: 1px solid var(--border);
-        color: var(--text-main);
-    }
-    .modal-new-input:focus { border-color: rgba(56,189,248,0.35); box-shadow: 0 0 0 1px rgba(2,132,199,0.12); }
-    .modal-new-input::placeholder { color: #64748B; }
+    .modal-new-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+    .modal-new-input::placeholder { color: var(--text-faint); }
     .modal-create-btn {
-        background: rgba(2,132,199,0.15); color: #7dd3fc; border: 1px solid rgba(56,189,248,0.25);
+        background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent);
         padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600;
-        cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap; transition: background 0.15s;
+        cursor: pointer; font-family: var(--font-body); white-space: nowrap; transition: all 0.2s;
     }
-    .modal-create-btn:hover { background: rgba(2,132,199,0.22); }
+    .modal-create-btn:hover { background: var(--accent); color: white; }
     .modal-done-btn {
-        background: #0284C7; color: #ffffff; border: none;
+        background: var(--accent); color: #ffffff; border: none;
         padding: 9px 22px; border-radius: 6px; font-size: 13px; font-weight: 600;
-        cursor: pointer; font-family: 'Inter', sans-serif; float: right; transition: background 0.15s;
+        cursor: pointer; font-family: var(--font-body); float: right; transition: all 0.2s;
     }
-    .modal-done-btn:hover { background: #0369A1; }
-    .modal-empty { font-size: 13px; color: #94A3B8; padding: 8px 0 12px; }
-    html[data-theme="light"] .modal-empty { color: var(--text-muted); }
+    .modal-done-btn:hover { background: var(--accent-hover); }
+    .modal-empty { font-size: 13px; color: var(--text-muted); padding: 8px 0 12px; }
 """)
 
 

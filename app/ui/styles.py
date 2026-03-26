@@ -13,39 +13,57 @@ def get_app_style():
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap');
 
         :root {
+            /* Typography */
             --font-display: "Space Grotesk", system-ui, sans-serif;
             --font-body: "Inter", system-ui, sans-serif;
             --font-mono: "JetBrains Mono", ui-monospace, monospace;
-            --bg-page: #14120b;
-            --bg-elevated: #0f1118;
-            --bg-surface: #141824;
-            --bg-card: #161a2a;
-            --bg-muted: #0c1018;
-            --text-main: #F8FAFC;
-            --text-muted: #94A3B8;
-            --text-faint: #475569;
+
+            /* Dark Palette (Default) */
+            --bg-page: #09090b;
+            --bg-elevated: #111114;
+            --bg-surface: #18181b;
+            --bg-card: #18181b;
+            --bg-muted: #27272a;
+            --text-main: #fafafa;
+            --text-muted: #a1a1aa;
+            --text-faint: #52525b;
+            
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --accent-light: rgba(99, 102, 241, 0.15);
+            
+            --brand-green: #10b981;
+            --brand-error: #ef4444;
+            
+            --border: rgba(255, 255, 255, 0.08);
+            --border-subtle: rgba(255, 255, 255, 0.04);
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+            --glass-bg: rgba(17, 17, 20, 0.85);
+
+            /* Surfaces (Static) */
             --surface-light: #FFFFFF;
-            --text-on-light: #1E293B;
-            --border-light: #E2E8F0;
-            --accent: #0284C7;
-            --accent-hover: #0369A1;
-            --accent-light: rgba(2, 132, 199, 0.15);
-            --brand-green: #10B981;
-            --border: rgba(255, 255, 255, 0.06);
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+            --text-on-light: #0f172a;
+            --border-light: #e2e8f0;
         }
 
         html[data-theme="light"] {
-            --bg-page: #f1f5f9;
+            --bg-page: #f8fafc;
             --bg-elevated: #ffffff;
-            --bg-surface: #ffffff;
-            --bg-card: #f8fafc;
+            --bg-surface: #f1f5f9;
+            --bg-card: #ffffff;
             --bg-muted: #e2e8f0;
-            --text-main: #0f172a;
-            --text-muted: #475569;
+            --text-main: #020617;
+            --text-muted: #64748b;
             --text-faint: #94a3b8;
-            --border: rgba(15, 23, 42, 0.1);
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+            
+            --accent: #4f46e5;
+            --accent-hover: #4338ca;
+            --accent-light: rgba(79, 70, 229, 0.1);
+            
+            --border: rgba(15, 23, 42, 0.08);
+            --border-subtle: rgba(15, 23, 42, 0.04);
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --glass-bg: rgba(255, 255, 255, 0.85);
         }
 
         *, *::before, *::after { box-sizing: border-box; }
@@ -75,10 +93,10 @@ def get_app_style():
             border: 1px solid var(--border); color: var(--text-main);
             padding: 12px 16px; border-radius: 8px;
             font-family: var(--font-body); font-size: 14px; margin-bottom: 16px;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        /* Ensure native opened dropdown menus match app theme. */
-        select,
-        select option {
+        
+        select, select option {
             background: var(--bg-surface);
             color: var(--text-main);
         }
@@ -88,21 +106,28 @@ def get_app_style():
         }
         input.odl-input:focus, select.odl-input:focus {
             outline: none; border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(2,132,199,0.12);
+            box-shadow: 0 0 0 3px var(--accent-light);
         }
 
         button.odl-btn-primary {
             background: var(--accent); color: #ffffff; border: none;
-            padding: 11px 22px; border-radius: 8px; font-weight: 500;
+            padding: 11px 22px; border-radius: 8px; font-weight: 600;
             font-size: 14px; font-family: var(--font-body);
             letter-spacing: -0.01em; cursor: pointer;
-            transition: background 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        button.odl-btn-primary:hover { background: var(--accent-hover); }
+        button.odl-btn-primary:hover { 
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+        }
+        button.odl-btn-primary:active {
+            transform: translateY(0);
+        }
 
         .success-text { color: var(--brand-green); font-size: 14px; }
-        .error-text   { color: #EF4444; font-size: 14px; }
+        .error-text   { color: var(--brand-error); font-size: 14px; }
     """)
 
 

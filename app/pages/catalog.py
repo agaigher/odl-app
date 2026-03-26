@@ -39,7 +39,7 @@ SORT_OPTIONS = [
 
 CATALOG_STYLE = Style("""
     /* Dark surfaces — aligned with dashboard (no stark white on #080a0f) */
-    .cat-wrap { display: flex; width: 100%; min-height: calc(100vh - 60px); align-items: stretch; }
+    .cat-wrap { display: flex; width: 100%; min-height: calc(100vh - 60px); align-items: stretch; background-color: var(--bg-page); }
     .cat-sidebar {
         width: 240px; flex-shrink: 0;
         position: sticky;
@@ -49,14 +49,16 @@ CATALOG_STYLE = Style("""
         -ms-overflow-style: none;
         scrollbar-width: none;
         padding: 40px 16px 24px;
-        background: #14120b;
+        background: var(--bg-elevated);
+        border-right: 1px solid var(--border);
     }
     .cat-sidebar::-webkit-scrollbar { width: 0; height: 0; display: none; }
-    .cat-main { min-width: 0; }
+    .cat-main { min-width: 0; flex: 1; display: flex; }
     .cat-results-col {
         flex: 1; min-width: 0; padding: 32px 20px;
         position: sticky; top: 60px; height: calc(100vh - 60px);
         overflow-y: auto;
+        background: var(--bg-page);
         -ms-overflow-style: none;
         scrollbar-width: none;
     }
@@ -65,8 +67,10 @@ CATALOG_STYLE = Style("""
         width: 340px; min-width: 280px; flex-shrink: 0; padding: 32px 20px;
         position: sticky; top: 60px; height: calc(100vh - 60px);
         overflow-y: auto;
+        background: var(--bg-page);
         -ms-overflow-style: none;
         scrollbar-width: none;
+        border-left: 1px solid var(--border);
     }
     .cat-controls-col::-webkit-scrollbar { width: 0; height: 0; display: none; }
     .cat-splitter {
@@ -85,16 +89,16 @@ CATALOG_STYLE = Style("""
         left: 50%;
         width: 1px;
         transform: translateX(-50%);
-        background: rgba(255,255,255,0.05);
+        background: var(--border);
     }
     .cat-splitter:hover::before,
     .cat-splitter.dragging::before {
-        background: rgba(125,211,252,0.5);
+        background: var(--accent);
     }
 
     .cat-sidebar-title {
-        font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
-        color: #475569; text-transform: uppercase; letter-spacing: 0.1em;
+        font-family: var(--font-display); font-size: 11px; font-weight: 700;
+        color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em;
         padding-left: 4px; margin-bottom: 12px;
     }
     .cat-sidebar-item {
@@ -102,21 +106,21 @@ CATALOG_STYLE = Style("""
         padding: 8px 12px; border-radius: 6px; text-decoration: none;
         margin-bottom: 2px; transition: background 0.15s, color 0.15s;
     }
-    .cat-sidebar-item:hover { background: rgba(255,255,255,0.03); }
-    .cat-sidebar-item.active { background: rgba(255,255,255,0.06); }
-    .cat-sidebar-label { font-size: 14px; color: #94A3B8; flex: 1; }
-    .cat-sidebar-item:hover .cat-sidebar-label { color: #F8FAFC; }
-    .cat-sidebar-item.active .cat-sidebar-label { color: #FFFFFF; font-weight: 500; }
-    .cat-sidebar-count { font-size: 12px; color: #64748B; }
-    .cat-sidebar-item.active .cat-sidebar-count { color: #94A3B8; }
+    .cat-sidebar-item:hover { background: var(--bg-surface); }
+    .cat-sidebar-item.active { background: var(--bg-muted); }
+    .cat-sidebar-label { font-size: 14px; color: var(--text-muted); flex: 1; }
+    .cat-sidebar-item:hover .cat-sidebar-label { color: var(--text-main); }
+    .cat-sidebar-item.active .cat-sidebar-label { color: var(--text-main); font-weight: 500; }
+    .cat-sidebar-count { font-size: 12px; color: var(--text-faint); }
+    .cat-sidebar-item.active .cat-sidebar-count { color: var(--text-muted); }
 
     .search-outer { margin: 0; }
     .controls-slicer {
         display: flex; align-items: center;
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.1);
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
         border-radius: 12px; padding: 3px; gap: 2px;
-        box-shadow: inset 0 1px 1px rgba(0,0,0,0.2);
+        box-shadow: inset 0 1px 1px rgba(0,0,0,0.1);
         margin-bottom: 14px;
     }
     .controls-slicer-btn {
@@ -124,21 +128,21 @@ CATALOG_STYLE = Style("""
         display: flex; align-items: center; justify-content: center;
         padding: 7px 12px; border-radius: 9px;
         border: 1px solid transparent; background: transparent;
-        color: #94A3B8; font-family: 'Inter', sans-serif;
+        color: var(--text-muted); font-family: var(--font-body);
         font-size: 13px; font-weight: 500; cursor: pointer;
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         white-space: nowrap;
     }
     .controls-slicer-btn:hover {
-        color: #F1F5F9;
-        background: rgba(255,255,255,0.05);
+        color: var(--text-main);
+        background: var(--bg-muted);
     }
     .controls-slicer-btn.active {
-        color: #F8FAFC;
-        background: rgba(2, 132, 199, 0.12);
-        border-color: rgba(2, 132, 199, 0.3);
+        color: var(--text-main);
+        background: var(--accent-light);
+        border-color: var(--accent);
         font-weight: 600;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 0 0 1px rgba(2, 132, 199, 0.05) inset;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     .controls-panel { display: none; }
     .controls-panel.active { display: block; }
