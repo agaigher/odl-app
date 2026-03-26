@@ -147,9 +147,9 @@ MODULE_HEADER_STYLE = Style("""
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
         border: 1px solid var(--border);
         background: transparent;
         color: var(--text-muted);
@@ -231,8 +231,8 @@ def odl_module_header(active_module="catalog", user=None):
 
     right_items = [
         Button(
-            Span(icon_svg(IC.sun, width="16", height="16"), cls="mh-theme-icon mh-theme-icon-sun"),
-            Span(icon_svg(IC.moon, width="16", height="16"), cls="mh-theme-icon mh-theme-icon-moon"),
+            Span(icon_svg(IC.sun, width="15", height="15"), cls="mh-theme-icon mh-theme-icon-sun"),
+            Span(icon_svg(IC.moon, width="15", height="15"), cls="mh-theme-icon mh-theme-icon-moon"),
             type="button",
             id="theme-toggle",
             cls="mh-theme-toggle",
