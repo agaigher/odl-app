@@ -1,5 +1,5 @@
 """
-Explore module: AI Chat for data querying.
+Explore module: data access options.
 """
 from fasthtml.common import *
 from app.auth.middleware import get_user_id
