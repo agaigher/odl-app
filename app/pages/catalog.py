@@ -53,7 +53,9 @@ CATALOG_STYLE = Style("""
         border-right: 1px solid var(--border);
     }
     .cat-sidebar::-webkit-scrollbar { width: 0; height: 0; display: none; }
-    .cat-main { min-width: 0; flex: 1; display: flex; }
+    .cat-main {
+        min-width: 0; flex: 1; display: flex; flex-direction: column; width: 100%;
+    }
     .cat-results-col {
         flex: 1; min-width: 0; padding: 32px 20px;
         position: sticky; top: 60px; height: calc(100vh - 60px);
@@ -147,7 +149,7 @@ CATALOG_STYLE = Style("""
     .controls-panel { display: none; }
     .controls-panel.active { display: block; }
     .search-row { display: flex; align-items: center; gap: 8px; }
-    .kw-search-wrap { margin-bottom: 14px; }
+    .kw-search-wrap { margin-bottom: 14px; width: 100%; min-width: 0; }
 
     .kw-bar { flex: 1; display: flex; align-items: center; gap: 0;
         background: var(--bg-surface);
@@ -345,13 +347,19 @@ CATALOG_STYLE = Style("""
     .chip:hover { color: #E2E8F0; border-color: rgba(255,255,255,0.16); background: rgba(255,255,255,0.06); }
     .chip.on { background: rgba(2,132,199,0.15); color: #7dd3fc; border-color: rgba(56,189,248,0.25); font-weight: 600; }
 
-    .ds-list-box { background: var(--bg-surface);
+    .ds-list-box {
+        width: 100%; min-width: 0; box-sizing: border-box;
+        background: var(--bg-surface);
         border: 1px solid var(--border);
         border-radius: 12px; overflow: hidden;
-        box-shadow: 0 1px 0 var(--border-subtle) inset; }
-    .ds-count-bar { display: flex; align-items: center; justify-content: space-between;
+        box-shadow: 0 1px 0 var(--border-subtle) inset;
+    }
+    .ds-count-bar {
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 8px 12px;
         padding: 8px 16px; border-bottom: 1px solid var(--border-subtle);
-        font-size: 12px; color: var(--text-muted); background: var(--bg-muted); }
+        font-size: 12px; color: var(--text-muted); background: var(--bg-muted);
+    }
     .ds-count-controls { display: flex; align-items: center; gap: 12px; }
     .per-page-wrap { display: flex; align-items: center; gap: 6px; }
     .per-page-label { font-size: 11px; color: var(--text-faint); }
