@@ -390,10 +390,65 @@ CATALOG_STYLE = Style("""
     .ds-row:last-child { border-bottom: none; }
     .ds-row:hover { background: rgba(255,255,255,0.04); }
 
+    .ds-expand { border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .ds-expand:last-child { border-bottom: none; }
+    .ds-expand-summary { list-style: none; cursor: pointer; padding: 0; }
+    .ds-expand-summary::-webkit-details-marker { display: none; }
+    .ds-expand-summary::marker { display: none; }
+    .ds-row-inner { display: flex; align-items: center; gap: 10px; padding: 11px 14px;
+        transition: background 0.1s; }
+    .ds-expand-summary:hover .ds-row-inner,
+    .ds-expand[open] .ds-row-inner { background: rgba(255,255,255,0.04); }
+    .ds-expand-chevron { color: #64748B; font-size: 11px; flex-shrink: 0; width: 12px;
+        transition: transform 0.15s ease; line-height: 1; margin-top: 1px; }
+    .ds-expand[open] .ds-expand-chevron { transform: rotate(90deg); color: #94A3B8; }
+
+    .ds-detail-panel { padding: 0 14px 14px 38px; border-top: 1px solid rgba(255,255,255,0.06);
+        background: rgba(0,0,0,0.15); }
+    .ds-detail-desc { font-size: 13px; color: #CBD5E1; line-height: 1.65; margin-bottom: 12px; }
+    .ds-detail-meta-inline { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 12px;
+        color: #94A3B8; margin-bottom: 14px; }
+    .ds-detail-meta-inline strong { color: #E2E8F0; font-weight: 600; }
+    .ds-detail-section { font-size: 11px; font-weight: 600; color: #64748B; text-transform: uppercase;
+        letter-spacing: 0.06em; margin: 16px 0 8px; }
+    .ds-detail-section:first-child { margin-top: 4px; }
+    .ds-inline-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+    .ds-inline-tag { font-size: 11px; font-weight: 600; color: #94A3B8; background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 4px; }
+    .ds-inline-table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(255,255,255,0.03); }
+    .ds-inline-schema { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .ds-inline-schema th { text-align: left; padding: 7px 10px; font-size: 10px; font-weight: 600;
+        color: #64748B; text-transform: uppercase; letter-spacing: 0.04em;
+        border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2); }
+    .ds-inline-schema td { padding: 7px 10px; color: #CBD5E1; border-bottom: 1px solid rgba(255,255,255,0.05);
+        vertical-align: top; }
+    .ds-inline-schema tr:last-child td { border-bottom: none; }
+    .ds-inline-col-name { font-family: 'Roboto Mono', monospace; font-size: 11px; color: #F1F5F9; font-weight: 500; }
+    .ds-inline-col-type { font-family: 'Roboto Mono', monospace; font-size: 10px; color: #7dd3fc;
+        background: rgba(2,132,199,0.15); padding: 1px 6px; border-radius: 4px; font-weight: 600; }
+    .ds-inline-col-desc { color: #94A3B8; font-size: 12px; }
+    .ds-inline-sample { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .ds-inline-sample th { text-align: left; padding: 6px 10px; font-size: 10px; font-weight: 600;
+        color: #64748B; text-transform: uppercase; white-space: nowrap;
+        border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.15); }
+    .ds-inline-sample td { padding: 6px 10px; color: #94A3B8; border-bottom: 1px solid rgba(255,255,255,0.05);
+        font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+    .ds-inline-sample tr:last-child td { border-bottom: none; }
+    .ds-inline-code { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 7px; padding: 10px 12px; font-family: 'Roboto Mono', monospace; font-size: 11px;
+        color: #E2E8F0; line-height: 1.55; overflow-x: auto; white-space: pre; margin-top: 4px; }
+    .ds-inline-muted { font-size: 12px; color: #64748B; }
+    .ds-inline-full { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); }
+    .ds-inline-full a { font-size: 12px; color: #7dd3fc; text-decoration: none; font-weight: 500; }
+    .ds-inline-full a:hover { text-decoration: underline; }
+
     .ds-row-mid { flex: 1; min-width: 0; }
     .ds-name { font-size: 14px; font-weight: 600; color: #F1F5F9; text-decoration: none;
         display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; }
     .ds-name:hover { color: #7dd3fc; }
+    .ds-name-btn { cursor: pointer; }
+    .ds-expand-summary:hover .ds-name { color: #7dd3fc; }
     .ds-meta { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
     .ds-cat-label { font-size: 12px; color: #94A3B8; }
     .ds-sep { color: #64748B; font-size: 12px; }
@@ -592,6 +647,82 @@ def _list_checkbox(list_id, slug, in_list, list_name):
     )
 
 
+def _dataset_inline_detail(d):
+    """Expanded panel below a catalog row (same information as the dataset detail page, compact)."""
+    slug = d.get("slug") or ""
+    schema_fields = d.get("schema_fields") or []
+    sample_rows = d.get("sample_rows") or []
+    tags = d.get("tags") or []
+    access = d.get("access_methods") or ["api"]
+    table_name = slug.replace("-", "_").upper()
+    long_desc = d.get("long_description") or d.get("description") or ""
+
+    meta_bits = [
+        Div(Span("Provider: "), Strong(d.get("provider") or "—")),
+        Div(Span("Updates: "), Strong(d.get("update_frequency") or "—")),
+        Div(Span("Access: "), Strong(", ".join(a.upper() for a in access))),
+    ]
+
+    if schema_fields:
+        schema_body = Tbody(*[
+            Tr(
+                Td(Span(f.get("name", ""), cls="ds-inline-col-name")),
+                Td(Span(f.get("type", ""), cls="ds-inline-col-type")),
+                Td(f.get("description", "") or "", cls="ds-inline-col-desc"),
+            )
+            for f in schema_fields
+        ])
+        schema_block = Div(
+            Table(
+                Thead(Tr(Th("Column"), Th("Type"), Th("Description"))),
+                schema_body,
+                cls="ds-inline-schema",
+            ),
+            cls="ds-inline-table-wrap",
+        )
+    else:
+        schema_block = P("Schema not yet documented.", cls="ds-inline-muted")
+
+    if sample_rows and isinstance(sample_rows, list) and len(sample_rows) > 0:
+        cols = list(sample_rows[0].keys())[:6]
+        sample_block = Div(
+            Table(
+                Thead(Tr(*[Th(c) for c in cols])),
+                Tbody(*[
+                    Tr(*[Td(str(row.get(c, "")) if row.get(c) is not None else "null") for c in cols])
+                    for row in sample_rows[:8]
+                ]),
+                cls="ds-inline-sample",
+            ),
+            cls="ds-inline-table-wrap",
+        )
+    else:
+        sample_block = P("Sample data not available.", cls="ds-inline-muted")
+
+    tags_block = (
+        Div(*[Span(f"#{t}", cls="ds-inline-tag") for t in tags], cls="ds-inline-tags")
+        if tags
+        else None
+    )
+
+    return Div(
+        P(long_desc, cls="ds-detail-desc") if long_desc else None,
+        Div(*meta_bits, cls="ds-detail-meta-inline"),
+        tags_block,
+        P("Schema", cls="ds-detail-section"),
+        schema_block,
+        P("Sample rows", cls="ds-detail-section"),
+        sample_block,
+        P("Query example", cls="ds-detail-section"),
+        Div(f"SELECT *\nFROM LONDON_DB.PUBLIC.{table_name}\nLIMIT 100;", cls="ds-inline-code"),
+        Div(
+            A("Open full page", href=f"/catalog/{slug}"),
+            cls="ds-inline-full",
+        ),
+        cls="ds-detail-panel",
+    )
+
+
 def _list_row(d, is_added=False, is_fav=False, ai_reason=None):
     slug   = d.get("slug", "")
     status_color, status_label = STATUS_BADGE.get(d.get("status", "live"), ("#64748B", "Unknown"))
@@ -601,7 +732,7 @@ def _list_row(d, is_added=False, is_fav=False, ai_reason=None):
     color  = _cat_color(cat)
 
     mid = Div(
-        A(d.get("title") or slug, href=f"/catalog/{slug}", cls="ds-name"),
+        Span(d.get("title") or slug, cls="ds-name ds-name-btn"),
         Div(
             Div(style=f"width:6px;height:6px;border-radius:50%;background:{color};flex-shrink:0;"),
             Span(cat, cls="ds-cat-label"),
@@ -620,9 +751,22 @@ def _list_row(d, is_added=False, is_fav=False, ai_reason=None):
         Div(title=status_label, style=f"width:7px;height:7px;border-radius:50%;background:{status_color};"),
         _fav_btn(slug, is_fav),
         _add_btn(slug, is_added),
-        cls="ds-row-right"
+        cls="ds-row-right",
+        onclick="event.stopPropagation()",
     )
-    return Div(mid, right, cls="ds-row")
+    return Details(
+        Summary(
+            Div(
+                Span("▸", cls="ds-expand-chevron"),
+                mid,
+                right,
+                cls="ds-row-inner",
+            ),
+            cls="ds-expand-summary",
+        ),
+        _dataset_inline_detail(d),
+        cls="ds-expand",
+    )
 
 
 # ── Favourite modal ───────────────────────────────────────────────────────────
