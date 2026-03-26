@@ -6,7 +6,7 @@ import base64
 import httpx as _httpx
 from urllib.parse import urlencode
 from fasthtml.common import *
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
 
 from app.config import (
     APP_URL,
@@ -145,7 +145,15 @@ def register(rt):
         if not supabase:
             return Div("Supabase not configured.", cls="error-text")
         try:
-            res = supabase.sign_up({"email": email_norm, "password": password})
+            res = supabase.sign_up(
+                {
+                    "email": email_norm,
+                    "password": password,
+                    "options": {
+                        "email_redirect_to": f"{APP_URL}/auth/email-confirm",
+                    },
+                }
+            )
             if res.session:
                 user = res.session.user if res.session else None
                 if not supabase_user_may_use_app(user):
@@ -192,6 +200,97 @@ def register(rt):
             except Exception:
                 pass
         return RedirectResponse('/login', status_code=303)
+
+    # ── Email confirmation (Supabase implicit flow: tokens in URL #hash, not visible to server) ──
+    @rt("/auth/email-confirm", methods=["GET"])
+    def get_email_confirm():
+        return Html(
+            Head(
+                Title("Confirming email | OpenData.London"),
+                Link(
+                    rel="stylesheet",
+                    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap",
+                ),
+                Style("""
+                    * { box-sizing: border-box; margin: 0; padding: 0; }
+                    body { background: #080a0f; font-family: 'Inter', sans-serif; min-height: 100vh;
+                           display: flex; align-items: center; justify-content: center; color: #F8FAFC; }
+                    .card { text-align: center; max-width: 420px; padding: 40px 20px; }
+                    .card h1 { font-size: 20px; font-weight: 600; margin-bottom: 10px; }
+                    .card p { color: #64748B; font-size: 14px; line-height: 1.6; }
+                """),
+            ),
+            Body(
+                Div(
+                    H1("Confirming your email…"),
+                    P("Please wait while we sign you in."),
+                    cls="card",
+                ),
+                Script("""
+(function() {
+  var hash = window.location.hash ? window.location.hash.substring(1) : '';
+  var params = new URLSearchParams(hash);
+  var err = params.get('error') || params.get('error_description');
+  var access = params.get('access_token');
+  if (err) {
+    window.location.replace('/login?error=' + encodeURIComponent(err));
+    return;
+  }
+  if (!access) {
+    window.location.replace('/login?error=missing_token');
+    return;
+  }
+  var refresh = params.get('refresh_token') || '';
+  fetch('/auth/implicit-session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
+    body: JSON.stringify({ access_token: access, refresh_token: refresh })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.ok && d.redirect) {
+      window.location.replace(d.redirect);
+    } else {
+      window.location.replace('/login?error=' + encodeURIComponent(d.error || 'session_failed'));
+    }
+  }).catch(function() {
+    window.location.replace('/login?error=oauth_failed');
+  });
+})();
+                """),
+            ),
+        )
+
+    @rt("/auth/implicit-session", methods=["POST"])
+    async def post_implicit_session(req, session):
+        supabase = get_auth_client()
+        if not supabase:
+            return JSONResponse(
+                {"ok": False, "error": "not_configured"}, status_code=503
+            )
+        try:
+            body = await req.json()
+        except Exception:
+            return JSONResponse({"ok": False, "error": "invalid_json"}, status_code=400)
+        access_token = (body.get("access_token") or "").strip()
+        if not access_token:
+            return JSONResponse({"ok": False, "error": "missing_token"}, status_code=400)
+        try:
+            ur = supabase.get_user(access_token)
+            if not ur or not ur.user:
+                return JSONResponse({"ok": False, "error": "invalid_token"}, status_code=401)
+            if not supabase_user_may_use_app(ur.user):
+                return JSONResponse(
+                    {"ok": False, "error": "email_not_confirmed"}, status_code=403
+                )
+            email = (ur.user.email or "").strip().lower()
+            if not email:
+                return JSONResponse({"ok": False, "error": "no_email"}, status_code=400)
+            session["user"] = email
+            session["access_token"] = access_token
+            session.pop("auth_provider", None)
+            return JSONResponse({"ok": True, "redirect": ENTRY_ROUTE})
+        except Exception as e:
+            return JSONResponse({"ok": False, "error": str(e)}, status_code=401)
 
     # ── OAuth: Google ──
     @rt("/auth/google")

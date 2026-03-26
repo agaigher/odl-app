@@ -9,6 +9,7 @@ def before(req, session):
     open_routes = [
         '/login', '/register', '/signup', '/forgot-password', '/reset-password',
         '/auth/google', '/auth/github', '/auth/callback',
+        '/auth/email-confirm', '/auth/implicit-session',
         '/auth/snowflake', '/auth/snowflake/callback',
         '/invite/accept', '/invite/confirm', '/robots.txt',
         '/', '/catalog', '/catalog/search', '/catalog/ai-search',
