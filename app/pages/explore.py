@@ -15,17 +15,17 @@ EXPLORE_STYLE = Style("""
         margin-bottom: 32px;
     }
     .explore-title {
-        font-family: 'Space Grotesk', system-ui, sans-serif;
+        font-family: var(--font-display);
         font-size: 30px;
         font-weight: 700;
         letter-spacing: -0.03em;
-        color: #F8FAFC;
+        color: var(--text-main);
         margin: 0 0 8px;
     }
     .explore-subtitle {
         margin: 0;
         max-width: 720px;
-        color: #94A3B8;
+        color: var(--text-muted);
         font-size: 15px;
         line-height: 1.65;
     }
@@ -40,10 +40,10 @@ EXPLORE_STYLE = Style("""
     .persona-pill {
         padding: 7px 16px;
         border-radius: 999px;
-        border: 1px solid rgba(255,255,255,0.12);
-        background: rgba(255,255,255,0.04);
-        color: #94A3B8;
-        font-family: 'Inter', sans-serif;
+        border: 1px solid var(--border);
+        background: var(--bg-surface);
+        color: var(--text-muted);
+        font-family: var(--font-body);
         font-size: 13px;
         font-weight: 500;
         cursor: pointer;
@@ -51,15 +51,16 @@ EXPLORE_STYLE = Style("""
         white-space: nowrap;
     }
     .persona-pill:hover {
-        color: #E2E8F0;
-        border-color: rgba(255,255,255,0.22);
-        background: rgba(255,255,255,0.07);
+        color: var(--text-main);
+        border-color: var(--text-muted);
+        background: var(--bg-muted);
     }
     .persona-pill.active {
-        color: #F8FAFC;
-        background: rgba(2,132,199,0.15);
-        border-color: rgba(56,189,248,0.35);
+        color: #FFFFFF;
+        background: var(--accent);
+        border-color: var(--accent);
         font-weight: 600;
+        box-shadow: var(--shadow);
     }
 
     /* ── Section groups ───────────────────────────────────── */
@@ -86,16 +87,16 @@ EXPLORE_STYLE = Style("""
         flex-shrink: 0;
     }
     .section-title {
-        font-family: 'Space Grotesk', system-ui, sans-serif;
+        font-family: var(--font-display);
         font-size: 18px;
         font-weight: 600;
-        color: #E2E8F0;
+        color: var(--text-main);
         margin: 0;
         letter-spacing: -0.01em;
     }
     .section-desc {
         font-size: 13px;
-        color: #64748B;
+        color: var(--text-faint);
         margin: 0;
     }
 
@@ -107,8 +108,8 @@ EXPLORE_STYLE = Style("""
     }
 
     .explore-card {
-        background: rgba(255,255,255,0.025);
-        border: 1px solid rgba(255,255,255,0.08);
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
         border-radius: 12px;
         padding: 18px 18px 16px;
         display: flex;
@@ -119,8 +120,8 @@ EXPLORE_STYLE = Style("""
         text-decoration: none;
     }
     .explore-card:hover {
-        border-color: rgba(56,189,248,0.35);
-        background: rgba(56,189,248,0.06);
+        border-color: var(--accent);
+        background: var(--bg-muted);
         transform: translateY(-1px);
     }
     .explore-card.coming-soon {
@@ -149,7 +150,7 @@ EXPLORE_STYLE = Style("""
     }
     .explore-card-title {
         margin: 0;
-        color: #E2E8F0;
+        color: var(--text-main);
         font-size: 15px;
         font-weight: 600;
         letter-spacing: -0.01em;
@@ -164,7 +165,7 @@ EXPLORE_STYLE = Style("""
         margin-top: 3px;
     }
     .card-status.live {
-        color: #10B981;
+        color: var(--brand-green);
     }
     .card-status.coming-soon {
         color: #F59E0B;
@@ -175,7 +176,7 @@ EXPLORE_STYLE = Style("""
         border-radius: 50%;
     }
     .status-dot.live {
-        background: #10B981;
+        background: var(--brand-green);
     }
     .status-dot.coming-soon {
         background: #F59E0B;
@@ -183,7 +184,7 @@ EXPLORE_STYLE = Style("""
 
     .explore-card-desc {
         margin: 0;
-        color: #94A3B8;
+        color: var(--text-muted);
         font-size: 13px;
         line-height: 1.55;
         flex: 1;
@@ -205,19 +206,19 @@ EXPLORE_STYLE = Style("""
     .explore-tag {
         font-size: 11px;
         border-radius: 999px;
-        border: 1px solid rgba(255,255,255,0.1);
-        color: #94A3B8;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
         padding: 2px 8px;
-        background: rgba(255,255,255,0.02);
+        background: var(--bg-surface);
     }
     .card-arrow {
-        color: #475569;
+        color: var(--text-faint);
         font-size: 16px;
         flex-shrink: 0;
         transition: color 0.15s, transform 0.15s;
     }
     .explore-card:hover .card-arrow {
-        color: #7dd3fc;
+        color: var(--accent);
         transform: translateX(2px);
     }
 
@@ -234,20 +235,20 @@ EXPLORE_STYLE = Style("""
 
 
 SECTION_ICON_COLORS = {
-    "query":    "background: rgba(99,102,241,0.15); color: #818CF8;",
+    "query":    "background: var(--accent-light); color: var(--accent);",
     "connect":  "background: rgba(16,185,129,0.15); color: #34D399;",
     "share":    "background: rgba(236,72,153,0.15); color: #F472B6;",
     "automate": "background: rgba(245,158,11,0.15); color: #FBBF24;",
 }
 
 CARD_ICON_STYLES = {
-    "sql":        "background: rgba(99,102,241,0.12); color: #818CF8;",
+    "sql":        "background: var(--accent-light); color: var(--accent);",
     "ai":         "background: rgba(139,92,246,0.12); color: #A78BFA;",
     "graphql":    "background: rgba(236,72,153,0.12); color: #F472B6;",
     "rest":       "background: rgba(59,130,246,0.12); color: #60A5FA;",
     "snowflake":  "background: rgba(56,189,248,0.12); color: #38BDF8;",
     "mcp":        "background: rgba(16,185,129,0.12); color: #34D399;",
-    "download":   "background: rgba(148,163,184,0.12); color: #CBD5E1;",
+    "download":   "background: var(--bg-muted); color: var(--text-muted);",
     "bi":         "background: rgba(245,158,11,0.12); color: #FBBF24;",
     "sheet":      "background: rgba(34,197,94,0.12);  color: #4ADE80;",
     "report":     "background: rgba(249,115,22,0.12); color: #FB923C;",
