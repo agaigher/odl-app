@@ -20,6 +20,7 @@ from supabase_auth.errors import AuthApiError
 from app.auth.client import get_auth_client
 from app.auth.middleware import get_user_id
 from app.auth.password_policy import password_policy_error
+from app.db.auth_admin import auth_user_exists_for_email
 from app.pages.auth import AuthPage
 from app.pages.forgot_password import ForgotPasswordPage, ResetPasswordPage
 
@@ -49,6 +50,21 @@ def _duplicate_signup_message():
         cls="error-text auth-alert",
         role="alert",
     )
+
+
+def _signup_is_obfuscated_duplicate(res) -> bool:
+    """
+    GoTrue may return HTTP 200 with no session for duplicate signups (enumeration
+    protection). Those payloads typically omit identities on the user object.
+    """
+    if res.session is not None:
+        return False
+    if not res.user:
+        return True
+    ids = res.user.identities
+    if ids is None:
+        return True
+    return len(ids) == 0
 
 
 def _sf_base_url():
@@ -100,15 +116,24 @@ def register(rt):
         policy_err = password_policy_error(password)
         if policy_err:
             return Div(policy_err, cls="error-text")
+        email_norm = email.strip().lower()
+        if auth_user_exists_for_email(email_norm):
+            return _duplicate_signup_message()
         supabase = get_auth_client()
         if not supabase:
             return Div("Supabase not configured.", cls="error-text")
         try:
-            res = supabase.sign_up({"email": email, "password": password})
-            session['user'] = email
+            res = supabase.sign_up({"email": email_norm, "password": password})
             if res.session:
+                session['user'] = email_norm
                 session['access_token'] = res.session.access_token
-            return _to_entry_route(req)
+                return _to_entry_route(req)
+            if _signup_is_obfuscated_duplicate(res):
+                return _duplicate_signup_message()
+            return Div(
+                "Check your email to confirm your account before signing in.",
+                cls="success-text",
+            )
         except Exception as e:
             if _is_duplicate_signup_error(e):
                 return _duplicate_signup_message()

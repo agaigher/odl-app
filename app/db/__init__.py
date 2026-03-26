@@ -15,7 +15,7 @@ from app.db.client import (
     _headers,
 )
 from app.db.storage import storage_upload
-from app.db.auth_admin import auth_invite
+from app.db.auth_admin import auth_invite, auth_user_exists_for_email
 
 __all__ = [
     "db_insert",
@@ -28,4 +28,5 @@ __all__ = [
     "get_user_id_from_session",
     "storage_upload",
     "auth_invite",
+    "auth_user_exists_for_email",
 ]
