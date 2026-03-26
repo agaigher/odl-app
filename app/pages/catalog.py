@@ -459,8 +459,6 @@ CATALOG_STYLE = Style("""
 
     .ds-row-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
     .badge { padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-    .badge-api  { background: rgba(2,132,199,0.2); color: #7dd3fc; border: 1px solid rgba(56,189,248,0.2); }
-    .badge-sf   { background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.2); }
     .badge-freq { background: rgba(148,163,184,0.12); color: #94A3B8; font-weight: 500; border: 1px solid rgba(148,163,184,0.15); }
 
     .fav-btn { background: transparent; border: none; cursor: pointer;
@@ -653,14 +651,12 @@ def _dataset_inline_detail(d):
     schema_fields = d.get("schema_fields") or []
     sample_rows = d.get("sample_rows") or []
     tags = d.get("tags") or []
-    access = d.get("access_methods") or ["api"]
     table_name = slug.replace("-", "_").upper()
     long_desc = d.get("long_description") or d.get("description") or ""
 
     meta_bits = [
         Div(Span("Provider: "), Strong(d.get("provider") or "—")),
         Div(Span("Updates: "), Strong(d.get("update_frequency") or "—")),
-        Div(Span("Access: "), Strong(", ".join(a.upper() for a in access))),
     ]
 
     if schema_fields:
@@ -723,10 +719,9 @@ def _dataset_inline_detail(d):
     )
 
 
-def _list_row(d, is_added=False, is_fav=False, ai_reason=None):
+def _list_row(d, is_fav=False, ai_reason=None):
     slug   = d.get("slug", "")
     status_color, status_label = STATUS_BADGE.get(d.get("status", "live"), ("#64748B", "Unknown"))
-    access = d.get("access_methods") or ["api"]
     cat    = d.get("category") or ""
     freq   = FREQ_SHORT.get(d.get("update_frequency") or "", "")
     color  = _cat_color(cat)
@@ -746,11 +741,8 @@ def _list_row(d, is_added=False, is_fav=False, ai_reason=None):
     )
     right = Div(
         *([Span(freq, cls="badge badge-freq")] if freq else []),
-        *([Span("API", cls="badge badge-api")] if "api" in access else []),
-        *([Span("Snowflake", cls="badge badge-sf")] if "snowflake" in access else []),
         Div(title=status_label, style=f"width:7px;height:7px;border-radius:50%;background:{status_color};"),
         _fav_btn(slug, is_fav),
-        _add_btn(slug, is_added),
         cls="ds-row-right",
         onclick="event.stopPropagation()",
     )
@@ -874,7 +866,8 @@ def IntegrationModal(slug, dataset_title, project_id):
 
     close_and_update = Script(f"""
         document.getElementById('modal-done').addEventListener('click', function() {{
-            htmx.ajax('GET', '/catalog/{slug}/add-btn', {{target: '#add-{slug}', swap: 'outerHTML'}});
+            var addEl = document.getElementById('add-{slug}');
+            if (addEl) htmx.ajax('GET', '/catalog/{slug}/add-btn', {{target: '#add-{slug}', swap: 'outerHTML'}});
             document.getElementById('modal-root').innerHTML = '';
         }});
     """)
@@ -1261,7 +1254,7 @@ def _page_nums(page, total_pages):
     return result
 
 
-def _list_body(page_datasets, total, added, favs, heading, subtext, page=1, per_page=25,
+def _list_body(page_datasets, total, favs, heading, subtext, page=1, per_page=25,
                q="", category="", freq_f="", updated_after_f="", size_f="", keywords_f="", sort_f="recent"):
     if not page_datasets:
         return Div(
@@ -1331,7 +1324,7 @@ def _list_body(page_datasets, total, added, favs, heading, subtext, page=1, per_
             style="margin-bottom:14px;"),
         Div(
             count_bar,
-            Div(*[_list_row(d, is_added=d.get("slug") in added, is_fav=d.get("slug") in favs)
+            Div(*[_list_row(d, is_fav=d.get("slug") in favs)
                   for d in page_datasets], cls="ds-list"),
             Div(*page_items, cls="ds-pagination") if total_pages > 1 else None,
             cls="ds-list-box"
@@ -1352,7 +1345,7 @@ def DataCatalog(category="", q="", user_id="", freq_filter="", updated_after_fil
     except Exception:
         datasets, counts, total_matches, total_all = [], {}, 0, 0
 
-    added, favs = _fetch_user_sets(user_id)
+    _, favs = _fetch_user_sets(user_id)
 
     heading = f'Results for "{q}"' if q else (category or "London Database")
     has_filters = any([category, freq_filter, updated_after_filter, size_filter, keywords_filter])
@@ -1441,7 +1434,7 @@ def DataCatalog(category="", q="", user_id="", freq_filter="", updated_after_fil
             Div(
                 _keyword_search_area(q, category, freq_filter, updated_after_filter, size_filter, keywords_filter, sort_filter),
                 Div(
-                    _list_body(datasets, total_matches, added, favs, heading, subtext,
+                    _list_body(datasets, total_matches, favs, heading, subtext,
                                page=page, per_page=per_page,
                                q=q, category=category, freq_f=freq_filter,
                                updated_after_f=updated_after_filter, size_f=size_filter, keywords_f=keywords_filter,
@@ -1471,13 +1464,13 @@ def SearchCatalogResults(q="", category="", user_id="", freq_filter="", updated_
     except Exception:
         datasets, total_matches = [], 0
 
-    added, favs = _fetch_user_sets(user_id)
+    _, favs = _fetch_user_sets(user_id)
     heading = f'Results for "{q}"' if q else (category or "London Database")
     has_filters = any([category, freq_filter, updated_after_filter, size_filter, keywords_filter])
     subtext = (f"{total_matches} dataset{'s' if total_matches != 1 else ''} found"
                if (q or has_filters)
                else f"{total_matches} datasets — growing continuously")
-    return _list_body(datasets, total_matches, added, favs, heading, subtext,
+    return _list_body(datasets, total_matches, favs, heading, subtext,
                       page=page, per_page=per_page,
                       q=q, category=category, freq_f=freq_filter,
                       updated_after_f=updated_after_filter, size_f=size_filter, keywords_f=keywords_filter,
@@ -1604,7 +1597,7 @@ def AiSearchResults(query="", user_id=""):
     except Exception:
         all_datasets = []
 
-    added, favs = _fetch_user_sets(user_id)
+    _, favs = _fetch_user_sets(user_id)
 
     catalog_lines = [
         f'slug:{d["slug"]} | title:{d.get("title","")} | category:{d.get("category","")} '
@@ -1656,7 +1649,6 @@ Rank by relevance. If nothing matches well, return []."""
         Div(
             Div(f"{len(ordered)} AI-matched datasets", cls="ds-count-bar"),
             Div(*[_list_row(d,
-                            is_added=d.get("slug") in added,
                             is_fav=d.get("slug") in favs,
                             ai_reason=slug_to_reason.get(d.get("slug"), ""))
                   for d in ordered], cls="ds-list"),
