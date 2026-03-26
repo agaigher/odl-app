@@ -18,6 +18,7 @@ from app.config import (
 from supabase_auth.errors import AuthApiError
 
 from app.auth.client import get_auth_client
+from app.auth.confirmation import supabase_user_may_use_app
 from app.auth.middleware import get_user_id
 from app.auth.password_policy import password_policy_error
 from app.db.auth_admin import auth_user_exists_for_email
@@ -80,10 +81,10 @@ def _to_entry_route(req=None):
 def register(rt):
 
     @rt("/login", methods=["GET"])
-    def get_login(session):
+    def get_login(session, error: str = ""):
         if get_user_id(session):
             return RedirectResponse(ENTRY_ROUTE, status_code=303)
-        return AuthPage(mode="login")
+        return AuthPage(mode="login", login_error=error)
 
     @rt("/login", methods=["POST"])
     def post_login(req, email: str, password: str, session):
@@ -95,10 +96,31 @@ def register(rt):
             return Div("Supabase not configured.", cls="error-text")
         try:
             res = supabase.sign_in_with_password({"email": email, "password": password})
-            session['user'] = email
+            user = res.session.user if res.session else None
+            if not supabase_user_may_use_app(user):
+                try:
+                    supabase.sign_out()
+                except Exception:
+                    pass
+                return Div(
+                    "Please confirm your email address before signing in. "
+                    "Check your inbox for the confirmation link we sent when you registered.",
+                    cls="error-text auth-alert",
+                    role="alert",
+                )
+            session['user'] = email.strip().lower()
             session['access_token'] = res.session.access_token
+            if 'auth_provider' in session:
+                del session['auth_provider']
             return _to_entry_route(req)
         except Exception as e:
+            if isinstance(e, AuthApiError) and e.code == "email_not_confirmed":
+                return Div(
+                    "Please confirm your email address before signing in. "
+                    "Check your inbox for the confirmation link we sent when you registered.",
+                    cls="error-text auth-alert",
+                    role="alert",
+                )
             return Div(f"Login failed: {str(e)}", cls="error-text")
 
     @rt("/signup", methods=["GET"])
@@ -125,8 +147,22 @@ def register(rt):
         try:
             res = supabase.sign_up({"email": email_norm, "password": password})
             if res.session:
+                user = res.session.user if res.session else None
+                if not supabase_user_may_use_app(user):
+                    try:
+                        supabase.sign_out()
+                    except Exception:
+                        pass
+                    return Div(
+                        "Please confirm your email address before signing in. "
+                        "Check your inbox for the confirmation link.",
+                        cls="error-text auth-alert",
+                        role="alert",
+                    )
                 session['user'] = email_norm
                 session['access_token'] = res.session.access_token
+                if 'auth_provider' in session:
+                    del session['auth_provider']
                 return _to_entry_route(req)
             if _signup_is_obfuscated_duplicate(res):
                 return _duplicate_signup_message()
@@ -241,8 +277,18 @@ def register(rt):
             return RedirectResponse('/login', status_code=303)
         try:
             result = supabase.exchange_code_for_session({"auth_code": code})
+            if not supabase_user_may_use_app(result.user):
+                try:
+                    supabase.sign_out()
+                except Exception:
+                    pass
+                return RedirectResponse(
+                    "/login?error=email_not_confirmed", status_code=303
+                )
             session['user'] = result.user.email
             session['access_token'] = result.session.access_token
+            if 'auth_provider' in session:
+                del session['auth_provider']
             return RedirectResponse(ENTRY_ROUTE, status_code=303)
         except Exception:
             return RedirectResponse('/login?error=oauth_failed', status_code=303)

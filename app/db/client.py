@@ -5,6 +5,7 @@ import httpx
 import re
 from datetime import datetime
 
+from app.auth.confirmation import auth_user_json_may_use_app
 from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
 
 
@@ -414,7 +415,10 @@ def get_user_id_from_session(session):
         }
         r = httpx.get(url, headers=headers)
         r.raise_for_status()
-        return r.json().get("id")
+        data = r.json()
+        if not auth_user_json_may_use_app(data):
+            return None
+        return data.get("id")
     except Exception as e:
         print(f"Error fetching user ID: {e}")
         return None

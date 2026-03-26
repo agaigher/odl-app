@@ -3,7 +3,7 @@ from fasthtml.common import *
 from app.auth.password_policy import PASSWORD_POLICY_HINT, password_policy_html_pattern
 
 
-def AuthPage(mode="login"):
+def AuthPage(mode="login", login_error: str = ""):
 
     auth_style = Style("""
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
@@ -364,6 +364,28 @@ def AuthPage(mode="login"):
         cls="org-link-row"
     )
 
+    login_alert = None
+    if is_login and login_error == "email_not_confirmed":
+        login_alert = Div(
+            "Your email address must be confirmed before you can sign in with this account.",
+            cls="error-text auth-alert",
+            role="alert",
+            style="margin-bottom: 20px;",
+        )
+
+    card_inner = [
+        H1(heading, cls="auth-heading"),
+        P(subheading, cls="auth-subheading"),
+        oauth_buttons,
+        divider,
+        form,
+        Div(id="auth-message", cls="auth-message"),
+        footer,
+        org_row,
+    ]
+    if login_alert:
+        card_inner.insert(0, login_alert)
+
     return Html(
         Head(
             Title("Sign In | OpenData.London" if is_login else "Create Account | OpenData.London"),
@@ -380,17 +402,7 @@ def AuthPage(mode="login"):
             ),
             # Card
             Div(
-                Div(
-                    H1(heading, cls="auth-heading"),
-                    P(subheading, cls="auth-subheading"),
-                    oauth_buttons,
-                    divider,
-                    form,
-                    Div(id="auth-message", cls="auth-message"),
-                    footer,
-                    org_row,
-                    cls="auth-card"
-                ),
+                Div(*card_inner, cls="auth-card"),
                 cls="auth-wrapper"
             ),
             cls="auth-page"
