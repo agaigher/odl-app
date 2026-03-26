@@ -190,6 +190,22 @@ def AuthPage(mode="login"):
         .error-text { color: #EF4444; }
         .success-text { color: #10B981; }
 
+        .auth-alert {
+            display: block;
+            padding: 12px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            background: rgba(239, 68, 68, 0.08);
+            text-align: left;
+            line-height: 1.45;
+        }
+        .auth-alert a {
+            color: #7dd3fc;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .auth-alert a:hover { text-decoration: underline; }
+
         /* ── Footer ── */
         .auth-card-footer {
             text-align: center;

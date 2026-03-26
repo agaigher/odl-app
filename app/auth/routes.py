@@ -15,12 +15,39 @@ from app.config import (
     SNOWFLAKE_CLIENT_SECRET,
     SNOWFLAKE_REDIRECT_URI,
 )
+from supabase_auth.errors import AuthApiError
+
 from app.auth.client import get_auth_client
 from app.auth.middleware import get_user_id
 from app.pages.auth import AuthPage
 from app.pages.forgot_password import ForgotPasswordPage, ResetPasswordPage
 
 ENTRY_ROUTE = "/catalog"
+
+_DUPLICATE_SIGNUP_CODES = frozenset(
+    {"email_exists", "user_already_exists", "identity_already_exists"}
+)
+
+
+def _is_duplicate_signup_error(exc: Exception) -> bool:
+    if isinstance(exc, AuthApiError) and exc.code in _DUPLICATE_SIGNUP_CODES:
+        return True
+    msg = str(exc).lower()
+    return (
+        "user already registered" in msg
+        or "already been registered" in msg
+        or "email address is already" in msg
+    )
+
+
+def _duplicate_signup_message():
+    return Div(
+        "This email already has an account. ",
+        A("Sign in here", href="/login"),
+        " to continue.",
+        cls="error-text auth-alert",
+        role="alert",
+    )
 
 
 def _sf_base_url():
@@ -76,8 +103,8 @@ def register(rt):
                 session['access_token'] = res.session.access_token
             return _to_entry_route(req)
         except Exception as e:
-            if "User already registered" in str(e):
-                return Div("Account already exists. Try logging in.", cls="error-text")
+            if _is_duplicate_signup_error(e):
+                return _duplicate_signup_message()
             return Div(f"Registration failed: {str(e)}", cls="error-text")
 
     @rt("/signup", methods=["POST"])
