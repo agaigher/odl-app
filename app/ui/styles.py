@@ -63,6 +63,16 @@ def get_app_style():
             padding: 12px 16px; border-radius: 8px;
             font-family: var(--font-body); font-size: 14px; margin-bottom: 16px;
         }
+        /* Ensure native opened dropdown menus match dark app theme. */
+        select,
+        select option {
+            background: var(--bg-surface);
+            color: var(--text-main);
+        }
+        select option:checked {
+            background: var(--accent);
+            color: #ffffff;
+        }
         input.odl-input:focus, select.odl-input:focus {
             outline: none; border-color: var(--accent);
             box-shadow: 0 0 0 3px rgba(2,132,199,0.12);
