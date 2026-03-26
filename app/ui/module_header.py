@@ -1,8 +1,8 @@
 """
 Top-level module header with brand, module slicer, and user controls.
 
-The slicer provides navigation between the three main modules:
-  Data Catalog  |  Explore  |  Settings
+The slicer provides navigation between core modules:
+  Data Catalog  |  Explore
 """
 from fasthtml.common import *
 from app.ui.components import icon_svg, IC
@@ -13,7 +13,6 @@ from app.ui.components import icon_svg, IC
 MODULES = [
     ("Catalog",      "/catalog",    "catalog",  IC.book),
     ("Explore",      "/explore",    "explore",  IC.bolt),
-    ("Settings",     "/projects",   "settings", IC.cog),
 ]
 
 
@@ -113,6 +112,24 @@ MODULE_HEADER_STYLE = Style("""
         font-family: var(--font-body);
     }
 
+    .mh-settings-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        text-decoration: none;
+        transition: all 0.15s;
+    }
+    .mh-settings-link:hover {
+        background: rgba(255,255,255,0.08);
+        color: var(--text-main);
+        border-color: var(--text-faint);
+    }
+
     .mh-signout {
         background: transparent;
         border: 1px solid var(--border);
@@ -159,6 +176,15 @@ def odl_module_header(active_module="catalog", user=None):
     right_items = []
     if user:
         right_items.append(Div(user, cls="mh-user"))
+        right_items.append(
+            A(
+                icon_svg(IC.cog, width="15", height="15"),
+                href="/settings",
+                cls="mh-settings-link",
+                title="Settings",
+                aria_label="Settings"
+            )
+        )
         right_items.append(A("Sign Out", href="/logout", cls="mh-signout"))
 
     right = Div(*right_items, cls="mh-right")

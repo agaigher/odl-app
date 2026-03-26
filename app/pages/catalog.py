@@ -71,7 +71,7 @@ CATALOG_STYLE = Style("""
     }
     .cat-results-col::-webkit-scrollbar { width: 0; height: 0; display: none; }
     .cat-controls-col {
-        width: 340px; min-width: 280px; flex-shrink: 0; padding: 32px 48px 32px 20px;
+        width: 340px; min-width: 280px; flex-shrink: 0; padding: 32px 20px;
         position: sticky; top: 60px; height: calc(100vh - 60px);
         overflow-y: auto;
         -ms-overflow-style: none;
