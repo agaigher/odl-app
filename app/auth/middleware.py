@@ -19,8 +19,9 @@ def before(req, session):
         # Sessionless endpoints (authenticate via header / Stripe signature)
         '/api/v1',
         '/api/webhooks',
+        '/dev-access',  # demo bypass — must match GET handler in auth.routes
     ]
-    if BYPASS_PATH:
+    if BYPASS_PATH and BYPASS_PATH != '/dev-access':
         open_routes.append(BYPASS_PATH)
     is_open = any(req.url.path == r or req.url.path.startswith(r + '/') for r in open_routes)
     if not is_open and not get_user_id(session):

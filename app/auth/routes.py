@@ -439,18 +439,15 @@ def register(rt):
             return Div(f"Error: {str(e)}", cls="error-text")
 
     # ── Demo / Bypass ──
-    @rt(BYPASS_PATH)
-    def get_bypass_login(req, session):
-        """Bypass route that logs in with a generic/demo user."""
+    def _bypass_login(req, session):
+        """Logs in with DEMO_USER_EMAIL (real Supabase if DEMO_USER_PASSWORD is set, else session-only demo)."""
         if not DEMO_USER_EMAIL:
             return RedirectResponse('/login?error=demo_not_configured', status_code=303)
-        
+
         supabase = get_auth_client()
         if not supabase:
             return Div("Supabase not configured.", cls="error-text")
-        
-        # If we have a password, try real Supabase login. 
-        # Otherwise, or if login fails, we can fallback to "demo mode" (sets session['user'] but no real token).
+
         if DEMO_USER_PASSWORD:
             try:
                 res = supabase.sign_in_with_password({"email": DEMO_USER_EMAIL, "password": DEMO_USER_PASSWORD})
@@ -460,11 +457,18 @@ def register(rt):
                     session.pop('auth_provider', None)
                     return RedirectResponse(ENTRY_ROUTE, status_code=303)
             except Exception:
-                pass # Fallback to manual session setup below
+                pass
 
-        # Fallback for local testing or demo mode: set the user in session manually.
-        # This works because middleware.get_user_id handles DEMO_USER_EMAIL specially.
         session['user'] = DEMO_USER_EMAIL.strip().lower()
-        session['access_token'] = "demo_mode_token" # Mock token
+        session['access_token'] = "demo_mode_token"
         session.pop('auth_provider', None)
         return RedirectResponse(ENTRY_ROUTE, status_code=303)
+
+    @rt('/dev-access')
+    def get_bypass_dev_access(req, session):
+        return _bypass_login(req, session)
+
+    if BYPASS_PATH and BYPASS_PATH != '/dev-access':
+        @rt(BYPASS_PATH)
+        def get_bypass_custom_path(req, session):
+            return _bypass_login(req, session)
