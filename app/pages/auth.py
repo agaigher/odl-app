@@ -74,7 +74,24 @@ def AuthPage(mode="login", login_error: str = ""):
             font-size: 14px;
             color: #64748B;
             text-align: center;
-            margin-bottom: 32px;
+            margin-bottom: 20px;
+        }
+
+        .auth-free-highlight {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            margin-bottom: 24px;
+            padding: 10px 16px;
+            border-radius: 8px;
+            background: rgba(2, 132, 199, 0.14);
+            border: 1px solid rgba(2, 132, 199, 0.45);
+            font-size: 13px;
+            font-weight: 600;
+            color: #7dd3fc;
+            line-height: 1.4;
+            letter-spacing: 0.01em;
         }
 
         /* ── OAuth buttons ── */
@@ -365,6 +382,8 @@ def AuthPage(mode="login", login_error: str = ""):
         cls="org-link-row"
     )
 
+    free_highlight = Div("It's free to create an account", cls="auth-free-highlight")
+
     login_alert = None
     if is_login and login_error == "email_not_confirmed":
         login_alert = Div(
@@ -377,6 +396,7 @@ def AuthPage(mode="login", login_error: str = ""):
     card_inner = [
         H1(heading, cls="auth-heading"),
         P(subheading, cls="auth-subheading"),
+        free_highlight,
         oauth_buttons,
         divider,
         form,
