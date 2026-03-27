@@ -1244,8 +1244,8 @@ def _list_body(page_datasets, total, favs, heading, subtext, page=1, per_page=25
                q="", category="", freq_f="", updated_after_f="", size_f="", keywords_f="", sort_f="recent"):
     if not page_datasets:
         return Div(
-            Div(H1(heading, style="font-size:18px;font-weight:600;color:#F8FAFC;letter-spacing:-0.03em;"),
-                P(subtext, style="font-size:13px;color:#94A3B8;margin-top:3px;"),
+            Div(H1(heading, style="font-size:18px;font-weight:600;color:var(--text-main);letter-spacing:-0.03em;"),
+                P(subtext, style="font-size:13px;color:var(--text-muted);margin-top:3px;"),
                 style="margin-bottom:14px;"),
             Div(P("No datasets match.", cls="empty-msg"), cls="ds-list-box"),
         )
@@ -1305,8 +1305,8 @@ def _list_body(page_datasets, total, favs, heading, subtext, page=1, per_page=25
     page_items.append(page_link("›", page + 1, is_disabled=(page == total_pages)))
 
     return Div(
-        Div(H1(heading, style="font-size:18px;font-weight:600;color:#F8FAFC;letter-spacing:-0.03em;"),
-            P(subtext, style="font-size:13px;color:#94A3B8;margin-top:3px;"),
+        Div(H1(heading, style="font-size:18px;font-weight:600;color:var(--text-main);letter-spacing:-0.03em;"),
+            P(subtext, style="font-size:13px;color:var(--text-muted);margin-top:3px;"),
             style="margin-bottom:14px;"),
         Div(
             count_bar,
@@ -1495,7 +1495,7 @@ def FavouritesView(user_id=""):
             CATALOG_STYLE,
             header,
             Div(
-                P("No lists yet.", style="font-size:15px;font-weight:600;color:#F8FAFC;margin-bottom:8px;"),
+                P("No lists yet.", style="font-size:15px;font-weight:600;color:var(--text-main);margin-bottom:8px;"),
                 P("Create a list above, then star ☆ any dataset in the catalog to add it.",
                   style="font-size:14px;color:#64748B;line-height:1.6;margin-bottom:20px;"),
                 A("Browse the catalog →", href="/catalog",
@@ -1532,7 +1532,7 @@ def FavouritesView(user_id=""):
             ) for d in datasets]
         else:
             rows = [P("No datasets in this list yet. Star ☆ datasets in the catalog to add them.",
-                      style="color:#94A3B8;font-size:13px;padding:20px 14px;")]
+                      style="color:var(--text-muted);font-size:13px;padding:20px 14px;")]
 
         panels.append(Div(
             Div(
@@ -1550,7 +1550,7 @@ def FavouritesView(user_id=""):
         CATALOG_STYLE,
         header,
         Div(
-            Label("Select Collection:", style="font-size:12px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:8px; display:block;"),
+            Label("Select Collection:", style="font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:8px; display:block;"),
             Select(*options, cls="fav-list-select", onchange="selectFavList(this.value)"),
             cls="fav-selector-wrap"
         ),
