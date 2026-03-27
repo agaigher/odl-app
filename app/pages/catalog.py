@@ -1301,9 +1301,10 @@ def _fav_list_dropdown(fav_list, fav_rows, user_id):
         ),
     )
     delete_form = None
+    trash_svg = NotStr('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:block;"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>')
     if fav_list:
         delete_form = Form(
-            Button("Delete list", type="submit", cls="fav-delete-btn", title="Delete this favourite list"),
+            Button(trash_svg, type="submit", cls="fav-delete-btn", title="Delete this favourite list"),
             method="post",
             action=f"/favourite-lists/{fav_list}/delete",
             onsubmit="return confirm('Delete this favourite list? Dataset entries are removed from the list only.');",
