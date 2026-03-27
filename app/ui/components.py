@@ -297,6 +297,13 @@ MODAL_STYLE = Style("""
         position: fixed; inset: 0; background: rgba(0,0,0,0.6);
         display: flex; align-items: center; justify-content: center; z-index: 9999;
         backdrop-filter: blur(4px);
+        outline: none !important;
+        box-shadow: none !important;
+    }
+    .modal-backdrop:focus,
+    .modal-backdrop:focus-visible {
+        outline: none !important;
+        box-shadow: none !important;
     }
     .modal-box {
         position: relative; background: var(--bg-elevated);
@@ -339,7 +346,7 @@ def module_page_layout(page_title, current_path, user, *content,
                        session=None, active_module="settings",
                        show_sidebar=True, full_width=False):
     """New layout wrapper using the module header with the 3-way slicer."""
-    from app.ui.styles import get_app_style
+    from app.ui.styles import get_app_style, get_critical_canvas_style
     from app.ui.module_header import odl_module_header
 
     org_name, avatar_url, active_org, all_orgs, active_project, all_projects = \
@@ -401,6 +408,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     return Html(
         Head(
+            get_critical_canvas_style(),
+            Meta(name="theme-color", content="#09090b"),
             Title(f"{page_title} | ODL App"),
             theme_init,
             Script(src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"),

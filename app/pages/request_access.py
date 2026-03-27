@@ -1,5 +1,6 @@
 from fasthtml.common import *
 from app.supabase_db import db_select
+from app.ui.styles import get_critical_canvas_style, get_focus_ring_reset_style
 
 
 def RequestAccessPage(slug: str, access_type: str, session=None):
@@ -15,6 +16,8 @@ def RequestAccessPage(slug: str, access_type: str, session=None):
     return Html(
         Head(
             Title(f"{'Add to Snowflake' if is_snowflake else 'Get API Access'} | OpenData.London"),
+            get_critical_canvas_style(bg="#080a0f", fg="#f8fafc"),
+            Meta(name="theme-color", content="#080a0f"),
             Link(rel="stylesheet", href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"),
             Script(src="https://unpkg.com/htmx.org@1.9.10"),
             Style("""
@@ -44,7 +47,8 @@ def RequestAccessPage(slug: str, access_type: str, session=None):
                 .auth-card-footer { text-align: center; font-size: 13px; color: #475569; margin-top: 22px; }
                 .auth-card-footer a { color: #0284C7; font-weight: 500; text-decoration: none; }
                 .auth-card-footer a:hover { text-decoration: underline; }
-            """)
+            """),
+            get_focus_ring_reset_style(),
         ),
         Body(
             Div(

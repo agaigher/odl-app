@@ -1,10 +1,14 @@
 from fasthtml.common import *
 
+from app.ui.styles import get_critical_canvas_style, get_focus_ring_reset_style
+
 
 def InvitePage(slug: str, org_name: str):
     return Html(
         Head(
             Title(f"Invite Member | {org_name}"),
+            get_critical_canvas_style(bg="#080a0f", fg="#f8fafc"),
+            Meta(name="theme-color", content="#080a0f"),
             Link(rel="stylesheet", href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"),
             Script(src="https://unpkg.com/htmx.org@1.9.10"),
             Style("""
@@ -31,7 +35,8 @@ def InvitePage(slug: str, org_name: str):
                 .auth-card-footer { text-align: center; font-size: 13px; color: #475569; margin-top: 24px; }
                 .auth-card-footer a { color: #0284C7; font-weight: 500; text-decoration: none; }
                 .auth-card-footer a:hover { text-decoration: underline; }
-            """)
+            """),
+            get_focus_ring_reset_style(),
         ),
         Body(
             Div(

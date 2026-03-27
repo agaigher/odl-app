@@ -7,6 +7,7 @@ from app.auth.client import get_auth_client
 from app.db import db_select, db_insert, db_patch, auth_invite, log_audit
 from app.email import send_org_invite
 from app.pages.invite import InvitePage
+from app.ui.styles import get_critical_canvas_style, get_focus_ring_reset_style
 
 
 def register(rt):
@@ -64,6 +65,8 @@ def register(rt):
         return Html(
             Head(
                 Title("Accepting Invitation | OpenData.London"),
+                get_critical_canvas_style(bg="#080a0f", fg="#f8fafc"),
+                Meta(name="theme-color", content="#080a0f"),
                 Link(rel="stylesheet", href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"),
                 Style("""
                     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -72,7 +75,8 @@ def register(rt):
                     .card { text-align: center; max-width: 400px; padding: 40px 20px; }
                     .card h1 { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
                     .card p { color: #64748B; font-size: 14px; line-height: 1.6; }
-                """)
+                """),
+                get_focus_ring_reset_style(),
             ),
             Body(
                 Div(

@@ -8,6 +8,8 @@ from urllib.parse import urlencode
 from fasthtml.common import *
 from starlette.responses import JSONResponse, Response
 
+from app.ui.styles import get_critical_canvas_style, get_focus_ring_reset_style
+
 from app.config import (
     APP_URL,
     SNOWFLAKE_ACCOUNT,
@@ -207,6 +209,8 @@ def register(rt):
         return Html(
             Head(
                 Title("Confirming email | OpenData.London"),
+                get_critical_canvas_style(bg="#080a0f", fg="#f8fafc"),
+                Meta(name="theme-color", content="#080a0f"),
                 Link(
                     rel="stylesheet",
                     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap",
@@ -219,6 +223,7 @@ def register(rt):
                     .card h1 { font-size: 20px; font-weight: 600; margin-bottom: 10px; }
                     .card p { color: #64748B; font-size: 14px; line-height: 1.6; }
                 """),
+                get_focus_ring_reset_style(),
             ),
             Body(
                 Div(

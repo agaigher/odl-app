@@ -1,15 +1,25 @@
 """
 Application factory — creates the FastHTML app and registers all routes.
 """
-from fasthtml.common import fast_app, Beforeware
+from fasthtml.common import Meta, fast_app, Beforeware
 
 from app.config import SESSION_SECRET
+from app.ui.styles import get_critical_canvas_style
 from app.auth.middleware import before
 from app.catalog.data import seed_catalog
 
 # ── Create app ──
 bware = Beforeware(before, skip=[r'/favicon\.ico', r'/static/.*', r'.*\.css'])
-app, rt = fast_app(before=bware, secret_key=SESSION_SECRET)
+app, rt = fast_app(
+    before=bware,
+    secret_key=SESSION_SECRET,
+    pico=False,
+    surreal=False,
+    hdrs=(
+        get_critical_canvas_style(),
+        Meta(name="theme-color", content="#09090b"),
+    ),
+)
 
 # ── Seed catalog data on startup ──
 seed_catalog()

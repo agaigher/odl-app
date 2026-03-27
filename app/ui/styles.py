@@ -8,6 +8,13 @@ All CSS styles for the ODL application.
 from fasthtml.common import Style
 
 
+def get_critical_canvas_style(bg: str = "#09090b", fg: str = "#fafafa"):
+    """Runs before @import/fonts in other stylesheets so the first paint is not browser-white (FOUC)."""
+    return Style(
+        f"html{{color-scheme:dark;background-color:{bg};}}body{{background-color:{bg};color:{fg};}}"
+    )
+
+
 def get_app_style():
     return Style("""
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap');
@@ -44,6 +51,8 @@ def get_app_style():
             --surface-light: #FFFFFF;
             --text-on-light: #0f172a;
             --border-light: #e2e8f0;
+            /* Chromium (Chrome/Edge): system focus ring colour */
+            -webkit-focus-ring-color: transparent;
         }
 
         html[data-theme="light"] {
@@ -68,15 +77,60 @@ def get_app_style():
 
         *, *::before, *::after { box-sizing: border-box; }
 
+        html {
+            border: none !important;
+            outline: none !important;
+        }
+
         body.app-layout {
             background-color: var(--bg-page);
             color: var(--text-main);
             font-family: var(--font-body);
             margin: 0; padding: 0;
+            border: none !important;
+            outline: none !important;
             display: flex; flex-direction: column;
             min-height: 100vh;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+        }
+
+        html:focus,
+        html:focus-visible,
+        html:focus-within,
+        body.app-layout:focus,
+        body.app-layout:focus-visible,
+        body.app-layout:focus-within,
+        .app-layout:focus,
+        .app-layout:focus-visible,
+        main:focus,
+        main:focus-visible,
+        body.app-layout > div:first-child:focus,
+        body.app-layout > div:first-child:focus-visible {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        a,
+        a:hover,
+        a:active,
+        button {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        a:focus,
+        a:focus-visible,
+        a:active,
+        button:focus,
+        button:focus-visible {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        a:focus-visible,
+        button:focus-visible {
+            outline: 2px solid color-mix(in srgb, var(--text-main) 65%, transparent) !important;
+            outline-offset: 3px;
         }
 
         .app-container { display: flex; flex: 1; width: 100%; }
@@ -135,6 +189,7 @@ def get_shared_style():
     return Style("""
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Roboto+Mono:wght@400;700&display=swap');
         :root {
+            -webkit-focus-ring-color: transparent;
             --odl-bg: #f7f7f4; --odl-bg-elevated: #ffffff;
             --odl-border-subtle: rgba(0, 0, 0, 0.1);
             --odl-text: #111827; --odl-text-muted: #4b5563;
@@ -142,11 +197,53 @@ def get_shared_style():
             --odl-font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
         * { box-sizing: border-box; }
+
+        html {
+            border: none !important;
+            outline: none !important;
+        }
+
         body {
             background-color: var(--odl-bg) !important;
             color: var(--odl-text) !important;
             font-family: var(--odl-font-family) !important;
-            margin: 0; -webkit-font-smoothing: antialiased;
+            margin: 0;
+            padding: 0;
+            border: none !important;
+            outline: none !important;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        html:focus,
+        html:focus-visible,
+        html:focus-within,
+        body:focus,
+        body:focus-visible,
+        body:focus-within {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        a,
+        a:hover,
+        a:active,
+        button {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        a:focus,
+        a:focus-visible,
+        a:active,
+        button:focus,
+        button:focus-visible {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        a:focus-visible,
+        button:focus-visible {
+            outline: 2px solid rgba(17, 24, 39, 0.4) !important;
+            outline-offset: 3px;
         }
         h1, h2, h3, h4, h5, h6 {
             font-family: var(--odl-font-family) !important; font-weight: 700;
@@ -190,5 +287,50 @@ def get_content_page_style():
         @media (max-width: 768px) {
             body.odl-page .content-wrapper { padding: 40px 20px; }
             body.odl-page .page-title { font-size: 36px; }
+        }
+    """)
+
+
+def get_focus_ring_reset_style():
+    """Pages with a custom Html/Head that do not load get_app_style() (auth, etc.)."""
+    return Style("""
+        :root {
+            -webkit-focus-ring-color: transparent;
+        }
+        html {
+            border: none !important;
+            outline: none !important;
+        }
+        body {
+            border: none !important;
+            outline: none !important;
+        }
+        html:focus,
+        html:focus-visible,
+        html:focus-within,
+        body:focus,
+        body:focus-visible,
+        body:focus-within {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+        a,
+        a:hover,
+        a:active,
+        button {
+            -webkit-tap-highlight-color: transparent;
+        }
+        a:focus,
+        a:focus-visible,
+        a:active,
+        button:focus,
+        button:focus-visible {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+        a:focus-visible,
+        button:focus-visible {
+            outline: 2px solid rgba(248, 250, 252, 0.45) !important;
+            outline-offset: 3px;
         }
     """)

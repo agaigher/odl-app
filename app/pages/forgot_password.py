@@ -1,12 +1,15 @@
 from fasthtml.common import *
 
 from app.auth.password_policy import PASSWORD_POLICY_HINT, password_policy_html_pattern
+from app.ui.styles import get_critical_canvas_style, get_focus_ring_reset_style
 
 
 def ForgotPasswordPage():
     return Html(
         Head(
             Title("Reset Password | OpenData.London"),
+            get_critical_canvas_style(bg="#080a0f", fg="#f8fafc"),
+            Meta(name="theme-color", content="#080a0f"),
             Link(rel="stylesheet", href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"),
             Script(src="https://unpkg.com/htmx.org@1.9.10"),
             Style("""
@@ -32,7 +35,8 @@ def ForgotPasswordPage():
                 .auth-card-footer { text-align: center; font-size: 13px; color: #475569; margin-top: 24px; }
                 .auth-card-footer a { color: #0284C7; font-weight: 500; text-decoration: none; }
                 .auth-card-footer a:hover { text-decoration: underline; }
-            """)
+            """),
+            get_focus_ring_reset_style(),
         ),
         Body(
             Div(
@@ -70,6 +74,8 @@ def ResetPasswordPage(token: str = ""):
     return Html(
         Head(
             Title("Set New Password | OpenData.London"),
+            get_critical_canvas_style(bg="#080a0f", fg="#f8fafc"),
+            Meta(name="theme-color", content="#080a0f"),
             Link(rel="stylesheet", href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"),
             Script(src="https://unpkg.com/htmx.org@1.9.10"),
             Style("""
@@ -93,7 +99,8 @@ def ResetPasswordPage(token: str = ""):
                 .auth-message { min-height: 20px; text-align: center; font-size: 13px; margin-top: 12px; }
                 .error-text { color: #EF4444; }
                 .success-text { color: #10B981; }
-            """)
+            """),
+            get_focus_ring_reset_style(),
         ),
         Body(
             Div(
