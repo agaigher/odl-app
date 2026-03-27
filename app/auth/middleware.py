@@ -4,7 +4,6 @@ Request middleware and session helpers.
 from starlette.responses import RedirectResponse
 
 from app.db import get_user_id_from_session
-from app.config import BYPASS_PATH, DEMO_USER_EMAIL
 
 
 def before(req, session):
@@ -19,10 +18,7 @@ def before(req, session):
         # Sessionless endpoints (authenticate via header / Stripe signature)
         '/api/v1',
         '/api/webhooks',
-        '/dev-access',  # demo bypass — must match GET handler in auth.routes
     ]
-    if BYPASS_PATH and BYPASS_PATH != '/dev-access':
-        open_routes.append(BYPASS_PATH)
     is_open = any(req.url.path == r or req.url.path.startswith(r + '/') for r in open_routes)
     if not is_open and not get_user_id(session):
         return RedirectResponse('/login', status_code=303)
@@ -35,9 +31,4 @@ def get_user_id(session):
         return None
     if user == 'test@example.com':
         return "test-user-id"
-    if DEMO_USER_EMAIL and user == DEMO_USER_EMAIL:
-        # If it's a demo user, try Supabase first (so we get real ID if possible),
-        # but if that fails (e.g. mock token), return a hardcoded demo ID.
-        uid = get_user_id_from_session(session)
-        return uid or f"demo-user-{DEMO_USER_EMAIL}"
     return get_user_id_from_session(session)
