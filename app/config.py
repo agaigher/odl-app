@@ -27,3 +27,9 @@ SNOWFLAKE_REDIRECT_URI = f"{APP_URL}/auth/snowflake/callback"
 # ── Stripe ──
 STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY", "sk_test_dummy")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "whsec_dummy")
+
+# ── Demo / Bypass ──
+# Secret path to bypass login: e.g. /xyz
+BYPASS_PATH = os.environ.get("BYPASS_PATH", "/dev-access")
+DEMO_USER_EMAIL = os.environ.get("DEMO_USER_EMAIL", "demo@opendata.london")
+DEMO_USER_PASSWORD = os.environ.get("DEMO_USER_PASSWORD", "")

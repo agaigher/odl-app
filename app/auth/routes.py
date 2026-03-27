@@ -16,6 +16,9 @@ from app.config import (
     SNOWFLAKE_CLIENT_ID,
     SNOWFLAKE_CLIENT_SECRET,
     SNOWFLAKE_REDIRECT_URI,
+    BYPASS_PATH,
+    DEMO_USER_EMAIL,
+    DEMO_USER_PASSWORD,
 )
 from supabase_auth.errors import AuthApiError
 
@@ -434,3 +437,34 @@ def register(rt):
             return Div("Password updated! ", A("Sign in", href="/login"), ".", cls="success-text")
         except Exception as e:
             return Div(f"Error: {str(e)}", cls="error-text")
+
+    # ── Demo / Bypass ──
+    @rt(BYPASS_PATH)
+    def get_bypass_login(req, session):
+        """Bypass route that logs in with a generic/demo user."""
+        if not DEMO_USER_EMAIL:
+            return RedirectResponse('/login?error=demo_not_configured', status_code=303)
+        
+        supabase = get_auth_client()
+        if not supabase:
+            return Div("Supabase not configured.", cls="error-text")
+        
+        # If we have a password, try real Supabase login. 
+        # Otherwise, or if login fails, we can fallback to "demo mode" (sets session['user'] but no real token).
+        if DEMO_USER_PASSWORD:
+            try:
+                res = supabase.sign_in_with_password({"email": DEMO_USER_EMAIL, "password": DEMO_USER_PASSWORD})
+                if res.session:
+                    session['user'] = DEMO_USER_EMAIL.strip().lower()
+                    session['access_token'] = res.session.access_token
+                    session.pop('auth_provider', None)
+                    return RedirectResponse(ENTRY_ROUTE, status_code=303)
+            except Exception:
+                pass # Fallback to manual session setup below
+
+        # Fallback for local testing or demo mode: set the user in session manually.
+        # This works because middleware.get_user_id handles DEMO_USER_EMAIL specially.
+        session['user'] = DEMO_USER_EMAIL.strip().lower()
+        session['access_token'] = "demo_mode_token" # Mock token
+        session.pop('auth_provider', None)
+        return RedirectResponse(ENTRY_ROUTE, status_code=303)
