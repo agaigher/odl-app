@@ -12,7 +12,7 @@ def before(req, session):
         '/login', '/register', '/signup', '/forgot-password', '/reset-password',
         '/auth/google', '/auth/github', '/auth/callback',
         '/auth/email-confirm', '/auth/implicit-session',
-yout        '/invite/accept', '/invite/confirm', '/robots.txt',
+        '/invite/accept', '/invite/confirm', '/robots.txt',
         '/',
         # Sessionless endpoints (authenticate via header / Stripe signature)
         '/api/v1',

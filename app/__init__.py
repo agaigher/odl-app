@@ -22,7 +22,10 @@ app, rt = fast_app(
 )
 
 # ── Seed catalog data on startup ──
-seed_catalog()
+try:
+    seed_catalog()
+except Exception as e:
+    print(f"Startup warning: seed_catalog failed: {e}")
 
 # ── Register feature routes ──
 from app.auth.routes import register as _auth

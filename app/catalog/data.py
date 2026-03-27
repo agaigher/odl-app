@@ -300,6 +300,10 @@ CATEGORIES = sorted(set(d["category"] for d in DATASETS))
 
 def seed_catalog():
     """Upsert all dataset definitions into Supabase. Safe to run on every deploy."""
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        print("Catalog seed skipped: Supabase URL or Key missing.")
+        return
+        
     url = f"{SUPABASE_URL}/rest/v1/datasets"
     headers = {
         "apikey": SUPABASE_SERVICE_KEY,
@@ -315,6 +319,9 @@ def seed_catalog():
         row["schema_fields"] = d["schema_fields"]
         row["sample_rows"] = d["sample_rows"]
         payload.append(row)
-    r = httpx.post(url, json=payload, headers=headers)
-    if r.status_code not in (200, 201):
-        print(f"Warning: catalog seed failed: {r.status_code} {r.text[:200]}")
+    try:
+        r = httpx.post(url, json=payload, headers=headers, timeout=10.0)
+        if r.status_code not in (200, 201):
+            print(f"Warning: catalog seed failed: {r.status_code} {r.text[:200]}")
+    except Exception as e:
+        print(f"Warning: catalog seed request failed: {e}")
