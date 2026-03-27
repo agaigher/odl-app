@@ -16,9 +16,6 @@ from app.config import (
     SNOWFLAKE_CLIENT_ID,
     SNOWFLAKE_CLIENT_SECRET,
     SNOWFLAKE_REDIRECT_URI,
-    BYPASS_PATH,
-    DEMO_USER_EMAIL,
-    DEMO_USER_PASSWORD,
 )
 from supabase_auth.errors import AuthApiError
 
