@@ -1281,7 +1281,7 @@ def _page_nums(page, total_pages):
 def _fav_list_dropdown(fav_list, fav_rows, user_id, oob=False):
     if not user_id:
         return None
-    opts = [Option("All datasets", value="", selected=(not fav_list))]
+    opts = [Option("All datasets", value="", selected=(not fav_list or fav_list == "All datasets"))]
     for row in fav_rows:
         lid = str(row["id"])
         opts.append(Option(row.get("name") or "List", value=lid, selected=(str(fav_list) == lid)))
@@ -1420,7 +1420,7 @@ def _list_body(page_datasets, total, favs, heading, subtext, page=1, per_page=25
 
 def DataCatalog(category="", q="", user_id="", freq_filter="", updated_after_filter="", size_filter="", keywords_filter="", sort_filter="recent", page=1, per_page=25, fav_list=""):
     from app.supabase_db import get_datasets_paginated, get_category_counts
-    effective_fav = fav_list if user_id else ""
+    effective_fav = fav_list if (user_id and fav_list and fav_list != "All datasets") else ""
     fav_rows = _favourite_lists_rows(user_id)
     slug_in = None
     if effective_fav:
@@ -1563,7 +1563,7 @@ def DataCatalog(category="", q="", user_id="", freq_filter="", updated_after_fil
 
 def SearchCatalogResults(q="", category="", user_id="", freq_filter="", updated_after_filter="", size_filter="", keywords_filter="", sort_filter="recent", page=1, per_page=25, fav_list=""):
     from app.supabase_db import get_datasets_paginated
-    effective_fav = fav_list if user_id else ""
+    effective_fav = fav_list if (user_id and fav_list and fav_list != "All datasets") else ""
     fav_rows = _favourite_lists_rows(user_id)
     slug_in = None
     if effective_fav:
@@ -1627,7 +1627,7 @@ def AiSearchResults(query="", user_id="", fav_list=""):
     except Exception:
         all_datasets = []
 
-    effective_fav = fav_list if user_id else ""
+    effective_fav = fav_list if (user_id and fav_list and fav_list != "All datasets") else ""
     if effective_fav:
         allow = set(_slugs_for_favourite_list(user_id, effective_fav))
         all_datasets = [d for d in all_datasets if d.get("slug") in allow]
