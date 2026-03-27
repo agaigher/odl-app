@@ -815,6 +815,7 @@ def FavouriteModal(slug, dataset_title, user_id):
         ),
         hx_post="/favourite-lists",
         hx_target="#modal-lists",
+        hx_include="#catalog-fav-list-select",
         hx_swap="beforeend",
         hx_on__after_request="this.reset()",
     )
@@ -1277,7 +1278,7 @@ def _page_nums(page, total_pages):
     return result
 
 
-def _fav_list_dropdown(fav_list, fav_rows, user_id):
+def _fav_list_dropdown(fav_list, fav_rows, user_id, oob=False):
     if not user_id:
         return None
     opts = [Option("All datasets", value="", selected=(not fav_list))]
@@ -1310,10 +1311,14 @@ def _fav_list_dropdown(fav_list, fav_rows, user_id):
             onsubmit="return confirm('Delete this favourite list? Dataset entries are removed from the list only.');",
         )
     control_row = Div(sel, delete_form, cls="cat-fav-select-row") if delete_form else sel
+    
+    attrs = {"hx_swap_oob": "true"} if oob else {}
     return Div(
         Span("Show Favourite", cls="cat-fav-select-label"),
         control_row,
+        id="fav-list-dropdown-container",
         cls="cat-fav-select-wrap",
+        **attrs
     )
 
 

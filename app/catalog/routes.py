@@ -104,8 +104,8 @@ def register(rt):
             return _fav_btn(slug, False)
 
     @rt("/favourite-lists", methods=["POST"])
-    def post_favourite_lists(slug: str, name: str, session):
-        from app.pages.catalog import _list_checkbox
+    def post_favourite_lists(slug: str, name: str, session, fav_list: str = ""):
+        from app.pages.catalog import _list_checkbox, _fav_list_dropdown, _favourite_lists_rows
         user_id = get_user_id(session)
         if not user_id or not name.strip():
             return ""
@@ -113,7 +113,17 @@ def register(rt):
             created = db_insert("favourite_lists", {"user_id": user_id, "name": name.strip()})
             list_id = created[0]["id"]
             db_insert("favourite_items", {"list_id": list_id, "user_id": user_id, "dataset_slug": slug})
-            return _list_checkbox(list_id, slug, True, name.strip())
+            
+            # The new checkbox to be appended to the modal's list list.
+            new_checkbox = _list_checkbox(list_id, slug, True, name.strip())
+            
+            # The updated dropdown to replace the one on the main page.
+            updated_rows = _favourite_lists_rows(user_id)
+            new_dropdown = _fav_list_dropdown(fav_list, updated_rows, user_id, oob=True)
+            
+            if new_dropdown:
+                return new_checkbox, new_dropdown
+            return new_checkbox
         except Exception:
             return ""
 
