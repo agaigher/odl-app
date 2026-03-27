@@ -127,7 +127,7 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None,
                 active_org=None, all_orgs=None, active_project=None, all_projects=None,
                 is_settings_module=False):
     def nav_item(label, path, icon_path):
-        exact_match_only = ("/", "/dashboard", "/projects", "/favourites")
+        exact_match_only = ("/", "/dashboard", "/projects")
         is_active = current_path == path or (path not in exact_match_only and current_path.startswith(path))
         active_cls = "active" if is_active else ""
         return A(
@@ -187,7 +187,6 @@ def odl_sidebar(current_path="/", org_name="Workspace", avatar_url=None,
         Div(
             Div("Discovery", cls="sidebar-title"),
             nav_item("Data Catalog", "/catalog", IC.book),
-            nav_item("Favourites", "/favourites", IC.star),
             nav_item("SQL Queries", "/queries", IC.code),
             cls="sidebar-section"
         ),

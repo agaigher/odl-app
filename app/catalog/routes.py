@@ -1,7 +1,8 @@
 """
-Catalog routes: browsing, search, AI search, dataset detail, favourites.
+Catalog routes: browsing, search, AI search, dataset detail, favourite lists API.
 """
 from fasthtml.common import *
+from starlette.responses import RedirectResponse
 from app.auth.middleware import get_user_id
 from app.db import db_select, db_insert, db_delete
 from app.ui.components import module_page_layout
@@ -136,17 +137,6 @@ def register(rt):
         except Exception:
             return ""
 
-    @rt("/favourite-lists/create", methods=["POST"])
-    def post_create_fav_list(name: str, session):
-        user_id = get_user_id(session)
-        if user_id and name.strip():
-            try:
-                db_insert("favourite_lists", {"user_id": user_id, "name": name.strip()})
-                return "ok"
-            except Exception:
-                return "error"
-        return "unauthorized"
-
     @rt("/favourite-lists/{list_id}/items/{slug}/remove", methods=["POST"])
     def post_remove_fav_item(list_id: str, slug: str, session):
         user_id = get_user_id(session)
@@ -155,7 +145,7 @@ def register(rt):
                 db_delete("favourite_items", {"list_id": list_id, "dataset_slug": slug, "user_id": user_id})
             except Exception:
                 pass
-        return RedirectResponse("/favourites", status_code=303)
+        return RedirectResponse(f"/catalog?fav_list={list_id}", status_code=303)
 
     @rt("/favourite-lists/{list_id}/delete", methods=["POST"])
     def post_delete_fav_list(list_id: str, session):
@@ -166,14 +156,11 @@ def register(rt):
                 db_delete("favourite_lists", {"id": list_id, "user_id": user_id})
             except Exception:
                 pass
-        return RedirectResponse("/favourites", status_code=303)
+        return RedirectResponse("/catalog", status_code=303)
 
     @rt("/favourites")
-    def get_favourites(session):
-        from app.pages.catalog import FavouritesView
-        user_id = get_user_id(session)
-        return module_page_layout("Favourites", "/favourites", session.get('user'), FavouritesView(user_id=user_id),
-                                  session=session, active_module="catalog", show_sidebar=False)
+    def get_favourites_redirect():
+        return RedirectResponse("/catalog", status_code=302)
 
     @rt("/catalog/{slug}")
     def get_dataset(slug: str, session):
