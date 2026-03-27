@@ -597,9 +597,8 @@ def _slugs_for_favourite_list(user_id, fav_list_id_str):
     """Return slug list for a list owned by the user, or [] if missing or invalid."""
     if not user_id or not fav_list_id_str:
         return []
-    try:
-        lid = int(fav_list_id_str)
-    except (ValueError, TypeError):
+    lid = str(fav_list_id_str).strip()
+    if not lid:
         return []
     try:
         lst = db_select("favourite_lists", {"id": lid, "user_id": user_id})
@@ -1129,6 +1128,7 @@ def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f="", keywo
                 pushUrl: '/catalog?' + qs
             });
         }
+        window._runCatalogFilterSearch = _runCatalogFilterSearch;
 
         function setCatalogSimpleFilter(filterName, value) {
             _writeFilter(filterName, value ? [value] : []);
@@ -1292,7 +1292,7 @@ def _fav_list_dropdown(fav_list, fav_rows, user_id):
             "var v=this.value;"
             "var h=document.getElementById('kw-filter-fav-list'); if(h) h.value=v;"
             "var ai=document.getElementById('ai-fav-list'); if(ai) ai.value=v;"
-            "_runCatalogFilterSearch();"
+            "if(window._runCatalogFilterSearch)window._runCatalogFilterSearch();"
         ),
     )
     delete_form = None
