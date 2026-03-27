@@ -242,9 +242,16 @@ def _fetch_all(url, params, limit=10000):
 
 
 def get_datasets_paginated(category="", q="", access="", freq="", page=1, per_page=25,
-                           provider="", status="", tags="", updated_after="", size="", keywords="", sort="recent"):
+                           provider="", status="", tags="", updated_after="", size="", keywords="", sort="recent",
+                           slug_in=None):
     url = f"{SUPABASE_URL}/rest/v1/datasets"
     params = {}
+
+    if slug_in is not None:
+        slug_in = [s for s in slug_in if s]
+        if not slug_in:
+            return [], 0
+        params["slug"] = _in_values(slug_in)
 
     categories = _split_csv(category)
     freqs = _split_csv(freq)

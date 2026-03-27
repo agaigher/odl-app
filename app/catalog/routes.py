@@ -14,31 +14,33 @@ def register(rt):
     @rt("/catalog")
     def get_catalog(session, q: str = "", category: str = "", freq: str = "",
                     updated_after: str = "", size: str = "", keywords: str = "",
-                    sort: str = "recent", page: int = 1, per_page: int = 25):
+                    sort: str = "recent", page: int = 1, per_page: int = 25,
+                    fav_list: str = ""):
         user_id = get_user_id(session)
         return module_page_layout("London Database", "/catalog", session.get('user'),
                            DataCatalog(category=category, q=q, user_id=user_id,
                                      freq_filter=freq, updated_after_filter=updated_after, size_filter=size, keywords_filter=keywords,
                                      sort_filter=sort,
-                                       page=page, per_page=per_page),
+                                       page=page, per_page=per_page, fav_list=fav_list),
                            session=session, active_module="catalog", show_sidebar=False, full_width=True)
 
     @rt("/catalog/search")
     def get_catalog_search(session, q: str = "", category: str = "", freq: str = "",
                            updated_after: str = "", size: str = "", keywords: str = "",
-                           sort: str = "recent", page: int = 1, per_page: int = 25):
+                           sort: str = "recent", page: int = 1, per_page: int = 25,
+                           fav_list: str = ""):
         from app.pages.catalog import SearchCatalogResults
         user_id = get_user_id(session)
         return SearchCatalogResults(q=q, category=category, user_id=user_id,
                                     freq_filter=freq, updated_after_filter=updated_after, size_filter=size, keywords_filter=keywords,
                                     sort_filter=sort,
-                                    page=page, per_page=per_page)
+                                    page=page, per_page=per_page, fav_list=fav_list)
 
     @rt("/catalog/ai-search", methods=["POST"])
-    def post_ai_search(session, query: str = ""):
+    def post_ai_search(session, query: str = "", fav_list: str = ""):
         from app.pages.catalog import AiSearchResults
         user_id = get_user_id(session)
-        return AiSearchResults(query=query, user_id=user_id)
+        return AiSearchResults(query=query, user_id=user_id, fav_list=fav_list)
 
     @rt("/catalog/{slug}/integration-modal", methods=["GET"])
     def get_integration_modal(slug: str, session):

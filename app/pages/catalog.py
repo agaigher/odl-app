@@ -116,6 +116,47 @@ CATALOG_STYLE = Style("""
     .cat-sidebar-count { font-size: 12px; color: var(--text-faint); }
     .cat-sidebar-item.active .cat-sidebar-count { color: var(--text-muted); }
 
+    .cat-header-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+    .cat-header-text { min-width: 0; flex: 1; }
+    .cat-fav-select-wrap {
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        align-items: flex-end;
+    }
+    .cat-fav-select-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+    .cat-fav-select {
+        min-width: 200px;
+        max-width: min(280px, 100%);
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--bg-surface);
+        color: var(--text-main);
+        font-size: 13px;
+        font-family: var(--font-body);
+        outline: none;
+        cursor: pointer;
+    }
+    .cat-fav-select:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px var(--accent-light);
+    }
+
     .search-outer { margin: 0; }
     .controls-slicer {
         display: flex; align-items: center;
@@ -577,6 +618,36 @@ def _fetch_user_sets(user_id):
     return added, favs
 
 
+def _favourite_lists_rows(user_id):
+    if not user_id:
+        return []
+    try:
+        return db_select("favourite_lists", {"user_id": user_id})
+    except Exception:
+        return []
+
+
+def _slugs_for_favourite_list(user_id, fav_list_id_str):
+    """Return slug list for a list owned by the user, or [] if missing or invalid."""
+    if not user_id or not fav_list_id_str:
+        return []
+    try:
+        lid = int(fav_list_id_str)
+    except (ValueError, TypeError):
+        return []
+    try:
+        lst = db_select("favourite_lists", {"id": lid, "user_id": user_id})
+    except Exception:
+        return []
+    if not lst:
+        return []
+    try:
+        items = db_select("favourite_items", {"list_id": lid, "user_id": user_id})
+    except Exception:
+        return []
+    return [row["dataset_slug"] for row in items]
+
+
 # ── Row-level components ──────────────────────────────────────────────────────
 
 def _fav_btn(slug, is_fav, oob=False):
@@ -884,10 +955,6 @@ def _sidebar(counts, active_cat, total):
           Span(str(total), cls="cat-sidebar-count"),
           href="/catalog",
           cls=f"cat-sidebar-item {'active' if not active_cat else ''}"),
-        A(Span("Favourites", cls="cat-sidebar-label"),
-          href="/favourites",
-          cls="cat-sidebar-item",
-          style="margin-top:4px;"),
         Div("Categories", cls="cat-sidebar-title", style="margin-top:20px;"),
     ]
     for cat in sorted(counts):
@@ -903,7 +970,7 @@ def _sidebar(counts, active_cat, total):
 
 # ── Search area ───────────────────────────────────────────────────────────────
 
-def _keyword_search_area(q, category, freq_f="", updated_after_f="", size_f="", keywords_f="", sort_f="recent"):
+def _keyword_search_area(q, category, freq_f="", updated_after_f="", size_f="", keywords_f="", sort_f="recent", fav_list=""):
     search_svg = NotStr('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>')
 
     kw_bar = Div(
@@ -914,7 +981,7 @@ def _keyword_search_area(q, category, freq_f="", updated_after_f="", size_f="", 
               hx_get="/catalog/search",
               hx_trigger="input changed delay:280ms, search",
               hx_target="#catalog-body",
-              hx_include="[name='q'],[name='category'],[name='freq'],[name='updated_after'],[name='size'],[name='keywords'],[name='sort']",
+              hx_include="[name='q'],[name='category'],[name='freq'],[name='updated_after'],[name='size'],[name='keywords'],[name='sort'],[name='fav_list']",
               hx_push_url="true"),
         Input(type="hidden", name="category", value=category, id="kw-filter-category"),
         Input(type="hidden", name="freq",     value=freq_f, id="kw-filter-freq"),
@@ -922,13 +989,14 @@ def _keyword_search_area(q, category, freq_f="", updated_after_f="", size_f="", 
         Input(type="hidden", name="size", value=size_f, id="kw-filter-size"),
         Input(type="hidden", name="keywords", value=keywords_f, id="kw-filter-keywords"),
         Input(type="hidden", name="sort", value=sort_f or "recent", id="kw-filter-sort"),
+        Input(type="hidden", name="fav_list", value=fav_list, id="kw-filter-fav-list"),
         id="kw-bar", cls="kw-bar"
     )
 
     return Div(kw_bar, cls="kw-search-wrap")
 
 
-def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f="", keywords_f=""):
+def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f="", keywords_f="", fav_list=""):
     keyword_items = [w.strip() for w in str(keywords_f or "").split(",") if w.strip()][:10]
     controls_slicer = Div(
         Button("AI Search", type="button", id="controls-tab-ai",
@@ -939,6 +1007,7 @@ def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f="", keywo
     )
 
     ai_bar = Form(
+        Input(type="hidden", name="fav_list", value=fav_list, id="ai-fav-list"),
         Div(
             Textarea(
                 name="query",
@@ -1075,6 +1144,7 @@ def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f="", keywo
         }
 
         function _runCatalogFilterSearch() {
+            const favEl = document.getElementById('kw-filter-fav-list');
             const params = new URLSearchParams({
                 q: _currentQuery(),
                 category: (_readFilter('category') || []).join(','),
@@ -1085,6 +1155,7 @@ def _ai_filter_area(q, category, freq_f="", updated_after_f="", size_f="", keywo
                 sort: _currentSort(),
                 page: '1',
                 per_page: _currentPerPage(),
+                fav_list: favEl ? (favEl.value || '') : '',
             });
             const qs = params.toString();
             htmx.ajax('GET', '/catalog/search?' + qs, {
@@ -1240,13 +1311,56 @@ def _page_nums(page, total_pages):
     return result
 
 
+def _fav_list_dropdown(fav_list, fav_rows, user_id):
+    if not user_id:
+        return None
+    opts = [Option("All datasets", value="", selected=(not fav_list))]
+    for row in fav_rows:
+        lid = str(row["id"])
+        opts.append(Option(row.get("name") or "List", value=lid, selected=(str(fav_list) == lid)))
+    sel = Select(
+        *opts,
+        id="catalog-fav-list-select",
+        cls="cat-fav-select",
+        onchange=(
+            "var v=this.value;"
+            "var h=document.getElementById('kw-filter-fav-list'); if(h) h.value=v;"
+            "var ai=document.getElementById('ai-fav-list'); if(ai) ai.value=v;"
+            "_runCatalogFilterSearch();"
+        ),
+    )
+    return Div(
+        Span("Show Favourite", cls="cat-fav-select-label"),
+        sel,
+        cls="cat-fav-select-wrap",
+    )
+
+
 def _list_body(page_datasets, total, favs, heading, subtext, page=1, per_page=25,
-               q="", category="", freq_f="", updated_after_f="", size_f="", keywords_f="", sort_f="recent"):
+               q="", category="", freq_f="", updated_after_f="", size_f="", keywords_f="", sort_f="recent",
+               fav_list="", fav_rows=None, user_id=""):
+    fav_rows = fav_rows or []
+    fav_dropdown = _fav_list_dropdown(fav_list, fav_rows, user_id)
+
+    def header_block():
+        inner_title = Div(
+            H1(heading, style="font-size:18px;font-weight:600;color:var(--text-main);letter-spacing:-0.03em;"),
+            P(subtext, style="font-size:13px;color:var(--text-muted);margin-top:3px;"),
+            cls="cat-header-text",
+        )
+        if fav_dropdown:
+            return Div(inner_title, fav_dropdown, cls="cat-header-row")
+        return Div(
+            H1(heading, style="font-size:18px;font-weight:600;color:var(--text-main);letter-spacing:-0.03em;"),
+            P(subtext, style="font-size:13px;color:var(--text-muted);margin-top:3px;"),
+            style="margin-bottom:14px;",
+        )
+
+    fav_q = f"&fav_list={fav_list}" if fav_list else ""
+
     if not page_datasets:
         return Div(
-            Div(H1(heading, style="font-size:18px;font-weight:600;color:var(--text-main);letter-spacing:-0.03em;"),
-                P(subtext, style="font-size:13px;color:var(--text-muted);margin-top:3px;"),
-                style="margin-bottom:14px;"),
+            header_block(),
             Div(P("No datasets match.", cls="empty-msg"), cls="ds-list-box"),
         )
 
@@ -1255,7 +1369,7 @@ def _list_body(page_datasets, total, favs, heading, subtext, page=1, per_page=25
 
     qs_base_no_sort = (
         f"q={q}&category={category}&freq={freq_f}"
-        f"&updated_after={updated_after_f}&size={size_f}&keywords={keywords_f}"
+        f"&updated_after={updated_after_f}&size={size_f}&keywords={keywords_f}{fav_q}"
     )
     qs_base = f"{qs_base_no_sort}&sort={sort_f or 'recent'}"
 
@@ -1305,9 +1419,7 @@ def _list_body(page_datasets, total, favs, heading, subtext, page=1, per_page=25
     page_items.append(page_link("›", page + 1, is_disabled=(page == total_pages)))
 
     return Div(
-        Div(H1(heading, style="font-size:18px;font-weight:600;color:var(--text-main);letter-spacing:-0.03em;"),
-            P(subtext, style="font-size:13px;color:var(--text-muted);margin-top:3px;"),
-            style="margin-bottom:14px;"),
+        header_block(),
         Div(
             count_bar,
             Div(*[_list_row(d, is_fav=d.get("slug") in favs)
@@ -1320,12 +1432,19 @@ def _list_body(page_datasets, total, favs, heading, subtext, page=1, per_page=25
 
 # ── Public components ─────────────────────────────────────────────────────────
 
-def DataCatalog(category="", q="", user_id="", freq_filter="", updated_after_filter="", size_filter="", keywords_filter="", sort_filter="recent", page=1, per_page=25):
+def DataCatalog(category="", q="", user_id="", freq_filter="", updated_after_filter="", size_filter="", keywords_filter="", sort_filter="recent", page=1, per_page=25, fav_list=""):
     from app.supabase_db import get_datasets_paginated, get_category_counts
+    effective_fav = fav_list if user_id else ""
+    fav_rows = _favourite_lists_rows(user_id)
+    slug_in = None
+    if effective_fav:
+        slug_in = _slugs_for_favourite_list(user_id, effective_fav)
+
     try:
         datasets, total_matches = get_datasets_paginated(
             category, q, "", freq_filter, page, per_page,
-            updated_after=updated_after_filter, size=size_filter, keywords=keywords_filter, sort=sort_filter
+            updated_after=updated_after_filter, size=size_filter, keywords=keywords_filter, sort=sort_filter,
+            slug_in=slug_in if effective_fav else None,
         )
         counts, total_all = get_category_counts()
     except Exception:
@@ -1333,8 +1452,23 @@ def DataCatalog(category="", q="", user_id="", freq_filter="", updated_after_fil
 
     _, favs = _fetch_user_sets(user_id)
 
-    heading = f'Results for "{q}"' if q else (category or "London Database")
-    has_filters = any([category, freq_filter, updated_after_filter, size_filter, keywords_filter])
+    fav_list_name = ""
+    if effective_fav:
+        for row in fav_rows:
+            if str(row["id"]) == str(effective_fav):
+                fav_list_name = row.get("name") or ""
+                break
+
+    if q:
+        heading = f'Results for "{q}"'
+    elif category:
+        heading = category
+    elif fav_list_name:
+        heading = fav_list_name
+    else:
+        heading = "London Database"
+
+    has_filters = any([category, freq_filter, updated_after_filter, size_filter, keywords_filter, effective_fav])
     subtext = (f"{total_matches} dataset{'s' if total_matches != 1 else ''} found"
                if (q or has_filters)
                else f"{total_matches} datasets — growing continuously")
@@ -1418,20 +1552,21 @@ def DataCatalog(category="", q="", user_id="", freq_filter="", updated_after_fil
             _sidebar(counts, category, total_all),
             Div(cls="cat-splitter", id="cat-splitter-left", title="Drag to resize columns (double-click to reset)"),
             Div(
-                _keyword_search_area(q, category, freq_filter, updated_after_filter, size_filter, keywords_filter, sort_filter),
+                _keyword_search_area(q, category, freq_filter, updated_after_filter, size_filter, keywords_filter, sort_filter, fav_list=effective_fav),
                 Div(
                     _list_body(datasets, total_matches, favs, heading, subtext,
                                page=page, per_page=per_page,
                                q=q, category=category, freq_f=freq_filter,
                                updated_after_f=updated_after_filter, size_f=size_filter, keywords_f=keywords_filter,
-                               sort_f=sort_filter),
+                               sort_f=sort_filter,
+                               fav_list=effective_fav, fav_rows=fav_rows, user_id=user_id),
                     id="catalog-body", cls="cat-main"
                 ),
                 cls="cat-results-col"
             ),
             Div(cls="cat-splitter", id="cat-splitter-right", title="Drag to resize columns (double-click to reset)"),
             Div(
-                _ai_filter_area(q, category, freq_filter, updated_after_filter, size_filter, keywords_filter),
+                _ai_filter_area(q, category, freq_filter, updated_after_filter, size_filter, keywords_filter, fav_list=effective_fav),
                 cls="cat-controls-col", id="cat-controls-col"
             ),
             cls="cat-wrap"
@@ -1440,19 +1575,42 @@ def DataCatalog(category="", q="", user_id="", freq_filter="", updated_after_fil
     )
 
 
-def SearchCatalogResults(q="", category="", user_id="", freq_filter="", updated_after_filter="", size_filter="", keywords_filter="", sort_filter="recent", page=1, per_page=25):
+def SearchCatalogResults(q="", category="", user_id="", freq_filter="", updated_after_filter="", size_filter="", keywords_filter="", sort_filter="recent", page=1, per_page=25, fav_list=""):
     from app.supabase_db import get_datasets_paginated
+    effective_fav = fav_list if user_id else ""
+    fav_rows = _favourite_lists_rows(user_id)
+    slug_in = None
+    if effective_fav:
+        slug_in = _slugs_for_favourite_list(user_id, effective_fav)
+
     try:
         datasets, total_matches = get_datasets_paginated(
             category, q, "", freq_filter, page, per_page,
-            updated_after=updated_after_filter, size=size_filter, keywords=keywords_filter, sort=sort_filter
+            updated_after=updated_after_filter, size=size_filter, keywords=keywords_filter, sort=sort_filter,
+            slug_in=slug_in if effective_fav else None,
         )
     except Exception:
         datasets, total_matches = [], 0
 
     _, favs = _fetch_user_sets(user_id)
-    heading = f'Results for "{q}"' if q else (category or "London Database")
-    has_filters = any([category, freq_filter, updated_after_filter, size_filter, keywords_filter])
+
+    fav_list_name = ""
+    if effective_fav:
+        for row in fav_rows:
+            if str(row["id"]) == str(effective_fav):
+                fav_list_name = row.get("name") or ""
+                break
+
+    if q:
+        heading = f'Results for "{q}"'
+    elif category:
+        heading = category
+    elif fav_list_name:
+        heading = fav_list_name
+    else:
+        heading = "London Database"
+
+    has_filters = any([category, freq_filter, updated_after_filter, size_filter, keywords_filter, effective_fav])
     subtext = (f"{total_matches} dataset{'s' if total_matches != 1 else ''} found"
                if (q or has_filters)
                else f"{total_matches} datasets — growing continuously")
@@ -1460,7 +1618,8 @@ def SearchCatalogResults(q="", category="", user_id="", freq_filter="", updated_
                       page=page, per_page=per_page,
                       q=q, category=category, freq_f=freq_filter,
                       updated_after_f=updated_after_filter, size_f=size_filter, keywords_f=keywords_filter,
-                      sort_f=sort_filter)
+                      sort_f=sort_filter,
+                      fav_list=effective_fav, fav_rows=fav_rows, user_id=user_id)
 
 
 def FavouritesView(user_id=""):
@@ -1564,7 +1723,7 @@ def FavouritesView(user_id=""):
     )
 
 
-def AiSearchResults(query="", user_id=""):
+def AiSearchResults(query="", user_id="", fav_list=""):
     import os, json
     if not query.strip():
         return Div(P("Please enter a query.", style="color:#64748B;font-size:13px;padding:20px 0;"))
@@ -1582,6 +1741,16 @@ def AiSearchResults(query="", user_id=""):
         all_datasets = db_select("datasets")
     except Exception:
         all_datasets = []
+
+    effective_fav = fav_list if user_id else ""
+    if effective_fav:
+        allow = set(_slugs_for_favourite_list(user_id, effective_fav))
+        all_datasets = [d for d in all_datasets if d.get("slug") in allow]
+
+    if not all_datasets:
+        return Div(
+            P("No datasets in this list to search.", style="color:#64748B;font-size:13px;padding:20px 0;"),
+        )
 
     _, favs = _fetch_user_sets(user_id)
 
