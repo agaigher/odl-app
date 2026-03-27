@@ -437,38 +437,3 @@ def register(rt):
             return Div("Password updated! ", A("Sign in", href="/login"), ".", cls="success-text")
         except Exception as e:
             return Div(f"Error: {str(e)}", cls="error-text")
-
-    # ── Demo / Bypass ──
-    def _bypass_login(req, session):
-        """Logs in with DEMO_USER_EMAIL (real Supabase if DEMO_USER_PASSWORD is set, else session-only demo)."""
-        if not DEMO_USER_EMAIL:
-            return RedirectResponse('/login?error=demo_not_configured', status_code=303)
-
-        supabase = get_auth_client()
-        if not supabase:
-            return Div("Supabase not configured.", cls="error-text")
-
-        if DEMO_USER_PASSWORD:
-            try:
-                res = supabase.sign_in_with_password({"email": DEMO_USER_EMAIL, "password": DEMO_USER_PASSWORD})
-                if res.session:
-                    session['user'] = DEMO_USER_EMAIL.strip().lower()
-                    session['access_token'] = res.session.access_token
-                    session.pop('auth_provider', None)
-                    return RedirectResponse(ENTRY_ROUTE, status_code=303)
-            except Exception:
-                pass
-
-        session['user'] = DEMO_USER_EMAIL.strip().lower()
-        session['access_token'] = "demo_mode_token"
-        session.pop('auth_provider', None)
-        return RedirectResponse(ENTRY_ROUTE, status_code=303)
-
-    @rt('/dev-access')
-    def get_bypass_dev_access(req, session):
-        return _bypass_login(req, session)
-
-    if BYPASS_PATH and BYPASS_PATH != '/dev-access':
-        @rt(BYPASS_PATH)
-        def get_bypass_custom_path(req, session):
-            return _bypass_login(req, session)

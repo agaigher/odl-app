@@ -1288,11 +1288,16 @@ def _fav_list_dropdown(fav_list, fav_rows, user_id):
         *opts,
         id="catalog-fav-list-select",
         cls="cat-fav-select",
+        name="fav_list",
+        hx_get="/catalog/search",
+        hx_trigger="change",
+        hx_target="#catalog-body",
+        hx_push_url="true",
+        hx_include="#kw-bar input, #ai-bar input",
         onchange=(
             "var v=this.value;"
             "var h=document.getElementById('kw-filter-fav-list'); if(h) h.value=v;"
             "var ai=document.getElementById('ai-fav-list'); if(ai) ai.value=v;"
-            "if(window._runCatalogFilterSearch)window._runCatalogFilterSearch();"
         ),
     )
     delete_form = None
