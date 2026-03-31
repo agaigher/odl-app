@@ -28,4 +28,9 @@ SNOWFLAKE_REDIRECT_URI = f"{APP_URL}/auth/snowflake/callback"
 STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY", "sk_test_dummy")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "whsec_dummy")
 
+# ── ODL API (Mac Mini / local) ──
+# Local dev: http://localhost:8000
+# Production: your Cloudflare Tunnel URL e.g. https://api.opendata.london
+ODL_API_URL = os.environ.get("ODL_API_URL", "http://localhost:8000").rstrip("/")
+
 

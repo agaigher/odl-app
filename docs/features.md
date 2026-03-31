@@ -525,3 +525,290 @@ This pattern is already consistent with how the rest of the app works (FastHTML,
 | UK CPI | ONS Beta API | None documented | Cache for 24h |
 
 That is original, technically credible, and directly relevant to both Rothschild (financial data) and systematic hedge funds (data infrastructure at scale).
+
+---
+
+## Upcoming Feature: Real Estate Intelligence Module
+
+### Why Real Estate
+
+UK residential and commercial property is a £8+ trillion asset class. It is also one of the most data-rich, publicly documented markets in the world — the UK government mandates disclosure at every stage: sale registration, energy performance, planning permission, title ownership. Almost all of it is free and open under the Open Government Licence.
+
+The opportunity for OpenData.London is to aggregate these fragmented official sources into a unified intelligence layer — and then surface it as live widgets, queryable datasets, and alerts. The target audience is broad: property investors, mortgage brokers, PropTech developers, estate agents, urban planners, housing researchers, and banks with UK real estate exposure (including Rothschild's advisory and financing arms).
+
+Unlike Rightmove or Zoopla (listings-only, walled gardens), ODL's value proposition is **transactional + structural intelligence**: what actually sold, for what, with what energy rating, next to what planning applications, owned by whom.
+
+---
+
+### Data Sources
+
+#### 1. HM Land Registry — Price Paid Data (PPD)
+
+**Source:** [HM Land Registry Price Paid Data](https://www.gov.uk/government/collections/price-paid-data) — free, Open Government Licence, no auth required.
+
+**What it contains:** Every residential property transaction in England and Wales since January 1995. 24+ million records. Fields: price, date of transfer, postcode, property type (detached/semi/terraced/flat), new build flag, estate type (freehold/leasehold), address.
+
+**Access:** Monthly CSV bulk download + SPARQL endpoint for programmatic queries.
+
+**Endpoint (CSV):**
+```
+http://prod.publicdata.landregistry.gov.uk.s3-website-eu-west-1.amazonaws.com/pp-monthly-update-new-version.csv
+```
+Updated monthly. Last updated: February 2026 data added 27 March 2026.
+
+**Intelligence value:** The most authoritative transaction record in the UK. No estimates — actual registered sale prices. The foundation of every serious UK property analysis.
+
+---
+
+#### 2. UK House Price Index (UKHPI)
+
+**Source:** [HM Land Registry / ONS UKHPI](https://landregistry.data.gov.uk/app/ukhpi/) — free, Open Government Licence, queryable API.
+
+**What it contains:** Monthly indexed house prices by region, local authority, property type, buyer type (first-time buyer / former owner occupier). Covers England, Wales, Scotland, Northern Ireland. Average UK house price: £268,421 (January 2026, +1.3% YoY).
+
+**API:**
+```
+https://landregistry.data.gov.uk/app/ukhpi/browse?location=http%3A%2F%2Flandregistry.data.gov.uk%2Fid%2Fregion%2Flondon&from=2020-01&to=2026-01&lang=en
+```
+Also queryable via SPARQL. JSON and CSV output. No auth.
+
+**Intelligence value:** Enables time-series charting of price trends by London borough — the "OHLCV candlestick" equivalent for UK residential property. Monthly granularity going back to 1995.
+
+---
+
+#### 3. Energy Performance Certificates (EPC)
+
+**Source:** [MHCLG EPC Open Data Portal](https://epc.opendatacommunities.org/) — free, requires registration (email only, no billing).
+
+**What it contains:** ~30 million EPC certificates for domestic buildings in England and Wales. Fields: address, postcode, current and potential energy rating (A–G), floor area, property type, construction year, heating type, CO2 emissions, estimated fuel cost.
+
+**API:**
+```
+https://epc.opendatacommunities.org/api/v1/domestic/search?postcode=EC1A1BB&size=25
+```
+REST API with JSON output. Bearer token auth (free registration).
+
+**Intelligence value:** Every property's energy efficiency rating is now financially material — EPC ratings affect mortgage eligibility (lenders increasingly refusing sub-D), rental legality (minimum E for lettings), and retrofit costs. Joining EPC data to PPD transactions gives you: *did this property sell at a discount because of its EPC rating?* That is a genuine analytical product.
+
+---
+
+#### 4. Planning Applications — planning.data.gov.uk
+
+**Source:** [MHCLG Planning Data Platform](https://www.planning.data.gov.uk/) — free, Open Government Licence, REST API, no auth.
+
+**What it contains:** National dataset of planning applications from 425+ local planning authorities in England. Fields: reference, description, decision, decision date, appeal status, site address, coordinates, UPRN.
+
+**API:**
+```
+https://www.planning.data.gov.uk/api/v1/entity.json?dataset=planning-application&geometry_relation=intersects&geometry=...
+```
+GeoJSON-compatible. Queryable by geography, date, decision type.
+
+**Intelligence value:** Planning applications are a leading indicator of property activity. A planning permission granted in a postcode signals incoming development, densification, or infrastructure change — all of which affect prices. This is the data that PropTech and hedge fund real estate desks pay for. Here it's free.
+
+---
+
+#### 5. HM Land Registry — UK Land Ownership (INSPIRE / Title Register)
+
+**Source:** [Use Land and Property Data service](https://use-land-property-data.service.gov.uk/) — free tier available for non-commercial use, API key required (free registration).
+
+**What it contains:** INSPIRE Index Polygons (the spatial footprint of every registered title in England and Wales), overseas company ownership of UK land, corporate ownership data.
+
+**Intelligence value:** The "who owns what" layer. Combined with Companies House (which ODL/Alliela already has), this creates a corporate → land ownership graph: *which UK properties are owned by companies whose directors are in your graph?* That is a unique product no public tool currently offers.
+
+---
+
+#### 6. ONS Sub-regional House Price Statistics
+
+**Source:** [ONS](https://www.ons.gov.uk/economy/inflationandpriceindices/datasets/ukhousepriceindexmonthlypricestatistics) — free, no auth, CSV + API.
+
+**What it contains:** Mean and median prices, transaction volumes, and 12-month price change by local authority, region, and country. Updated monthly.
+
+**Intelligence value:** Borough-level price velocity — which London boroughs are accelerating vs decelerating. Combined with planning application volume, this gives a forward-looking signal: high planning activity + rising prices = developer pressure zone.
+
+---
+
+### Intelligence Products (What to Build)
+
+These are the analytical outputs — the "tools" — built by combining the sources above.
+
+---
+
+#### Tool 1: London Borough Price Heatmap (Live Widget)
+
+**Inputs:** UKHPI monthly by local authority + ONS sub-regional stats
+
+**Output:** An SVG or canvas map of London boroughs colour-coded by 12-month price change. Green = rising above London average, red = falling. Updated monthly when new UKHPI data drops.
+
+**Widget format:**
+```
+┌──────────────────────────────────────────┐
+│  LONDON PROPERTY PRICES     JAN 2026     │
+│  [borough map — colour gradient]         │
+│  Hackney     +4.2%   Croydon   +1.1%     │
+│  Kensington  –0.8%   Barking   +3.7%     │
+│  City of Lon +0.3%   Avg: +1.3% YoY      │
+└──────────────────────────────────────────┘
+```
+
+**Route:** `GET /live/property-heatmap` — returns pre-rendered SVG fragment, HTMX-swapped, refreshes daily.
+
+---
+
+#### Tool 2: Transaction Velocity Monitor
+
+**Inputs:** HM Land Registry PPD (monthly CSV) — transaction counts by postcode district
+
+**Output:** A ranked table of London postcode districts by transaction volume in the last 30/90/180 days, with MoM and YoY change. Effectively a "liquidity" signal for the London property market.
+
+**Why it matters:** Low transaction volume in a previously active district often precedes price correction (sellers holding, buyers withdrawing). High volume + rising price = strong demand signal. Hedge fund real estate desks track this manually. ODL can automate it.
+
+**dbt model:** `models/gold/transaction_velocity_by_postcode.sql` — incremental, partitioned by month.
+
+---
+
+#### Tool 3: EPC × Price Correlation ("Green Discount / Premium")
+
+**Inputs:** PPD (price + address) joined to EPC (rating + floor area) via UPRN or address matching
+
+**Output:** For each London borough and property type: median price per sq metre by EPC band (A–G). Answer the question: *how much more does an EPC A flat sell for vs an EPC D flat of the same size in the same borough?*
+
+**Why it matters:** This is a financially material question for anyone buying, lending against, or insuring UK property. The gap is widening as minimum EPC standards tighten. This product exists nowhere for free.
+
+**Complexity note:** UPRN matching is reliable for ~80% of records. Address fuzzy matching handles the rest. This is a dbt + DuckDB transform problem.
+
+---
+
+#### Tool 4: Planning Pressure Index
+
+**Inputs:** planning.data.gov.uk (application counts by geography + decision) + UKHPI (price change)
+
+**Output:** For each London borough: planning application volume in last 12 months (by type: residential, commercial, permitted development), approval rate, and overlay with price trend. Boroughs with high application volume + high approval rate = supply pressure zone.
+
+**Live widget version:**
+```
+┌──────────────────────────────────────────────┐
+│  PLANNING PRESSURE INDEX         THIS MONTH  │
+│  Tower Hamlets   ████████░░  312 apps  HIGH  │
+│  Southwark       ██████░░░░  241 apps  MED   │
+│  Westminster     █████░░░░░  198 apps  MED   │
+│  Hackney         ████░░░░░░  167 apps  LOW   │
+└──────────────────────────────────────────────┘
+```
+
+---
+
+#### Tool 5: Corporate Land Ownership Lookup
+
+**Inputs:** HM Land Registry overseas/corporate ownership data + Companies House graph (Alliela)
+
+**Output:** Given a company name or number, show all UK properties registered in that company's name — with title polygon on a map, acquisition date, and estimated current value (from UKHPI index applied to PPD purchase price).
+
+**Why it's unique:** This joins two datasets that are both public but never combined in a user-facing tool. Every AML team, investigative journalist, and property researcher wants this. The data is free. The join is the product.
+
+**Route:** `GET /intelligence/corporate-ownership/{company_number}` — calls Land Registry title data + queries Alliela's CH graph + returns GeoJSON + property table.
+
+---
+
+#### Tool 6: Mortgage Stress Indicator
+
+**Inputs:** BoE base rate history (already in live widget) + UKHPI regional prices + ONS regional earnings data
+
+**Output:** For each London borough: estimated mortgage affordability ratio (median house price / median annual earnings), current monthly payment on a 75% LTV repayment mortgage at current BoE rate, and change vs 12 months ago.
+
+**Why it matters:** At 3.75% base rate with London prices, affordability is stretched. This widget makes that concrete and borough-specific. Any bank, mortgage broker, or housing policy researcher needs it. No free tool currently shows it at borough granularity.
+
+```
+┌──────────────────────────────────────────────────┐
+│  MORTGAGE AFFORDABILITY      LONDON, JAN 2026    │
+│  Median price:        £521,000                   │
+│  75% LTV mortgage:    £390,750                   │
+│  At 3.75% + spread:   ~5.5% rate                 │
+│  Monthly payment:     ~£2,340                    │
+│  Price/earnings ratio: 11.2x  (London avg)       │
+│  vs 12mo ago:  ▲ +0.4x  (rate rise effect)       │
+└──────────────────────────────────────────────────┘
+```
+
+---
+
+#### Tool 7: New Build vs Resale Price Premium Tracker
+
+**Inputs:** PPD (new build flag field) — filter by `new_build = Y` vs `N`, same postcode, same property type, same quarter
+
+**Output:** For each London borough, what premium (or discount) do new builds command vs resale properties of the same type. Updated monthly.
+
+**Why it matters:** New build premium is a key metric for developers (pricing), buyers (overpaying?), and mortgage lenders (valuation risk on day-one decline). This requires no additional data source — it's all inside PPD, just never surfaced cleanly.
+
+---
+
+### Data Pipeline Architecture for Real Estate
+
+```
+HM Land Registry PPD (monthly CSV)
+       │
+       ▼
+pipelines/connectors/land_registry_ppd.py
+  → downloads monthly update CSV
+  → appends to raw/land_registry_ppd/<year_month>.jsonl
+       │
+       ▼
+dbt/models/bronze/land_registry_ppd.sql       ← parse + type CSV
+dbt/models/silver/ppd_london.sql              ← filter to London postcodes
+dbt/models/silver/ppd_monthly_volume.sql      ← transaction counts by postcode/month
+dbt/models/gold/transaction_velocity.sql      ← velocity + MoM/YoY deltas
+dbt/models/gold/new_build_premium.sql         ← new build vs resale by borough
+
+EPC API (on-demand REST)
+       │
+       ▼
+pipelines/connectors/epc_api.py
+  → queries by postcode batch
+  → raw/epc/<postcode_district>.jsonl
+       │
+       ▼
+dbt/models/bronze/epc_certificates.sql
+dbt/models/gold/epc_price_correlation.sql     ← JOIN to PPD via UPRN/address
+
+UKHPI (monthly CSV/API)
+       │
+       ▼
+pipelines/connectors/ukhpi.py
+dbt/models/silver/ukhpi_london_boroughs.sql
+dbt/models/gold/borough_price_heatmap.sql     ← feeds live widget
+
+planning.data.gov.uk (REST API)
+       │
+       ▼
+pipelines/connectors/planning_data.py
+dbt/models/silver/planning_applications_london.sql
+dbt/models/gold/planning_pressure_index.sql   ← feeds live widget
+```
+
+---
+
+### New API Routes (proposed)
+
+| Route | Returns | Refresh |
+|-------|---------|---------|
+| `GET /live/property-prices` | Borough heatmap fragment | Monthly |
+| `GET /live/planning-pressure` | Top 5 boroughs by application volume | Monthly |
+| `GET /live/mortgage-affordability` | London affordability widget | Monthly |
+| `GET /intelligence/borough/{slug}` | Full borough profile: prices, EPCs, planning, velocity | On request |
+| `GET /intelligence/postcode/{pc}` | Postcode drill-down: recent sales, EPC ratings, nearby planning apps | On request |
+| `GET /intelligence/corporate-ownership/{number}` | CH company → Land Registry titles | On request |
+
+---
+
+### Source Summary
+
+| Dataset | Provider | Licence | Auth | Update frequency |
+|---------|----------|---------|------|-----------------|
+| [Price Paid Data](https://www.gov.uk/government/collections/price-paid-data) | HM Land Registry | OGL | None | Monthly |
+| [UK House Price Index](https://landregistry.data.gov.uk/app/ukhpi/) | HMLR + ONS | OGL | None | Monthly |
+| [EPC Certificates](https://epc.opendatacommunities.org/) | MHCLG | OGL* | Free registration | Monthly |
+| [Planning Applications](https://www.planning.data.gov.uk/) | MHCLG | OGL | None | Continuous |
+| [Land Ownership / INSPIRE](https://use-land-property-data.service.gov.uk/) | HM Land Registry | OGL* | Free API key | Monthly |
+| [ONS Sub-regional HPI](https://www.ons.gov.uk/economy/inflationandpriceindices/datasets/ukhousepriceindexmonthlypricestatistics) | ONS | OGL | None | Monthly |
+
+*OGL with registration requirement for bulk/API access.
