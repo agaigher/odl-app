@@ -96,18 +96,43 @@ The catalog is the single source of truth for what datasets exist. Integrations 
 
 ### Data Layer (odl-data)
 
+**Medallion architecture:** raw → bronze (Python) → silver (dbt, typed) → gold (dbt, aggregates).
+
 | Feature | Where | Notes |
 |---------|-------|-------|
-| Registry-driven ingestion | `contracts/source_registry.yml` | Each source configured as a YAML entry; no bespoke pipeline per source |
-| London Datastore connector | `pipelines/extract_sources.py` | CKAN Datastore API; auto-discovers resources by query |
-| Raw zone | `raw/` | Immutable JSONL snapshots, one file per run |
-| Staging zone | `staging/` | Normalised Parquet tables |
-| Local warehouse | `warehouse/odl.duckdb` | DuckDB; queryable locally |
-| dbt transform layer | `dbt/` | Bronze/silver/gold models |
+| Registry-driven ingestion | `contracts/source_registry.yml` + `sources/<id>/contract.yml` | Each source is a self-contained folder; registry is a lean enabled/disabled index |
+| Raw zone | `raw/<source_id>/` | Immutable partitioned JSONL snapshots, one file per partition per run |
+| Staging zone | `staging/<source_id>/` | Normalised Parquet (converted from raw JSONL) |
+| Local warehouse | `warehouse/odl.duckdb` | DuckDB single-file warehouse; tables stored inside |
+| dbt bronze models | `dbt/models/bronze/` | Passthrough from Python-loaded tables; adds dbt tests + docs |
+| dbt silver models | `dbt/models/silver/` | Type casting, column renames, derived fields, null filtering |
+| dbt macro | `dbt/macros/generate_schema_name.sql` | Overrides dbt default to use clean schema names (`bronze`, `silver`) not `main_bronze` |
 | Export layer | `export/` | Snowflake-ready Parquet artifacts |
 | Scheduler | `pipelines/scheduler.py` | Free local scheduler; cron-like intervals per source |
 | Snowflake migration path | `pipelines/snowflake_trial.py` | Switch dbt profile; load `export/` via Snowflake stage |
-| Active sources | `source_registry.yml` | `london_population`, `london_air_quality`, `london_housing` |
+
+**Active sources:**
+
+| Source | Rows | Coverage | Refresh |
+|--------|------|----------|---------|
+| `london_air_quality` | ~500k | 60 sites, 8 pollutants, 90-day rolling | Hourly |
+| `met_police_crime` | ~3.4M | 14 crime types, 33 boroughs, Feb 2023–Jan 2026 | Monthly |
+| `land_registry_ppd` | ~4-5M (est.) | London property transactions, 1995–present | Monthly incremental |
+
+### API Layer (odl-api)
+
+FastAPI server running on Mac Mini, exposed to Vercel frontend via Cloudflare Tunnel. Auth via `X-API-Key` header validated against Supabase `integrations` table.
+
+| Endpoint group | Endpoints | Notes |
+|---------------|-----------|-------|
+| Air Quality | `GET /v1/datasets/air-quality/sites` | 60 monitoring sites with metadata |
+| | `GET /v1/datasets/air-quality/readings` | Filtered hourly readings (site, species, date, borough) |
+| Crime | `GET /v1/datasets/crime/categories` | 14 crime type categories |
+| | `GET /v1/datasets/crime/boroughs` | All boroughs |
+| | `GET /v1/datasets/crime/incidents` | Filtered incidents (borough, type, month range, LSOA) |
+| | `GET /v1/datasets/crime/summary` | Monthly counts by crime type |
+| Property | `GET /v1/datasets/property/transactions` | Filtered PPD transactions (borough, postcode, type, tenure, price range, date) |
+| | `GET /v1/datasets/property/summary` | Annual median/mean/count by borough + property type |
 
 ---
 
@@ -219,7 +244,7 @@ This is already in the ODL data source registry (`london_air_quality`). The upgr
 
 With 150 stations × hourly readings × 4 pollutants = ~600 events/hour. Aggregated at the silver layer into hourly borough-level averages; at the gold layer into daily summaries with trend indicators.
 
-#### 3. Land Registry Price Paid Data
+#### 3. Land Registry Price Paid Data ✅ Built
 
 The Land Registry publishes [monthly Price Paid Data](https://www.gov.uk/government/collections/price-paid-data) as a free CSV download. Each transaction is a financial event:
 
@@ -227,35 +252,35 @@ The Land Registry publishes [monthly Price Paid Data](https://www.gov.uk/governm
 { transaction_id, price, date_of_transfer, postcode, property_type, tenure, ... }
 ```
 
-The streaming interpretation: each new month's file is a batch of events. The silver layer partitions by London borough and month; the gold layer produces median price trajectories by borough, property type, and tenure — a financial time series directly analogous to OHLCV candlestick data.
+**Status:** connector built (`sources/land_registry_ppd/`). Streams yearly CSVs 1995–present filtered to GREATER LONDON. Silver layer: price as integer, decoded property_type/tenure/new_build, borough with consistent casing. API: `GET /v1/datasets/property/transactions` and `/summary`.
 
-This is the most directly relevant to Rothschild and hedge fund context: a property price event feed, structured like a financial instrument, with multi-tier aggregation.
+The streaming interpretation: each new month's file is a batch of events. The gold layer will produce median price trajectories by borough, property type, and tenure — a financial time series directly analogous to OHLCV candlestick data.
 
-#### 4. Met Police Crime Data
+#### 4. Met Police Crime Data ✅ Built
 
-The [data.police.uk API](https://data.police.uk/docs/) is free and open. It returns street-level crime incidents by location and month. Each crime report is a georeferenced event:
+The [data.police.uk API](https://data.police.uk/docs/) is free and open. Street-level crime incidents by location and month.
 
 ```
 { category, location: { lat, lng, street }, outcome, month }
 ```
 
-Silver layer: incident counts by borough and crime category per month. Gold layer: rolling 12-month trend per borough — structurally a time-series signal.
+**Status:** connector built (`sources/met_police_crime/`). Downloads 36 months via HTTP range requests against the cumulative national archive (pulls only Met Police CSV ~3.8MB/month from 1.7GB ZIP). 3.4M rows. Silver layer: typed coordinates, borough extracted from LSOA name. API: 4 endpoints including `/summary` for monthly counts by type.
 
 ---
 
 ### New Files (proposed)
 
-| File | What it does |
-|------|-------------|
-| `pipelines/stream_ingestor.py` | Poll-based stream ingestor: fetches source at interval, appends new events to raw JSONL with deduplication on `event_id` |
-| `pipelines/stream_aggregator.py` | In-memory aggregator: maintains rolling 60s window per source, exposes current state dict for the live API endpoint |
-| `pipelines/connectors/tfl_unified.py` | TfL Unified API connector: `/Line/.../Status`, `/StopPoint/.../Arrivals`, etc. |
-| `pipelines/connectors/laqn.py` | LAQN air quality connector: per-station hourly readings |
-| `pipelines/connectors/land_registry.py` | Land Registry Price Paid connector: monthly CSV fetch + parse |
-| `dbt/models/silver/hourly_tfl_disruptions.sql` | Hourly disruption duration per line (incremental) |
-| `dbt/models/silver/hourly_air_quality.sql` | Hourly mean pollutant per borough (incremental) |
-| `dbt/models/gold/daily_property_prices.sql` | Daily median price per borough × property type |
-| `app/api_v1/stream_routes.py` | `GET /api/v1/stream/{source_id}/live` — returns current in-memory snapshot |
+| File | Status | What it does |
+|------|--------|-------------|
+| `sources/london_air_quality/connector.py` | ✅ Built | LAQN air quality connector: per-station hourly readings |
+| `sources/met_police_crime/connector.py` | ✅ Built | Met Police bulk archive via HTTP range requests |
+| `sources/land_registry_ppd/connector.py` | ✅ Built | Land Registry Price Paid connector: yearly CSVs 1995–present |
+| `pipelines/stream_ingestor.py` | Planned | Poll-based stream ingestor: fetches source at interval, appends new events to raw JSONL with deduplication on `event_id` |
+| `pipelines/stream_aggregator.py` | Planned | In-memory aggregator: maintains rolling 60s window per source |
+| `pipelines/connectors/tfl_unified.py` | Planned | TfL Unified API connector: `/Line/.../Status`, arrivals, crowding |
+| `dbt/models/silver/hourly_tfl_disruptions.sql` | Planned | Hourly disruption duration per line (incremental) |
+| `dbt/models/gold/daily_property_prices.sql` | Planned | Daily median price per borough × property type |
+| `app/api_v1/stream_routes.py` | Planned | `GET /api/v1/stream/{source_id}/live` — returns current in-memory snapshot |
 
 ---
 
