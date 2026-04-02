@@ -32,6 +32,8 @@ class IC:
     credit_card = "M2 10h20 M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
     sun = "M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
     moon = "M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"
+    circle_help = "M9.09 9a3 3 0 1 1 5.82 1c0 2-3 3-3 3 M12 17h.01 M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
+    activity = "M22 12h-4l-3 8-4-16-3 8H2"
 
 
 def icon_svg(d_path, width="18", height="18", **kwargs):
@@ -394,14 +396,30 @@ def module_page_layout(page_title, current_path, user, *content,
 """)
     theme_toggle = Script("""
 document.addEventListener('DOMContentLoaded', function() {
-  var btn = document.getElementById('theme-toggle');
-  if (!btn) return;
-  btn.addEventListener('click', function() {
-    var cur = document.documentElement.getAttribute('data-theme') || 'dark';
-    var next = cur === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    try { localStorage.setItem('odl-theme', next); } catch(e) {}
+  var buttons = Array.prototype.slice.call(document.querySelectorAll('[data-theme-toggle]'));
+  if (!buttons.length) return;
+
+  function syncControls(theme) {
+    var isDark = theme !== 'light';
+    buttons.forEach(function(btn) {
+      btn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(document.querySelectorAll('[data-theme-indicator]')).forEach(function(node) {
+      node.setAttribute('data-checked', isDark ? 'true' : 'false');
+    });
+  }
+
+  buttons.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var cur = document.documentElement.getAttribute('data-theme') || 'dark';
+      var next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('odl-theme', next); } catch(e) {}
+      syncControls(next);
+    });
   });
+
+  syncControls(document.documentElement.getAttribute('data-theme') || 'dark');
 });
 """)
 
