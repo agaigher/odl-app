@@ -41,6 +41,7 @@ from app.settings.routes import register as _settings
 from app.api_v1.routes import register as _api_v1
 from app.dashboard.routes import register as _dashboard
 from app.explore.routes import register as _explore
+from app.companies_graph.routes import register as _companies_graph
 
 _auth(rt)
 _catalog(rt)
@@ -55,3 +56,4 @@ _settings(rt)
 _api_v1(rt)
 _dashboard(rt)
 _explore(rt)
+_companies_graph(rt)
