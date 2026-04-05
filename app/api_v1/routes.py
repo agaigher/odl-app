@@ -9,7 +9,7 @@ import httpx
 from starlette.responses import Response
 
 from app.db import db_select, db_patch
-from app.config import ODL_API_URL
+from app.config import ODL_API_URL, ODL_GRAPH_API_URL
 
 
 def register(rt):
@@ -62,32 +62,66 @@ def register(rt):
                     return Response('{"error": "API Key does not have access to this dataset."}',
                                     status_code=403, media_type="application/json")
 
-            # Map dataset slug to odl-api endpoint path
+            # Map dataset slug to odl-api endpoint path (DuckDB-backed datasets)
             DATASET_ROUTES = {
                 "london-air-quality": "/v1/datasets/air-quality/readings",
             }
-            api_path = DATASET_ROUTES.get(dataset_slug or "")
-            if not api_path:
-                return Response(
-                    json.dumps({"error": f"Dataset '{dataset_slug}' is not available via API yet."}),
-                    status_code=404, media_type="application/json",
-                )
 
-            # Forward query params from the request body to odl-api as query string params
-            query_params = body.get("params", {})
+            # Graph datasets route to ODL Graph API (Neo4j + Postgres)
+            GRAPH_DATASET_ROUTES = {
+                "uk-companies-house": True,
+            }
 
-            try:
-                async with httpx.AsyncClient(timeout=30) as client:
-                    odl_response = await client.get(
-                        f"{ODL_API_URL}{api_path}",
-                        params=query_params,
-                        headers={"X-API-Key": api_key},
+            if dataset_slug in GRAPH_DATASET_ROUTES:
+                # Graph API: pass the full request body through and forward to the graph service.
+                # The caller specifies an "endpoint" key in the body (e.g. "search", "expand").
+                graph_endpoint = body.get("endpoint", "search")
+                graph_method = body.get("method", "POST").upper()
+                graph_params = body.get("params", {})
+                graph_payload = body.get("payload", {})
+                try:
+                    async with httpx.AsyncClient(timeout=30) as client:
+                        if graph_method == "GET":
+                            odl_response = await client.get(
+                                f"{ODL_GRAPH_API_URL}/{graph_endpoint}",
+                                params=graph_params,
+                                headers={"X-API-Key": api_key},
+                            )
+                        else:
+                            odl_response = await client.post(
+                                f"{ODL_GRAPH_API_URL}/{graph_endpoint}",
+                                json=graph_payload,
+                                params=graph_params,
+                                headers={"X-API-Key": api_key},
+                            )
+                except httpx.ConnectError:
+                    return Response(
+                        '{"error": "Graph service unavailable. Please try again later."}',
+                        status_code=503, media_type="application/json",
                     )
-            except httpx.ConnectError:
-                return Response(
-                    '{"error": "Data service unavailable. Please try again later."}',
-                    status_code=503, media_type="application/json",
-                )
+            else:
+                api_path = DATASET_ROUTES.get(dataset_slug or "")
+                if not api_path:
+                    return Response(
+                        json.dumps({"error": f"Dataset '{dataset_slug}' is not available via API yet."}),
+                        status_code=404, media_type="application/json",
+                    )
+
+                # Forward query params from the request body to odl-api as query string params
+                query_params = body.get("params", {})
+
+                try:
+                    async with httpx.AsyncClient(timeout=30) as client:
+                        odl_response = await client.get(
+                            f"{ODL_API_URL}{api_path}",
+                            params=query_params,
+                            headers={"X-API-Key": api_key},
+                        )
+                except httpx.ConnectError:
+                    return Response(
+                        '{"error": "Data service unavailable. Please try again later."}',
+                        status_code=503, media_type="application/json",
+                    )
 
             if odl_response.status_code != 200:
                 return Response(odl_response.text, status_code=odl_response.status_code,

@@ -33,4 +33,10 @@ STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "whsec_dummy")
 # Production: your Cloudflare Tunnel URL e.g. https://api.opendata.london
 ODL_API_URL = os.environ.get("ODL_API_URL", "http://localhost:8000").rstrip("/")
 
+# ── ODL Graph API (Mac Mini / local) ──
+# Serves Companies Graph endpoints (Neo4j + Postgres).
+# Local dev: http://localhost:8001
+# Production: https://graph.opendata.london
+ODL_GRAPH_API_URL = os.environ.get("ODL_GRAPH_API_URL", "http://localhost:8001").rstrip("/")
+
 
